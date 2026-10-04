@@ -435,6 +435,126 @@ class AuthenticationUtilitiesTest {
     }
 
     @Test
+    fun testFetchUserIdentityWithRetry_communityUser_usesTokenResponseIdUrlForInitialAndReplay() = runTest {
+        val communityIdUrl = "https://login.salesforce.com/id/00D000000000000EAA/005000000000000AAA"
+        val tokenResponse = OAuth2.TokenEndpointResponse(
+            mutableMapOf(
+                "access_token" to "initial-access-token",
+                "refresh_token" to "initial-refresh-token",
+                "instance_url" to "https://acme.my.salesforce.com",
+                "id" to communityIdUrl,
+                "scope" to "refresh_token id",
+                "sfdc_community_id" to "0DB000000000000AAA",
+                "sfdc_community_url" to "https://acme.my.site.com/customerportal",
+            )
+        )
+        val expectedIdentity = createIdServiceResponse()
+        val identityUrls = mutableListOf<String>()
+
+        val result = fetchUserIdentityWithRetry(
+            tokenResponse = tokenResponse,
+            loginServer = "https://acme.my.site.com/customerportal",
+            consumerKey = "test_consumer_key",
+            identityFetcher = { url, _ ->
+                identityUrls += url
+                if (identityUrls.size == 1) throw OAuth2.IdentityServiceException(403, "Wrong_Org")
+                expectedIdentity
+            },
+            tokenRefresher = { _, _, _ ->
+                OAuth2.TokenEndpointResponse(
+                    mutableMapOf(
+                        "access_token" to "refreshed-access-token",
+                        "instance_url" to "https://acme.my.salesforce.com",
+                        "id" to communityIdUrl,
+                        "scope" to "refresh_token id",
+                    )
+                )
+            },
+        )
+
+        assertSame(expectedIdentity, result.identity)
+        // The id host from the token response is used as-is both times. Swapping in the
+        // instance_url host is rejected (403 Wrong_Org) for community users.
+        assertEquals(listOf(communityIdUrl, communityIdUrl), identityUrls)
+    }
+
+    private fun communityTokenResponse(idUrl: String) = OAuth2.TokenEndpointResponse(
+        mutableMapOf(
+            "access_token" to "initial-access-token",
+            "refresh_token" to "initial-refresh-token",
+            "instance_url" to "https://acme.my.salesforce.com",
+            "id" to idUrl,
+            "scope" to "refresh_token id",
+            "sfdc_community_id" to "0DB000000000000AAA",
+            "sfdc_community_url" to "https://acme.my.site.com/customerportal",
+        )
+    )
+
+    private fun refreshedResponse(idUrl: String) = OAuth2.TokenEndpointResponse(
+        mutableMapOf(
+            "access_token" to "refreshed-access-token",
+            "instance_url" to "https://acme.my.salesforce.com",
+            "id" to idUrl,
+            "scope" to "refresh_token id",
+        )
+    )
+
+    @Test
+    fun testFetchUserIdentityWithRetry_communityUser_keepsRefreshingUntilReplaySucceeds() = runTest {
+        val idUrl = "https://login.salesforce.com/id/00D000000000000EAA/005000000000000AAA"
+        val expectedIdentity = createIdServiceResponse()
+        val identityUrls = mutableListOf<String>()
+        var refreshes = 0
+
+        val result = fetchUserIdentityWithRetry(
+            tokenResponse = communityTokenResponse(idUrl),
+            loginServer = "https://acme.my.site.com/customerportal",
+            consumerKey = "test_consumer_key",
+            identityFetcher = { url, _ ->
+                identityUrls += url
+                // Initial call plus the first 4 replays fail; the 5th replay succeeds.
+                if (identityUrls.size <= 5) throw OAuth2.IdentityServiceException(403, "Wrong_Org")
+                expectedIdentity
+            },
+            tokenRefresher = { _, _, _ ->
+                refreshes++
+                refreshedResponse(idUrl)
+            },
+        )
+
+        assertSame(expectedIdentity, result.identity)
+        assertEquals(5, refreshes)
+        assertEquals(List(6) { idUrl }, identityUrls)
+    }
+
+    @Test
+    fun testFetchUserIdentityWithRetry_communityUser_givesUpAtRefreshCap() = runTest {
+        val idUrl = "https://login.salesforce.com/id/00D000000000000EAA/005000000000000AAA"
+        var identityCalls = 0
+        var refreshes = 0
+
+        val error = runCatching {
+            fetchUserIdentityWithRetry(
+                tokenResponse = communityTokenResponse(idUrl),
+                loginServer = "https://acme.my.site.com/customerportal",
+                consumerKey = "test_consumer_key",
+                identityFetcher = { _, _ ->
+                    identityCalls++
+                    throw OAuth2.IdentityServiceException(403, "Wrong_Org")
+                },
+                tokenRefresher = { _, _, _ ->
+                    refreshes++
+                    refreshedResponse(idUrl)
+                },
+            )
+        }.exceptionOrNull() as? OAuth2.IdentityServiceException
+
+        assertEquals(403, error?.httpStatusCode)
+        assertEquals(MAX_COMMUNITY_IDENTITY_REFRESHES, refreshes)
+        assertEquals(MAX_COMMUNITY_IDENTITY_REFRESHES + 1, identityCalls)
+    }
+
+    @Test
     fun testFetchUserIdentityWithRetry_replayForbidden_doesNotRefreshAgain() = runTest {
         val tokenResponse = createTokenEndpointResponse().apply {
             tokenType = "DPoP"

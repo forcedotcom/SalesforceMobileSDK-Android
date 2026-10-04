@@ -294,6 +294,17 @@ if response is HTTP 400 use_dpop_nonce and the request carried a DPoP proof:
 The identity endpoint does not harvest or retry inline. Its 401/403 path refreshes through the
 token endpoint, and the subsequent identity request is rebuilt with the refreshed credentials.
 
+**Identity fetch at login** (`fetchUserIdentityWithRetry`):
+- Regular users: one refresh and one replay, on `idUrlWithInstance`. DPoP tokens from a pool
+  server use the raw `idUrl` for the first request.
+- Community (Experience Cloud) users (token response has `sfdc_community_id` and
+  `sfdc_community_url`): the raw token-response `id` URL is used for the first request and every
+  replay. The instance-host substitution is rejected with 403 `Wrong_Org`. Right after login the
+  identity service can keep answering 401 or `Wrong_Org` for a valid token, so the flow loops
+  refresh then replay until it succeeds, up to `MAX_COMMUNITY_IDENTITY_REFRESHES` (20) as a safety
+  net. iOS does the same with no cap (it needed up to 10 cycles in testing). If the cap is hit a
+  warning is logged and the last error is thrown.
+
 ### Read path (interceptor + OAuth2.java)
 
 Every DPoP proof — whether selected by `DPoPRequestDecorator.applyAuthHeaders()` (API calls) or
