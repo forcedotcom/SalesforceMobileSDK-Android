@@ -294,16 +294,20 @@ if response is HTTP 400 use_dpop_nonce and the request carried a DPoP proof:
 The identity endpoint does not harvest or retry inline. Its 401/403 path refreshes through the
 token endpoint, and the subsequent identity request is rebuilt with the refreshed credentials.
 
-**Identity fetch at login** (`fetchUserIdentityWithRetry`):
-- Regular users: one refresh and one replay, on `idUrlWithInstance`. DPoP tokens from a pool
-  server use the raw `idUrl` for the first request.
-- Community (Experience Cloud) users (token response has `sfdc_community_id` and
-  `sfdc_community_url`): the raw token-response `id` URL is used for the first request and every
-  replay. The instance-host substitution is rejected with 403 `Wrong_Org`. Right after login the
-  identity service can keep answering 401 or `Wrong_Org` for a valid token, so the flow loops
-  refresh then replay until it succeeds, up to `MAX_COMMUNITY_IDENTITY_REFRESHES` (30) as a safety
-  net. iOS does the same with no cap (it needed up to 13 cycles in testing). If the cap is hit a
-  warning is logged and the last error is thrown.
+**Identity fetch at login** (`fetchUserIdentityWithRetry`), identical to iOS for every user:
+- The raw token-response `id` URL is used for the first request and every replay. No
+  instance-host substitution is applied (it is rejected with 403 `Wrong_Org` for community users and
+  for DPoP tokens from a pool server).
+- Any 401 or 403 is refreshable. The flow refreshes through the token endpoint, merges the
+  complete refreshed credentials (including a rotated refresh token), and replays. Right after
+  login the identity service can keep answering 401 or 403 (`Wrong_Org`, `Bad_OAuth_Token`) for a
+  valid token, so this repeats with no cap until the identity service accepts the token (community
+  logins have needed up to 17 cycles). Other statuses fail immediately, as does a 401/403 with no
+  refresh token, and a failed refresh is propagated.
+- One info-level line is logged when the fetch finishes, with no tokens or user data:
+  `IDENTITY_ATTEMPTS attempts=N refreshes=M status=... elapsedMs=... dpop=... community=...
+  pool=... host=...` (`attempts=1` means the first request was accepted). Each 401/403 also logs
+  its status and error code (`Wrong_Org`, `Bad_OAuth_Token` or `other`).
 
 ### Read path (interceptor + OAuth2.java)
 
