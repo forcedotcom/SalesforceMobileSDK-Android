@@ -55,9 +55,12 @@ External Client App (ECA) login tests for both opaque and JWT token formats with
 | `testECAOpaque_DefaultScopes` | ECA Opaque | Default | |
 | `testECAOpaque_SubsetScopes` | ECA Opaque | Subset | |
 | `testECAOpaque_AllScopes` | ECA Opaque | All | |
+| `testECAOpaque_Hybrid` | ECA Opaque | Default | Hybrid auth token |
+| `testECAOpaque_NoHybrid` | ECA Opaque | Default | Non-hybrid auth token |
 | `testECAJwt_DefaultScopes` | ECA JWT | Default | |
 | `testECAJwt_SubsetScopes_NotHybrid` | ECA JWT | Subset | |
 | `testECAJwt_AllScopes` | ECA JWT | All | |
+| `testECAOpaque_ViaLoginPoolServer` | ECA Opaque | — | Pool server login without DPoP |
 | `testECAJwt_ViaLoginPoolServer` | ECA JWT | — | Pool server login without DPoP |
 
 #### DPoPLoginTests
