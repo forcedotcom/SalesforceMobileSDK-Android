@@ -381,6 +381,7 @@ L3 takes priority over the resolved domain: even if Welcome Discovery resolves t
 |-----------|-------------|
 | `AuthFlowTest` | Abstract base class providing `loginAndValidate`, `migrateAndValidate`, and `restartAndValidateUser` orchestration. Also exposes `restartApp()` (kills only the app process via `pidof` filtered by `myPid`, then relaunches), `addOtherUserAndValidate()`, and `switchToUserAndValidateUser()` helpers for restart and multi-user flows. Uses `ActivityScenarioRule` + `ComposeTestRule`. Assigns users based on API level to spread credential usage across Firebase Test Lab devices. |
 | `UITestConfig` | Deserializes `ui_test_config.json` (from `shared/test/`) into typed enums: `KnownAppConfig`, `KnownLoginHostConfig`, `KnownUserConfig`, `ScopeSelection`. |
+| `RecordingHttpAccess` | Test-only `HttpAccess` wrapper private to `CommunityLoginTests`. Installed as `HttpAccess.DEFAULT` and records the URL of every request made through the SDK's OkHttp client (its network interceptors are preserved), so the tests can assert that each `/services/oauth2/token` refresh goes to the configured community host and path rather than the instance URL, including after a restart. The original `HttpAccess` is restored after each test. |
 
 ### Page Objects
 
@@ -397,10 +398,23 @@ L3 takes priority over the resolved domain: even if Welcome Discovery resolves t
 
 - **App configs** (`KnownAppConfig`): `ECA_OPAQUE`, `ECA_JWT`, `ECA_OPAQUE_RTR`, `ECA_JWT_RTR`, `ECA_JWT_DPOP`, `ECA_JWT_DPOP_RTR`, `BEACON_OPAQUE`, `BEACON_JWT`, `CA_OPAQUE`, `CA_JWT`
 - **Login hosts** (`KnownLoginHostConfig`): `REGULAR_AUTH` (in-app WebView), `ADVANCED_AUTH` (Chrome Custom Tab), `COMMUNITY_AUTH` (Experience Cloud community site; optional — see `CommunityLoginTests`)
+- **Login pool host** (`loginPoolHost`, top-level string in `ui_test_config.json`): the login pool server URL used by the `*_ViaLoginPoolServer` tests (`useLoginPoolHost = true`). Tests that need it fail with a clear error if it is missing.
 - **Scope options** (`ScopeSelection`): `EMPTY` (default/boot config scopes), `SUBSET` (all minus `sfap_api`), `ALL`
 - **Users** (`KnownUserConfig`): `FIRST` through `FIFTH`, assigned per API level
+- **Community login host** (`community_auth`): a `loginHosts` entry whose `url` is the community site (`https://<your-community>.my.site.com/<path>`) with a single user. It is optional: when it is absent every `CommunityLoginTests` test is skipped (`Assume.assumeTrue`), so CI without it stays green. No community app entry is needed; the tests reuse the existing apps.
 
 > **Note:** A valid `shared/test/ui_test_config.json` file with login host URLs, user credentials, and app configurations is required. See `shared/test/ui_test_config.json.sample` for the expected format.
+
+### Identity fetch attempts in logcat
+
+After each login the SDK fetches the user's identity. The identity service can briefly reject a fresh token with 401 or 403 (`Wrong_Org`, `Bad_OAuth_Token`), and the SDK then refreshes and retries (uncapped, same as iOS). Each login logs one summary line, and each rejected attempt logs one line, under the `AuthenticationUtilities` tag:
+
+```
+adb logcat -s AuthenticationUtilities | grep -E "IDENTITY_ATTEMPTS|Identity request returned"
+IDENTITY_ATTEMPTS attempts=N refreshes=M status=<200|code|error|refresh_failed> elapsedMs=T dpop=<bool> community=<bool> pool=<bool> host=<host only>
+```
+
+Only the host is logged, never tokens or user data. To tabulate a run, pass a saved `adb logcat -d -v threadtime` dump to `tmp/dpop-community-investigation/collect_identity_attempts_android.sh` in the Workspace repo. See `docs/auth/token-lifecycle.md` ("Identity fetch at login").
 
 ## Manual Testing
 
