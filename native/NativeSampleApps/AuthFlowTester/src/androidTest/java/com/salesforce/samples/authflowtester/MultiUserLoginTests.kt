@@ -107,7 +107,8 @@ class MultiUserLoginTests: AuthFlowTest() {
             expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN,
             expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
             isJwt = true,
-            expectedRtMarker = false,
+            // The identity fetch at login can refresh and rotate on an RTR app, so use the tracked state.
+            expectedRtMarker = expectedRtMarker(retainedUsername),
         )
         assertEquals(retainedUserTokens, app.getTokens())
         app.validateApiRequest()

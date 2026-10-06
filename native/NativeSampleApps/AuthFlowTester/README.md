@@ -109,7 +109,7 @@ Tests for login against a community (Experience Cloud) login host, using the `co
 | `testCommunityDPoP_And_RegularAuthDPoP_MultiHost_UniqueTokensAndIsolatedNonces` | ECA JWT DPoP | Yes | Yes | Community user + `regular_auth` ECA JWT DPoP user; unique tokens/keys, independent revoke+refresh and nonce rotation per user/host |
 
 #### RTRLoginTests
-Tests for ECA configurations with Refresh Token Rotation (RTR) enabled. Verifies that the refresh token rotates on each token refresh cycle. The `assertRevokeAndRefreshWorks` check asserts the refresh token **changes** after a revoke/refresh cycle for RTR apps. The restart regression also observes the final outbound token-request User-Agent and verifies its request-scoped RT, auth-flow, and token-format markers. DPoP+RTR tests live in `DPoPLoginTests`.
+Tests for ECA configurations with Refresh Token Rotation (RTR) enabled. Verifies that the refresh token rotates on each token refresh cycle. The `assertRevokeAndRefreshWorks` check asserts the refresh token **changes** after a revoke/refresh cycle for RTR apps. The restart regression also observes the final outbound token-request User-Agent and verifies its request-scoped RT, auth-flow, and token-format markers. DPoP+RTR tests live in `DPoPLoginTests`. The expected `RT` user-agent marker is tracked per user (`AuthFlowTest.expectedRtMarker`), seeded at login from `lastTokenRotationTime`, because the login-time identity fetch can refresh and rotate on an RTR app, so `RT` may already be present on the first screen.
 
 | Test | App Config | Hybrid | Notes |
 |------|-----------|--------|-------|

@@ -124,7 +124,8 @@ abstract class AuthFlowTest {
         SalesforceSDKManager.getInstance().userAccountManager.currentUser?.username
             ?: throw AssertionError("No current user to read the RT feature-marker state for")
 
-    private fun expectedRtMarker(username: String): Boolean =
+    /** Tracked RT feature-marker expectation for a user, seeded at login from lastTokenRotationTime. */
+    protected fun expectedRtMarker(username: String): Boolean =
         expectedRtMarkerByUsername[username]
             ?: throw AssertionError("No RT feature-marker state recorded for user $username")
 
@@ -655,9 +656,11 @@ abstract class AuthFlowTest {
 
         app.waitForAppLoad()
         val appConfig = testConfig.getApp(knownAppConfig)
-        // Admin login is still an authorization-code login, so RT starts absent for this user.
-        // Reuse the username already resolved above for the Chrome login.
-        expectedRtMarkerByUsername[username] = false
+        // Admin login is still an authorization-code login: RT is expected only if its identity
+        // fetch refreshed and rotated (lastTokenRotationTime persisted). Reuse the username
+        // already resolved above for the Chrome login.
+        expectedRtMarkerByUsername[username] = SalesforceSDKManager.getInstance()
+            .userAccountManager.currentUser?.lastTokenRotationTime?.isNotBlank() == true
         app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true, isDpop = useDPoP, expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FOR_ADMIN, expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN, expectedAMarker = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID, isJwt = appConfig.issuesJwt, isBeacon = appConfig.isBeacon, expectedRtMarker = expectedRtMarker(username))
         app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY)
         app.validateApiRequest()

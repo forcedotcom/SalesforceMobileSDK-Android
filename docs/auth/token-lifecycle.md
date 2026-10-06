@@ -299,7 +299,9 @@ token endpoint, and the subsequent identity request is rebuilt with the refreshe
   instance-host substitution is applied (it is rejected with 403 `Wrong_Org` for community users and
   for DPoP tokens from a pool server).
 - Any 401 or 403 is refreshable. The flow refreshes through the token endpoint, merges the
-  complete refreshed credentials (including a rotated refresh token), and replays. Right after
+  complete refreshed credentials (including a rotated refresh token), and replays. A rotation
+  during this fetch records `lastTokenRotationTime` and registers the `RT` feature flag, so an RTR
+  app can already show `RT` on the first screen (matches iOS). Right after
   login the identity service can keep answering 401 or 403 (`Wrong_Org`, `Bad_OAuth_Token`) for a
   valid token, so this repeats with no cap until the identity service accepts the token (community
   logins have needed up to 17 cycles). Other statuses fail immediately, as does a 401/403 with no
