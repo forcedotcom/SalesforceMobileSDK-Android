@@ -18,7 +18,8 @@
                 android:resource="@xml/authenticator" />
         </service>
 
-
+        <activity android:name="com.salesforce.androidsdk.ui.CancellationObservingLoginActivity"
+            android:exported="false" />
 
         <!-- Launcher screen -->
         <activity android:name="com.salesforce.androidsdk.MainActivity"

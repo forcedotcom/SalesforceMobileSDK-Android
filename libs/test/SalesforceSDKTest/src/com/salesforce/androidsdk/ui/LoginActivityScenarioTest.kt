@@ -26,21 +26,30 @@
  */
 package com.salesforce.androidsdk.ui
 
+import android.app.Activity.RESULT_CANCELED
 import android.content.Intent
+import android.os.Bundle
 import android.webkit.WebView
+import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
+import androidx.activity.viewModels
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle.State.CREATED
 import androidx.lifecycle.Lifecycle.State.RESUMED
 import androidx.lifecycle.Lifecycle.State.STARTED
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ActivityScenario.launch
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
 import com.salesforce.androidsdk.config.OAuthConfig
@@ -59,6 +68,109 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class LoginActivityScenarioTest {
+
+    @Test
+    fun cancellationCallback_recreationAndClose_doNotNotify() = withCancellationActivity { scenario ->
+        scenario.recreate()
+        assertEquals(0, CancellationObservingLoginActivity.cancellations)
+    }
+
+    @Test
+    fun cancellationCallback_backgroundAndResume_doNotNotify() = withCancellationActivity { scenario ->
+        scenario.moveToState(CREATED)
+        scenario.moveToState(RESUMED)
+        assertEquals(0, CancellationObservingLoginActivity.cancellations)
+    }
+
+    @Test
+    fun cancellationCallback_back_notifiesBeforeDestruction() = withCancellationActivity { scenario ->
+        scenario.onActivity { activity ->
+            activity.onBackPressedDispatcher.onBackPressed()
+            assertEquals(1, CancellationObservingLoginActivity.cancellations)
+            assertEquals(0, CancellationObservingLoginActivity.cancellationsAtDestruction)
+        }
+    }
+
+    @Test
+    fun cancellationCallback_oauthRedirectThenRecreation_ignoresBrowserResult() =
+        withCancellationActivity { scenario ->
+            scenario.onActivity { activity ->
+                activity.deliverOAuthRedirect(Intent().setData("test://callback?error=access_denied".toUri()))
+            }
+            scenario.recreate()
+            scenario.onActivity { activity ->
+                activity.CustomTabActivityResult(activity).onActivityResult(ActivityResult(RESULT_CANCELED, null))
+                assertEquals(0, CancellationObservingLoginActivity.cancellations)
+            }
+        }
+
+    @Test
+    fun cancellationCallback_browserDismissalThenRecreation_doesNotNotifyAgain() =
+        withCancellationActivity { scenario ->
+            scenario.onActivity { activity ->
+                activity.CustomTabActivityResult(activity).onActivityResult(ActivityResult(RESULT_CANCELED, null))
+                assertEquals(1, CancellationObservingLoginActivity.cancellations)
+            }
+            scenario.recreate()
+            scenario.onActivity { activity ->
+                activity.CustomTabActivityResult(activity).onActivityResult(ActivityResult(RESULT_CANCELED, null))
+                assertEquals(1, CancellationObservingLoginActivity.cancellations)
+            }
+        }
+
+    @Test
+    fun cancellationCallback_newBrowserAttempt_notifiesAgain() = withCancellationActivity { scenario ->
+        scenario.onActivity { activity ->
+            val callback = activity.CustomTabActivityResult(activity)
+            callback.onActivityResult(ActivityResult(RESULT_CANCELED, null))
+            val launcher = object : ActivityResultLauncher<Intent>() {
+                override fun launch(input: Intent, options: ActivityOptionsCompat?) = Unit
+                override fun unregister() = Unit
+                override val contract = StartActivityForResult()
+            }
+            activity.loadLoginPageInCustomTab("https://example.com/authorize", launcher) { true }
+            callback.onActivityResult(ActivityResult(RESULT_CANCELED, null))
+            assertEquals(2, CancellationObservingLoginActivity.cancellations)
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun withCancellationActivity(block: (ActivityScenario<CancellationObservingLoginActivity>) -> Unit) {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalBioAuthManager = sdkManager.biometricAuthenticationManager
+        val originalForceAdvancedAuth = sdkManager.forceAdvancedAuthentication
+        val affectedFeatures = listOf(
+            Features.FEATURE_BROWSER_LOGIN,
+            Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
+            Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
+            Features.FEATURE_AUTH_TYPE_NATIVE,
+        )
+        val originalFeatureState = affectedFeatures.associateWith(sdkManager::isGlobalFeatureRegistered)
+        val biometricManager = mockk<BiometricAuthenticationManager>(relaxed = true)
+        every { biometricManager.locked } returns false
+        sdkManager.biometricAuthenticationManager = biometricManager
+        sdkManager.forceAdvancedAuthentication = false
+        CancellationObservingLoginActivity.cancellations = 0
+        CancellationObservingLoginActivity.cancellationsAtDestruction = 0
+        try {
+            launch<CancellationObservingLoginActivity>(
+                Intent(getApplicationContext(), CancellationObservingLoginActivity::class.java)
+            ).use(block)
+            assertEquals(
+                CancellationObservingLoginActivity.cancellations,
+                CancellationObservingLoginActivity.cancellationsAtDestruction,
+            )
+        } finally {
+            sdkManager.biometricAuthenticationManager = originalBioAuthManager
+            sdkManager.forceAdvancedAuthentication = originalForceAdvancedAuth
+            originalFeatureState.forEach { (feature, registered) ->
+                if (registered) sdkManager.registerUsedAppFeature(feature)
+                else sdkManager.unregisterUsedAppFeature(feature)
+            }
+        }
+    }
 
     @Test
     fun viewModelLoginHint_UpdatesOn_applyWelcomeLoginHintAndHostIntentExtras() {
@@ -519,5 +631,40 @@ class LoginActivityScenarioTest {
         assertNotNull("User agent should contain ftr_ field: $userAgentString", ftrMatch)
         val ftrValue = ftrMatch!!.groupValues[1]
         return ftrValue.split(".")
+    }
+}
+
+class CancellationObservingLoginActivity : LoginActivity() {
+    override val viewModel: LoginViewModel by viewModels {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                object : LoginViewModel(BootConfig.getBootConfig(applicationContext)) {
+                    override val shouldShowBackButton = true
+                } as T
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        viewModel.onBrowserCustomTabReady = {}
+    }
+
+    override fun onAuthFlowCancelled() {
+        cancellations += 1
+    }
+
+    override fun onAuthFlowError(error: String, errorDesc: String?, e: Throwable?) = Unit
+
+    override fun onDestroy() {
+        cancellationsAtDestruction = cancellations
+        super.onDestroy()
+    }
+
+    fun deliverOAuthRedirect(intent: Intent) = onNewIntent(intent)
+
+    companion object {
+        var cancellations = 0
+        var cancellationsAtDestruction = 0
     }
 }
