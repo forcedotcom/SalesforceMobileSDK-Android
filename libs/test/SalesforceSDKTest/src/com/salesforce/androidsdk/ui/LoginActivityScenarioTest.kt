@@ -100,6 +100,7 @@ class LoginActivityScenarioTest {
             scenario.recreate()
             scenario.onActivity { activity ->
                 activity.CustomTabActivityResult(activity).onActivityResult(ActivityResult(RESULT_CANCELED, null))
+                activity.resolvePendingCustomTabCancellation()
                 assertEquals(0, CancellationObservingLoginActivity.cancellations)
             }
         }
@@ -109,11 +110,13 @@ class LoginActivityScenarioTest {
         withCancellationActivity { scenario ->
             scenario.onActivity { activity ->
                 activity.CustomTabActivityResult(activity).onActivityResult(ActivityResult(RESULT_CANCELED, null))
+                activity.resolvePendingCustomTabCancellation()
                 assertEquals(1, CancellationObservingLoginActivity.cancellations)
             }
             scenario.recreate()
             scenario.onActivity { activity ->
                 activity.CustomTabActivityResult(activity).onActivityResult(ActivityResult(RESULT_CANCELED, null))
+                activity.resolvePendingCustomTabCancellation()
                 assertEquals(1, CancellationObservingLoginActivity.cancellations)
             }
         }
@@ -123,6 +126,7 @@ class LoginActivityScenarioTest {
         scenario.onActivity { activity ->
             val callback = activity.CustomTabActivityResult(activity)
             callback.onActivityResult(ActivityResult(RESULT_CANCELED, null))
+            activity.resolvePendingCustomTabCancellation()
             val launcher = object : ActivityResultLauncher<Intent>() {
                 override fun launch(input: Intent, options: ActivityOptionsCompat?) = Unit
                 override fun unregister() = Unit
@@ -130,6 +134,7 @@ class LoginActivityScenarioTest {
             }
             activity.loadLoginPageInCustomTab("https://example.com/authorize", launcher) { true }
             callback.onActivityResult(ActivityResult(RESULT_CANCELED, null))
+            activity.resolvePendingCustomTabCancellation()
             assertEquals(2, CancellationObservingLoginActivity.cancellations)
         }
     }

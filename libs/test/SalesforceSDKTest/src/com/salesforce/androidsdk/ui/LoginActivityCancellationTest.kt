@@ -115,6 +115,7 @@ class LoginActivityCancellationTest {
         val model = activity.viewModel
         every { model.singleServerCustomTabActivity } returns true
         activity.CustomTabActivityResult(activity).onActivityResult(cancelledResult)
+        activity.resolvePendingCustomTabCancellation()
         assertEquals(listOf("cancel", "finish"), activity.events)
     }
 
@@ -122,6 +123,7 @@ class LoginActivityCancellationTest {
     fun browserDismissalReturningToPicker_notifiesBeforeClearing() = onMain {
         val activity = recordingActivity()
         activity.CustomTabActivityResult(activity).onActivityResult(cancelledResult)
+        activity.resolvePendingCustomTabCancellation()
         assertEquals(listOf("cancel", "clear:true"), activity.events)
     }
 
@@ -130,6 +132,7 @@ class LoginActivityCancellationTest {
         every { sdkManager.isShareBrowserSessionEnabled } returns true
         val activity = recordingActivity()
         activity.CustomTabActivityResult(activity).onActivityResult(cancelledResult)
+        activity.resolvePendingCustomTabCancellation()
         assertEquals(listOf("cancel", "clear:false"), activity.events)
     }
 
@@ -159,11 +162,31 @@ class LoginActivityCancellationTest {
     }
 
     @Test
+    fun browserResultBeforeOAuthRedirect_doesNotNotify() = onMain {
+        val activity = recordingActivity()
+        activity.CustomTabActivityResult(activity).onActivityResult(cancelledResult)
+        deliverOAuthRedirect(activity, "error=access_denied")
+        activity.resolvePendingCustomTabCancellation()
+        assertEquals(listOf("error"), activity.events)
+    }
+
+    @Test
+    fun browserResultBeforeSuccessfulOAuthRedirect_doesNotNotify() = onMain {
+        val activity = recordingActivity()
+        activity.CustomTabActivityResult(activity).onActivityResult(cancelledResult)
+        deliverOAuthRedirect(activity, "code=test_code")
+        activity.resolvePendingCustomTabCancellation()
+        assertEquals(emptyList<String>(), activity.events)
+    }
+
+    @Test
     fun duplicateBrowserResult_notifiesOnlyOnce() = onMain {
         val activity = recordingActivity()
         val callback = activity.CustomTabActivityResult(activity)
         callback.onActivityResult(cancelledResult)
         callback.onActivityResult(cancelledResult)
+        activity.resolvePendingCustomTabCancellation()
+        activity.resolvePendingCustomTabCancellation()
         assertEquals(listOf("cancel", "clear:true"), activity.events)
     }
 
