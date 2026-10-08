@@ -147,7 +147,7 @@ internal suspend fun onAuthFlowComplete(
     setAdministratorPreferences: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::setAdministratorPreferences,
     addAccount: (account: UserAccount) -> Unit = ::addAccountHelper,
     persistScreenLockFeature: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit
-        = ::persistScreenLockFeature,
+        = { userIdentity, account -> com.salesforce.androidsdk.auth.persistScreenLockFeature(userIdentity, account) },
     handleScreenLockPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleScreenLockPolicy,
     handleBiometricAuthPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleBiometricAuthPolicy,
     handleDuplicateUserAccount: (userAccountManager: UserAccountManager, account: UserAccount, userIdentity: OAuth2.IdServiceResponse?) -> Unit
@@ -768,8 +768,8 @@ internal fun handleScreenLockPolicy(
 internal fun persistScreenLockFeature(
     userIdentity: OAuth2.IdServiceResponse?,
     account: UserAccount,
+    sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
 ) {
-    val sdkManager = SalesforceSDKManager.getInstance()
     if (userIdentity?.screenLockTimeout?.compareTo(0) == 1) {
         sdkManager.registerUsedAppFeature(FEATURE_SCREEN_LOCK, account)
     } else if ((sdkManager.screenLockManager as ScreenLockManager?)?.enabled == true) {

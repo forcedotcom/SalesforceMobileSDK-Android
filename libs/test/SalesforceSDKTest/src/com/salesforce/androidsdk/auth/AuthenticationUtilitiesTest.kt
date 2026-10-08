@@ -155,7 +155,7 @@ class AuthenticationUtilitiesTest {
         verify { onAuthFlowError.invoke("Error", "Authentication only allowed from managed device.", null) }
         verify(exactly = 0) { onAuthFlowSuccess.invoke(any()) }
         verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
-        verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
+        verify(exactly = 0) { mockUserAccountManager.createAccount(any(), any()) }
     }
 
     @Test
@@ -861,7 +861,7 @@ class AuthenticationUtilitiesTest {
 
         // Then - non-migration flow steps should NOT be called
         verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
-        verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
+        verify(exactly = 0) { mockUserAccountManager.createAccount(any(), any()) }
         verify(exactly = 0) { startMainActivity.invoke() }
         verify(exactly = 0) { updateLoggingPrefs.invoke(any()) }
         verify(exactly = 0) { mockUserAccountManager.sendUserSwitchIntent(any(), any()) }
@@ -873,11 +873,13 @@ class AuthenticationUtilitiesTest {
 
     @Test
     fun testPersistScreenLockFeature_positiveTimeout_registersFeature() {
-        val mockSdkManager = setupMockSdkManager()
+        val mockSdkManager = setupMockSdkManager(
+            screenLockManager = mockk(relaxed = true),
+        )
         val userIdentity = createIdServiceResponse().apply { screenLockTimeout = 10 }
         val account = mockk<UserAccount>()
 
-        persistScreenLockFeature(userIdentity, account)
+        persistScreenLockFeature(userIdentity, account, mockSdkManager)
 
         verify { mockSdkManager.registerUsedAppFeature(FEATURE_SCREEN_LOCK, account) }
         verify(exactly = 0) { mockSdkManager.unregisterUsedAppFeature(any(), any()) }
@@ -891,7 +893,7 @@ class AuthenticationUtilitiesTest {
         val mockSdkManager = setupMockSdkManager(screenLockManager = screenLockManager)
         val account = mockk<UserAccount>()
 
-        persistScreenLockFeature(null, account)
+        persistScreenLockFeature(null, account, mockSdkManager)
 
         verify { mockSdkManager.unregisterUsedAppFeature(FEATURE_SCREEN_LOCK, account) }
         verify(exactly = 0) { mockSdkManager.registerUsedAppFeature(any(), any()) }
@@ -905,7 +907,7 @@ class AuthenticationUtilitiesTest {
         val mockSdkManager = setupMockSdkManager(screenLockManager = screenLockManager)
         val account = mockk<UserAccount>()
 
-        persistScreenLockFeature(null, account)
+        persistScreenLockFeature(null, account, mockSdkManager)
 
         verify(exactly = 0) { mockSdkManager.registerUsedAppFeature(any(), any()) }
         verify(exactly = 0) { mockSdkManager.unregisterUsedAppFeature(any(), any()) }
