@@ -93,9 +93,11 @@ data class UITestConfig(
 
     // Not every environment provisions every login host (e.g. community_auth requires a
     // dedicated Experience Cloud site). Tests that depend on an optional host should skip
-    // via Assume.assumeTrue(testConfig.hasLoginHost(...)) rather than fail.
+    // via Assume.assumeTrue(testConfig.hasLoginHost(...)) rather than fail. A host with no
+    // configured users counts as absent so that a partially provisioned host skips instead of
+    // failing in getUser.
     fun hasLoginHost(knownLoginHostConfig: KnownLoginHostConfig): Boolean = loginHosts.any {
-        (name, _, _) -> name == knownLoginHostConfig.name.toLowerCase(Locale.current)
+        (name, _, users) -> name == knownLoginHostConfig.name.toLowerCase(Locale.current) && users.isNotEmpty()
     }
 
     fun getUser(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig): User =
