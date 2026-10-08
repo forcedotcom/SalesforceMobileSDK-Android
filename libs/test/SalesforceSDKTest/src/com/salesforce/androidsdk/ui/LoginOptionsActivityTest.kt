@@ -175,11 +175,11 @@ class LoginOptionsActivityTest {
     @Test
     fun loginOptionsActivity_CustomTabBrowserLiveData_UpdatesSdkManager() {
         composeTestRule.activity.runOnUiThread {
-            composeTestRule.activity.customTabBrowser.value = "org.mozilla.firefox"
+            composeTestRule.activity.customTabBrowser.value = "com.microsoft.emmx"
         }
         composeTestRule.waitForIdle()
 
-        assertEquals("org.mozilla.firefox", SalesforceSDKManager.getInstance().customTabBrowser)
+        assertEquals("com.microsoft.emmx", SalesforceSDKManager.getInstance().customTabBrowser)
     }
 
     @Test

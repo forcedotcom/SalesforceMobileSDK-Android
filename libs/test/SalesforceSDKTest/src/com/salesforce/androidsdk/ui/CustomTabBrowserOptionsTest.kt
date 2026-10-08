@@ -32,17 +32,17 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 private const val CHROME = "com.android.chrome"
-private const val FIREFOX = "org.mozilla.firefox"
+private const val EDGE = "com.microsoft.emmx"
 
 private val chrome = InstalledBrowser("Chrome", CHROME)
-private val firefox = InstalledBrowser("Firefox", FIREFOX)
+private val edge = InstalledBrowser("Edge", EDGE)
 
 @RunWith(AndroidJUnit4::class)
 class CustomTabBrowserOptionsTest {
 
     @Test
     fun buildOptions_givenNullAppDefault_whenBuilt_thenOmitsAppDefaultRow() {
-        val options = buildCustomTabBrowserOptions(null, listOf(chrome, firefox))
+        val options = buildCustomTabBrowserOptions(null, listOf(chrome, edge))
 
         assertEquals(
             listOf(
@@ -56,7 +56,7 @@ class CustomTabBrowserOptionsTest {
 
     @Test
     fun buildOptions_givenInstalledAppDefault_whenBuilt_thenAppDefaultIsNotRepeated() {
-        val options = buildCustomTabBrowserOptions(CHROME, listOf(chrome, firefox))
+        val options = buildCustomTabBrowserOptions(CHROME, listOf(chrome, edge))
 
         assertEquals(
             listOf(
@@ -69,25 +69,25 @@ class CustomTabBrowserOptionsTest {
         assertEquals(CHROME, options[0].packageName)
         assertEquals("Chrome", options[0].label)
         assertEquals(true, options[0].installed)
-        assertEquals(FIREFOX, options[2].packageName)
+        assertEquals(EDGE, options[2].packageName)
     }
 
     @Test
     fun buildOptions_givenAppDefaultNotFound_whenBuilt_thenAppDefaultIsMarkedNotInstalled() {
-        val options = buildCustomTabBrowserOptions(CHROME, listOf(firefox))
+        val options = buildCustomTabBrowserOptions(CHROME, listOf(edge))
 
         assertEquals(CustomTabBrowserOptionType.AppDefault, options[0].type)
         assertEquals(false, options[0].installed)
-        assertEquals(FIREFOX, options.last().packageName)
+        assertEquals(EDGE, options.last().packageName)
     }
 
     @Test
     fun selectedIndex_givenNullSelection_whenSearched_thenSelectsSystemDefault() {
-        val options = buildCustomTabBrowserOptions(CHROME, listOf(chrome, firefox))
+        val options = buildCustomTabBrowserOptions(CHROME, listOf(chrome, edge))
 
         assertEquals(1, selectedCustomTabBrowserIndex(options, null))
         assertEquals(0, selectedCustomTabBrowserIndex(options, CHROME))
-        assertEquals(2, selectedCustomTabBrowserIndex(options, FIREFOX))
+        assertEquals(2, selectedCustomTabBrowserIndex(options, EDGE))
         assertEquals(-1, selectedCustomTabBrowserIndex(options, "unknown.browser"))
     }
 }
