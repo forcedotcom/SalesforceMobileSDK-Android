@@ -82,6 +82,7 @@ class AuthenticationUtilitiesTest {
     private val startMainActivity: () -> Unit = mockk()
     private val setAdministratorPreferences: (OAuth2.IdServiceResponse?, UserAccount) -> Unit = mockk()
     private val addAccount: (UserAccount) -> Unit = mockk()
+    private val persistScreenLockFeature: (OAuth2.IdServiceResponse?, UserAccount) -> Unit = mockk()
     private val handleScreenLockPolicy: (OAuth2.IdServiceResponse?, UserAccount) -> Unit = mockk()
     private val handleBiometricAuthPolicy: (OAuth2.IdServiceResponse?, UserAccount) -> Unit = mockk()
     private val handleDuplicateUserAccount: (UserAccountManager, UserAccount, OAuth2.IdServiceResponse?) -> Unit = mockk()
@@ -104,13 +105,16 @@ class AuthenticationUtilitiesTest {
         every { startMainActivity.invoke() } returns Unit
         every { setAdministratorPreferences.invoke(any(), any()) } returns Unit
         every { addAccount.invoke(any()) } returns Unit
+        every { persistScreenLockFeature.invoke(any(), any()) } returns Unit
         every { handleScreenLockPolicy.invoke(any(), any()) } returns Unit
         every { handleBiometricAuthPolicy.invoke(any(), any()) } returns Unit
         every { handleDuplicateUserAccount.invoke(any(), any(), any()) } returns Unit
 
         // Setup mock for UserAccountManager methods
         every { mockUserAccountManager.createAccount(any()) } returns mockk<android.os.Bundle>()
+        every { mockUserAccountManager.createAccount(any(), any()) } returns mockk<android.os.Bundle>()
         every { mockUserAccountManager.switchToUser(any()) } returns Unit
+        every { mockUserAccountManager.storeCurrentUserInfo(any(), any()) } returns Unit
         every { mockUserAccountManager.sendUserSwitchIntent(any(), any()) } returns Unit
     }
 
@@ -129,7 +133,7 @@ class AuthenticationUtilitiesTest {
         verify { onAuthFlowError.invoke("Error", "Authentication error. Please try again.", null) }
         verify(exactly = 0) { onAuthFlowSuccess.invoke(any()) }
         verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
-        verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
+        verify(exactly = 0) { mockUserAccountManager.createAccount(any(), any()) }
     }
 
     @Test
@@ -151,7 +155,7 @@ class AuthenticationUtilitiesTest {
         verify { onAuthFlowError.invoke("Error", "Authentication only allowed from managed device.", null) }
         verify(exactly = 0) { onAuthFlowSuccess.invoke(any()) }
         verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
-        verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
+        verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
     }
 
     @Test
@@ -177,8 +181,8 @@ class AuthenticationUtilitiesTest {
         // Then
         verify(exactly = 0) { onAuthFlowError.invoke(any(), any(), any()) }
         verify { onAuthFlowSuccess.invoke(expectedAccount) }
-        verify { mockUserAccountManager.createAccount(expectedAccount) }
-        verify { mockUserAccountManager.switchToUser(expectedAccount) }
+        verify { mockUserAccountManager.createAccount(expectedAccount, false) }
+        verify { mockUserAccountManager.storeCurrentUserInfo(expectedAccount.userId, expectedAccount.orgId) }
         verify { setAdministratorPreferences.invoke(userIdentity, expectedAccount) }
         verify { handleDuplicateUserAccount.invoke(mockUserAccountManager, expectedAccount, userIdentity) }
         verify { addAccount.invoke(expectedAccount) }
@@ -236,6 +240,7 @@ class AuthenticationUtilitiesTest {
             startMainActivity = startMainActivity,
             setAdministratorPreferences = setAdministratorPreferences,
             addAccount = addAccount,
+            persistScreenLockFeature = persistScreenLockFeature,
             handleScreenLockPolicy = handleScreenLockPolicy,
             handleBiometricAuthPolicy = handleBiometricAuthPolicy,
             handleDuplicateUserAccount = handleDuplicateUserAccount,
@@ -251,6 +256,21 @@ class AuthenticationUtilitiesTest {
         }
         verify(exactly = 0) { startMainActivity.invoke() }
         verify(exactly = 0) { handleScreenLockPolicy.invoke(any(), any()) }
+    }
+
+    @Test
+    fun testOnAuthFlowComplete_persistsScreenLockFeatureBeforeUserSwitchAndSuccess() = runTest {
+        val userIdentity = createIdServiceResponse()
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+
+        callOnAuthFlowComplete()
+
+        verifyOrder {
+            mockUserAccountManager.createAccount(any(), false)
+            persistScreenLockFeature.invoke(userIdentity, any())
+            mockUserAccountManager.storeCurrentUserInfo(any(), any())
+            onAuthFlowSuccess.invoke(any())
+        }
     }
 
     @Test
@@ -278,6 +298,7 @@ class AuthenticationUtilitiesTest {
             startMainActivity = startMainActivity,
             setAdministratorPreferences = setAdministratorPreferences,
             addAccount = addAccount,
+            persistScreenLockFeature = persistScreenLockFeature,
             handleScreenLockPolicy = handleScreenLockPolicy,
             handleBiometricAuthPolicy = handleBiometricAuthPolicy,
             handleDuplicateUserAccount = handleDuplicateUserAccount,
@@ -313,7 +334,7 @@ class AuthenticationUtilitiesTest {
         verify(exactly = 0) { onAuthFlowSuccess.invoke(any()) }
         verify(exactly = 0) { addAccount.invoke(any()) }
         verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
-        verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
+        verify(exactly = 0) { mockUserAccountManager.createAccount(any(), any()) }
         coVerify(exactly = 1) { fetchUserIdentity.invoke(tokenResponseWithoutIdScope) }
     }
 
@@ -327,7 +348,7 @@ class AuthenticationUtilitiesTest {
 
         verify(exactly = 0) { onAuthFlowError.invoke(any(), any(), any()) }
         verify { onAuthFlowSuccess.invoke(match { it.username == userIdentity.username }) }
-        verify { mockUserAccountManager.createAccount(match { it.username == userIdentity.username }) }
+        verify { mockUserAccountManager.createAccount(match { it.username == userIdentity.username }, false) }
         coVerify(exactly = 1) { fetchUserIdentity.invoke(tokenResponseWithoutIdScope) }
     }
 
@@ -347,8 +368,8 @@ class AuthenticationUtilitiesTest {
         }
         verify(exactly = 0) { onAuthFlowSuccess.invoke(any()) }
         verify(exactly = 0) { addAccount.invoke(any()) }
+        verify(exactly = 0) { mockUserAccountManager.createAccount(any(), any()) }
         verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
-        verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
     }
 
     @Test
@@ -367,7 +388,7 @@ class AuthenticationUtilitiesTest {
         verify(exactly = 0) { onAuthFlowSuccess.invoke(any()) }
         verify(exactly = 0) { addAccount.invoke(any()) }
         verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
-        verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
+        verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
     }
 
     @Test
@@ -634,6 +655,7 @@ class AuthenticationUtilitiesTest {
         verifyOrder {
             mockUserAccountManager.createAccount(
                 match { it.lastTokenRotationTime == rotationTime },
+                false,
             )
             mockSdkManager.registerUsedAppFeature(
                 FEATURE_RTR,
@@ -667,8 +689,8 @@ class AuthenticationUtilitiesTest {
         // Then
         verify(exactly = 0) { onAuthFlowError.invoke(any(), any(), any()) }
         verify { onAuthFlowSuccess.invoke(expectedAccount) }
-        verify { mockUserAccountManager.createAccount(expectedAccount) }
-        verify { mockUserAccountManager.switchToUser(expectedAccount) }
+        verify { mockUserAccountManager.createAccount(expectedAccount, false) }
+        verify { mockUserAccountManager.storeCurrentUserInfo(expectedAccount.userId, expectedAccount.orgId) }
         verify { setAdministratorPreferences.invoke(userIdentity, expectedAccount) }
         verify { handleDuplicateUserAccount.invoke(mockUserAccountManager, expectedAccount, userIdentity) }
         verify { addAccount.invoke(expectedAccount) }
@@ -739,7 +761,7 @@ class AuthenticationUtilitiesTest {
         verify(exactly = 1) { addAccount.invoke(any()) }
         verify(exactly = 1) { mockUserAccountManager.updateAccount(any<Account>(), any<UserAccount>()) }
         verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
-        verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
+        verify(exactly = 0) { mockUserAccountManager.createAccount(any(), any()) }
     }
 
     @Test
@@ -839,7 +861,7 @@ class AuthenticationUtilitiesTest {
 
         // Then - non-migration flow steps should NOT be called
         verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
-        verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
+        verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
         verify(exactly = 0) { startMainActivity.invoke() }
         verify(exactly = 0) { updateLoggingPrefs.invoke(any()) }
         verify(exactly = 0) { mockUserAccountManager.sendUserSwitchIntent(any(), any()) }
@@ -847,10 +869,54 @@ class AuthenticationUtilitiesTest {
 
     // endregion
 
+    // region persistScreenLockFeature Tests
+
+    @Test
+    fun testPersistScreenLockFeature_positiveTimeout_registersFeature() {
+        val mockSdkManager = setupMockSdkManager()
+        val userIdentity = createIdServiceResponse().apply { screenLockTimeout = 10 }
+        val account = mockk<UserAccount>()
+
+        persistScreenLockFeature(userIdentity, account)
+
+        verify { mockSdkManager.registerUsedAppFeature(FEATURE_SCREEN_LOCK, account) }
+        verify(exactly = 0) { mockSdkManager.unregisterUsedAppFeature(any(), any()) }
+    }
+
+    @Test
+    fun testPersistScreenLockFeature_noTimeout_enabledManager_unregistersFeature() {
+        val screenLockManager = mockk<ScreenLockManager>(relaxed = true) {
+            every { enabled } returns true
+        }
+        val mockSdkManager = setupMockSdkManager(screenLockManager = screenLockManager)
+        val account = mockk<UserAccount>()
+
+        persistScreenLockFeature(null, account)
+
+        verify { mockSdkManager.unregisterUsedAppFeature(FEATURE_SCREEN_LOCK, account) }
+        verify(exactly = 0) { mockSdkManager.registerUsedAppFeature(any(), any()) }
+    }
+
+    @Test
+    fun testPersistScreenLockFeature_noTimeout_disabledManager_doesNotUpdateFeature() {
+        val screenLockManager = mockk<ScreenLockManager>(relaxed = true) {
+            every { enabled } returns false
+        }
+        val mockSdkManager = setupMockSdkManager(screenLockManager = screenLockManager)
+        val account = mockk<UserAccount>()
+
+        persistScreenLockFeature(null, account)
+
+        verify(exactly = 0) { mockSdkManager.registerUsedAppFeature(any(), any()) }
+        verify(exactly = 0) { mockSdkManager.unregisterUsedAppFeature(any(), any()) }
+    }
+
+    // endregion
+
     // region handleScreenLockPolicy Tests
 
     @Test
-    fun testHandleScreenLockPolicy_positiveTimeout_registersFeatureAndStoresPolicy() {
+    fun testHandleScreenLockPolicy_positiveTimeout_storesPolicy() {
         // Given
         val mockScreenLockManager = mockk<ScreenLockManager>(relaxed = true)
         val mockSdkManager = setupMockSdkManager(screenLockManager = mockScreenLockManager)
@@ -865,12 +931,13 @@ class AuthenticationUtilitiesTest {
         com.salesforce.androidsdk.auth.handleScreenLockPolicy(userIdentity, account)
 
         // Then
-        verify { mockSdkManager.registerUsedAppFeature(FEATURE_SCREEN_LOCK, account) }
+        verify(exactly = 0) { mockSdkManager.registerUsedAppFeature(any(), any()) }
+        verify(exactly = 0) { mockSdkManager.unregisterUsedAppFeature(any(), any()) }
         verify { mockScreenLockManager.storeMobilePolicy(account, enabled = true, 600000) }
     }
 
     @Test
-    fun testHandleScreenLockPolicy_zeroTimeout_enabledManager_unregistersFeatureAndCleansUp() {
+    fun testHandleScreenLockPolicy_zeroTimeout_enabledManager_cleansUp() {
         // Given
         val mockScreenLockManager = mockk<ScreenLockManager>(relaxed = true) {
             every { enabled } returns true
@@ -886,7 +953,8 @@ class AuthenticationUtilitiesTest {
         com.salesforce.androidsdk.auth.handleScreenLockPolicy(userIdentity, account)
 
         // Then
-        verify { mockSdkManager.unregisterUsedAppFeature(FEATURE_SCREEN_LOCK, account) }
+        verify(exactly = 0) { mockSdkManager.registerUsedAppFeature(any(), any()) }
+        verify(exactly = 0) { mockSdkManager.unregisterUsedAppFeature(any(), any()) }
         verify { mockScreenLockManager.cleanUp(account) }
     }
 
@@ -905,8 +973,6 @@ class AuthenticationUtilitiesTest {
         com.salesforce.androidsdk.auth.handleScreenLockPolicy(userIdentity, account)
 
         // Then
-        verify(exactly = 0) { mockSdkManager.registerUsedAppFeature(any()) }
-        verify(exactly = 0) { mockSdkManager.unregisterUsedAppFeature(any()) }
         verify(exactly = 0) { mockScreenLockManager.storeMobilePolicy(any(), any(), any()) }
         verify(exactly = 0) { mockScreenLockManager.cleanUp(any()) }
     }
@@ -925,7 +991,6 @@ class AuthenticationUtilitiesTest {
         com.salesforce.androidsdk.auth.handleScreenLockPolicy(null, account)
 
         // Then
-        verify { mockSdkManager.unregisterUsedAppFeature(FEATURE_SCREEN_LOCK, account) }
         verify { mockScreenLockManager.cleanUp(account) }
     }
 
@@ -943,8 +1008,6 @@ class AuthenticationUtilitiesTest {
         com.salesforce.androidsdk.auth.handleScreenLockPolicy(null, account)
 
         // Then
-        verify(exactly = 0) { mockSdkManager.registerUsedAppFeature(any()) }
-        verify(exactly = 0) { mockSdkManager.unregisterUsedAppFeature(any()) }
         verify(exactly = 0) { mockScreenLockManager.storeMobilePolicy(any(), any(), any()) }
         verify(exactly = 0) { mockScreenLockManager.cleanUp(any()) }
     }
@@ -1317,6 +1380,7 @@ class AuthenticationUtilitiesTest {
             startMainActivity = startMainActivity,
             setAdministratorPreferences = setAdministratorPreferences,
             addAccount = addAccount,
+            persistScreenLockFeature = persistScreenLockFeature,
             handleScreenLockPolicy = handleScreenLockPolicy,
             handleBiometricAuthPolicy = handleBiometricAuthPolicy,
             handleDuplicateUserAccount = handleDuplicateUserAccount
