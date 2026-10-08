@@ -33,6 +33,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -79,6 +80,7 @@ class LoginOptionsActivityTest {
     private var originalUseHybridToken: Boolean = false
     private var originalForceAdvancedAuth: Boolean = true
     private var originalUseEphemeralSessionForAdvancedAuth: Boolean = true
+    private var originalCustomTabBrowser: String? = null
     private lateinit var dynamicToggle: SemanticsNodeInteraction
     private lateinit var consumerKeyField: SemanticsNodeInteraction
     private lateinit var redirectUriField: SemanticsNodeInteraction
@@ -98,6 +100,7 @@ class LoginOptionsActivityTest {
         originalForceAdvancedAuth = SalesforceSDKManager.getInstance().forceAdvancedAuthentication
         originalUseEphemeralSessionForAdvancedAuth =
             SalesforceSDKManager.getInstance().useEphemeralSessionForAdvancedAuth
+        originalCustomTabBrowser = SalesforceSDKManager.getInstance().customTabBrowser
         SalesforceSDKManager.getInstance().loginDevMenuReload = false
 
         dynamicToggle = composeTestRule.onNodeWithContentDescription(
@@ -138,8 +141,45 @@ class LoginOptionsActivityTest {
         SalesforceSDKManager.getInstance().forceAdvancedAuthentication = originalForceAdvancedAuth
         SalesforceSDKManager.getInstance().useEphemeralSessionForAdvancedAuth =
             originalUseEphemeralSessionForAdvancedAuth
+        SalesforceSDKManager.getInstance().customTabBrowser = originalCustomTabBrowser
         SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
         SalesforceSDKManager.getInstance().loginDevMenuReload = false
+    }
+
+    @Test
+    fun loginOptionsActivity_CustomTabBrowserSystemDefault_SetsSdkManagerBrowserToNull() {
+        composeTestRule.activity.runOnUiThread {
+            composeTestRule.activity.customTabBrowser.value = "com.android.chrome"
+        }
+        composeTestRule.waitForIdle()
+        assertEquals("com.android.chrome", SalesforceSDKManager.getInstance().customTabBrowser)
+
+        composeTestRule.onNodeWithText("System default").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+
+        assertNull(SalesforceSDKManager.getInstance().customTabBrowser)
+        assertNull(composeTestRule.activity.customTabBrowser.value)
+    }
+
+    @Test
+    fun loginOptionsActivity_CustomTabBrowserSection_ShowsSystemDefaultSelectedWhenBrowserIsNull() {
+        composeTestRule.activity.runOnUiThread {
+            composeTestRule.activity.customTabBrowser.value = null
+        }
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onNodeWithText("Custom Tab Browser").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("System default").performScrollTo().assertIsSelected()
+    }
+
+    @Test
+    fun loginOptionsActivity_CustomTabBrowserLiveData_UpdatesSdkManager() {
+        composeTestRule.activity.runOnUiThread {
+            composeTestRule.activity.customTabBrowser.value = "org.mozilla.firefox"
+        }
+        composeTestRule.waitForIdle()
+
+        assertEquals("org.mozilla.firefox", SalesforceSDKManager.getInstance().customTabBrowser)
     }
 
     @Test

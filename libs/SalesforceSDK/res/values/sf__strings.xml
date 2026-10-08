@@ -133,6 +133,15 @@
     <string name="sf__login_options_save_button_content_description">Save Button</string>
     <string name="sf__login_options_save_and_login">Save and Login</string>
 
+    <!-- Custom Tab browser selector (Login Options).  translatable="false" because it only appears in
+         debug / dev-support builds. -->
+    <string name="sf__login_options_custom_tab_browser_title" translatable="false">Custom Tab Browser</string>
+    <string name="sf__login_options_custom_tab_browser_app_default" translatable="false">App default (%1$s)</string>
+    <string name="sf__login_options_custom_tab_browser_app_default_not_found" translatable="false">App default (%1$s, not found)</string>
+    <string name="sf__login_options_custom_tab_browser_system_default" translatable="false">System default</string>
+    <string name="sf__login_options_custom_tab_browser_row" translatable="false">%1$s (%2$s)</string>
+    <string name="sf__login_options_custom_tab_browser_none_visible" translatable="false">No Custom Tab browsers are visible to this app. Declare package visibility (&lt;queries&gt;) in the app manifest.</string>
+
     <!-- Welcome Discovery Simulation (Login Options).  Mirrors iOS DiscoveryResultEditor strings.
          translatable="false" because this editor only appears in debug / dev-support builds. -->
     <string name="sf__login_options_discovery_simulate_title" translatable="false">Simulate Discovery Result</string>
