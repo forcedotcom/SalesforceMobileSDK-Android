@@ -161,10 +161,12 @@ class LoginActivityTest {
         every { viewModel.singleServerCustomTabActivity } returns true
         val activity = mockk<LoginActivity>(relaxed = true)
         every { activity.viewModel } returns viewModel
+        every { activity.resolvePendingCustomTabCancellation() } answers { callOriginal() }
 
         val customTabActivityResult = activity.CustomTabActivityResult(activity)
 
         customTabActivityResult.onActivityResult(ActivityResult(RESULT_CANCELED, Intent()))
+        activity.resolvePendingCustomTabCancellation()
 
         verify(exactly = 1) { loginUrl.value = ABOUT_BLANK }
     }
@@ -196,10 +198,12 @@ class LoginActivityTest {
         every { viewModel.singleServerCustomTabActivity } returns false
         val activity = mockk<LoginActivity>(relaxed = true)
         every { activity.viewModel } returns viewModel
+        every { activity.resolvePendingCustomTabCancellation() } answers { callOriginal() }
 
         val customTabActivityResult = activity.CustomTabActivityResult(activity)
 
         customTabActivityResult.onActivityResult(ActivityResult(RESULT_CANCELED, Intent()))
+        activity.resolvePendingCustomTabCancellation()
 
         verify(exactly = 1) { activity.clearWebView(any()) }
     }
@@ -211,10 +215,12 @@ class LoginActivityTest {
         val activity = mockk<LoginActivity>(relaxed = true)
         every { activity.viewModel } returns viewModel
         every { activity.sharedBrowserSession } returns true
+        every { activity.resolvePendingCustomTabCancellation() } answers { callOriginal() }
 
         val customTabActivityResult = activity.CustomTabActivityResult(activity)
 
         customTabActivityResult.onActivityResult(ActivityResult(RESULT_CANCELED, Intent()))
+        activity.resolvePendingCustomTabCancellation()
 
         verify(exactly = 1) { activity.clearWebView(any()) }
     }

@@ -260,6 +260,8 @@ open class LoginActivity : FragmentActivity() {
     private var wasBackgrounded = false
     private var completedViaBrowserTab = false
     private var completedViaAdminCustomTab = false
+    private var customTabResultHandled = false
+    private var pendingCustomTabCancellation = false
     private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
     private var accountAuthenticatorResult: Bundle? = null
     private var newUserIntent = false
@@ -293,6 +295,8 @@ open class LoginActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        customTabResultHandled = savedInstanceState?.getBoolean(CUSTOM_TAB_RESULT_HANDLED) ?: false
+        pendingCustomTabCancellation = savedInstanceState?.getBoolean(PENDING_CUSTOM_TAB_CANCELLATION) ?: false
         enableEdgeToEdge()
         if (viewModel.dynamicBackgroundTheme.value == DARK) {
             SalesforceSDKManager.getInstance().setViewNavigationVisibility(this)
@@ -363,9 +367,17 @@ open class LoginActivity : FragmentActivity() {
         EventsObservable.get().notifyEvent(LoginActivityCreateComplete, this)
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean(CUSTOM_TAB_RESULT_HANDLED, customTabResultHandled)
+        outState.putBoolean(PENDING_CUSTOM_TAB_CANCELLATION, pendingCustomTabCancellation)
+        super.onSaveInstanceState(outState)
+    }
+
     override fun onResume() {
         super.onResume()
         wasBackgrounded = false
+        resolvePendingCustomTabCancellation()
+        if (isFinishing) return
 
         // If debug LoginOptions were changed reload the webview.
         //
@@ -779,6 +791,16 @@ open class LoginActivity : FragmentActivity() {
         )
 
     /**
+     * Called when the user dismisses login or its browser Custom Tab. Returning
+     * to the server picker cancels the browser attempt. Lifecycle teardown and
+     * Login for Admin dismissal do not notify.
+     *
+     * Runs on the UI thread before dismissal handling. Overrides should return
+     * quickly and dispatch expensive work to a background thread or coroutine.
+     */
+    protected open fun onAuthFlowCancelled() = Unit
+
+    /**
      * A callback when the user facing part of the authentication flow completed
      * with an error.
      *
@@ -850,6 +872,8 @@ open class LoginActivity : FragmentActivity() {
     }
 
     private fun completeAdvAuthFlow(intent: Intent) {
+        customTabResultHandled = true
+        pendingCustomTabCancellation = false
         val params = UriFragmentParser.parse(intent.data)
         val error = params["error"]
         // Did we fail?
@@ -869,11 +893,33 @@ open class LoginActivity : FragmentActivity() {
         }
     }
 
+    private fun notifyAuthFlowCancelled() {
+        if (!isFinishing && !isDestroyed && !viewModel.authFinished.value) {
+            onAuthFlowCancelled()
+        }
+    }
+
+    @VisibleForTesting
+    internal fun resolvePendingCustomTabCancellation() {
+        if (!pendingCustomTabCancellation) return
+        pendingCustomTabCancellation = false
+        if (customTabResultHandled || isFinishing || isDestroyed) return
+        customTabResultHandled = true
+        notifyAuthFlowCancelled()
+        if (viewModel.singleServerCustomTabActivity) {
+            viewModel.loginUrl.value = ABOUT_BLANK
+            finish()
+        } else {
+            clearWebView(showServerPicker = !sharedBrowserSession)
+        }
+    }
+
     internal fun handleBackBehavior() {
         with(SalesforceSDKManager.getInstance()) {
             // If app is using Native Login this activity is a fallback and can be dismissed.
             if (nativeLoginActivity != null) {
                 setResult(RESULT_CANCELED)
+                notifyAuthFlowCancelled()
                 finish()
                 return // If we don't call return here moveTaskToBack can also be called below.
             }
@@ -892,6 +938,7 @@ open class LoginActivity : FragmentActivity() {
                 wasBackgrounded = true
                 if (userAccountManager.authenticatedUsers != null || viewModel.shouldShowBackButton) {
                     setResult(RESULT_CANCELED)
+                    notifyAuthFlowCancelled()
                     finish()
                 } else {
                     moveTaskToBack(true)
@@ -1214,6 +1261,8 @@ open class LoginActivity : FragmentActivity() {
 
         runCatching {
             customTabsIntent.intent.setData(urlString.toUri())
+            customTabResultHandled = false
+            pendingCustomTabCancellation = false
             customTabLauncher.launch(customTabsIntent.intent)
         }.onFailure { throwable ->
             e(TAG, "Unable to launch Advanced Authentication, Chrome browser not installed.", throwable)
@@ -1722,6 +1771,8 @@ open class LoginActivity : FragmentActivity() {
 
         internal const val NEW_USER = "new_user"
         private const val SETUP_REQUEST_CODE = 72
+        private const val CUSTOM_TAB_RESULT_HANDLED = "custom_tab_result_handled"
+        private const val PENDING_CUSTOM_TAB_CANCELLATION = "pending_custom_tab_cancellation"
         private const val TAG = "LoginActivity"
         private const val PROMPT_LOGIN = "&prompt=login"
 
@@ -2150,15 +2201,12 @@ open class LoginActivity : FragmentActivity() {
 
         override fun onActivityResult(result: ActivityResult) {
             // Check if the user backed out of the custom tab.
-            if (result.resultCode == RESULT_CANCELED) {
-                if (activity.viewModel.singleServerCustomTabActivity) {
-                    // Show blank page and spinner until PKCE is done.
-                    activity.viewModel.loginUrl.value = ABOUT_BLANK
-                    finish()
-                } else {
-                    // Don't show server picker if we are re-authenticating with cookie.
-                    activity.clearWebView(showServerPicker = !activity.sharedBrowserSession)
-                }
+            if (result.resultCode == RESULT_CANCELED && !activity.customTabResultHandled
+                && !activity.isFinishing && !activity.isDestroyed
+            ) {
+                // Android can deliver this result before the OAuth redirect. Resolve it on
+                // resume, after onNewIntent has a chance to handle that redirect.
+                activity.pendingCustomTabCancellation = true
             }
         }
     }
