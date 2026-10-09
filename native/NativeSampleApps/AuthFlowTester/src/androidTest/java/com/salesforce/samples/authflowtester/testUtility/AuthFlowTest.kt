@@ -785,10 +785,19 @@ abstract class AuthFlowTest {
         val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
         val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
         val appConfig = testConfig.getApp(knownAppConfig)
-        // Migration re-issues tokens through the token-migration path, not the session refresher, so
-        // it never advances the RT marker. Assert with the RT state carried over from before this
-        // migration (a rotation from an earlier normal refresh stays sticky).
+        // The token migration itself does not rotate the refresh token, but the identity fetch that
+        // finishes it can: a login-host /id 403 (W-24433488) triggers a normal refresh, which
+        // rotates when the target app has RTR and persists lastTokenRotationTime. Fold that
+        // persisted metadata into the sticky RT state, as loginAndValidate does, so the assertion
+        // holds whether or not the refresh happened.
+        // TODO(W-24433488): once fixed on the test org, migration should no longer rotate, so
+        // assert the absence of RT again for the non-RTR -> RTR case.
         val username = usernameFor(knownLoginHostConfig, knownUserConfig)
+        recordRefreshTokenRotation(
+            username,
+            SalesforceSDKManager.getInstance().userAccountManager.currentUser
+                ?.lastTokenRotationTime?.isNotBlank() == true,
+        )
         app.validateUser(
             knownLoginHostConfig,
             knownUserConfig,
