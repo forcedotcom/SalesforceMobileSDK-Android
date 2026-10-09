@@ -7,7 +7,7 @@ A native Android sample app for the Salesforce Mobile SDK that serves as the pri
 Tests are executed by GitHub Actions via `.github/workflows/reusable-ui-workflow.yaml` and run in [Firebase Test Lab](https://firebase.google.com/docs/test-lab) across all supported API levels using the AndroidX Test Orchestrator.
 
 - **PR runs** — a representative smoke subset on one API level; AuthFlowTester-changing PRs run the complete inventory in four sequential groups.
-- **Nightly runs** — all 110 logical test executions run on every supported API level in four sequential groups: login/catch-all, welcome discovery, token lifecycle, and multi-user. Keeping the groups sequential prevents concurrent runs from competing for shared test credentials.
+- **Nightly runs** — all 128 logical test executions run on every supported API level in four sequential groups: login/catch-all, welcome discovery, token lifecycle, and multi-user. Keeping the groups sequential prevents concurrent runs from competing for shared test credentials.
 
 ### Test Suites
 

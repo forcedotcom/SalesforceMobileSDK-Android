@@ -573,8 +573,8 @@ jobs:
 
           for api_level in sorted(expected_api_levels):
               actual_count = len(keys_by_api[api_level])
-              if actual_count != 110:
-                  errors.append(f"API {api_level}: expected 110 logical tests, found {actual_count}")
+              if actual_count != 128:
+                  errors.append(f"API {api_level}: expected 128 logical tests, found {actual_count}")
 
           if errors:
               print("Incomplete Firebase Test Lab results:", file=sys.stderr)
@@ -582,7 +582,7 @@ jobs:
                   print(f"- {error}", file=sys.stderr)
               sys.exit(1)
 
-          print("All Firebase Test Lab result groups contain 110 unique logical tests per API level.")
+          print("All Firebase Test Lab result groups contain 128 unique logical tests per API level.")
           PYEOF
       - name: Test Report
         uses: mikepenz/action-junit-report@3a81627bfac62268172037048872e8ebd4207e6d  # v6.4.1
