@@ -28,19 +28,17 @@ package com.salesforce.androidsdk.accounts;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
-import android.app.DownloadManager;
-import android.content.Context;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.AuthenticationUtilitiesKt;
 import com.salesforce.androidsdk.auth.ScopeParser;
 import com.salesforce.androidsdk.util.MapUtil;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
@@ -55,6 +53,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * This class represents a single user account that is currently
@@ -115,8 +116,11 @@ public class UserAccount {
 	private static final String FORWARD_SLASH = "/";
 	private static final String UNDERSCORE = "_";
 	private static final String PROFILE_PHOTO_PATH_PREFIX = "profile_photo_";
-	private static final String AUTHORIZATION = "Authorization";
-	private static final String BEARER = "Bearer ";
+	private static final ExecutorService PHOTO_EXECUTOR = Executors.newSingleThreadExecutor(runnable -> {
+		final Thread thread = new Thread(runnable, "UserAccount-profile-photo");
+		thread.setDaemon(true);
+		return thread;
+	});
 	private static final String JPG = ".jpg";
 
 	private String authToken;
@@ -921,49 +925,39 @@ public class UserAccount {
 	}
 
 	/**
-	 * Fetches this user's profile photo from the server and stores it in the cache.
+	 * Fetches this user's profile photo from the server and stores it in the
+	 * cache, replacing any cached copy. The request is authenticated like other
+	 * API calls (including a DPoP proof for DPoP-bound credentials) and runs on
+	 * a background thread.
 	 */
 	public void downloadProfilePhoto() {
+		downloadProfilePhotoAsync(false);
+	}
+
+	/**
+	 * Fetches this user's profile photo from the server and stores it in the
+	 * cache only if no photo is cached yet. Used after token refresh, where the
+	 * photo URL has not changed.
+	 */
+	public void downloadProfilePhotoIfMissing() {
+		downloadProfilePhotoAsync(true);
+	}
+
+	@VisibleForTesting
+	@Nullable
+	Future<?> downloadProfilePhotoAsync(boolean onlyIfMissing) {
 		final File file = getProfilePhotoFile();
-		if (photoUrl == null || file == null) {
-			return;
-		}
-		final Uri srcUri = Uri.parse(photoUrl);
-		final Uri destUri = Uri.fromFile(file);
-		if (srcUri == null || destUri == null) {
-			return;
+		if (photoUrl == null || file == null || (onlyIfMissing && file.exists())) {
+			return null;
 		}
 
-		// Checks if DownloadManager is enabled on the device, to ensure it doesn't crash.
-		final PackageManager pm = SalesforceSDKManager.getInstance().getAppContext().getPackageManager();
-		int state;
-		try {
-			state = pm.getApplicationEnabledSetting("com.android.providers.downloads");
-		} catch (IllegalArgumentException e) {
-			/*
-			 * On some OEM/enterprise-managed devices,
-			 * com.android.providers.downloads is absent rather than merely
-			 * disabled, and the query itself throws instead of returning a
-			 * disabled state. Treat that the same as "disabled" and skip
-			 * the download rather than crashing.
-			 */
-			SalesforceSDKLogger.w(TAG,
-					"Could not determine if com.android.providers.downloads is enabled",
-					e);
-			return;
-		}
-		if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED ||
-			state == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT) {
-			final DownloadManager.Request downloadReq = new DownloadManager.Request(srcUri);
-			downloadReq.setDestinationUri(destUri);
-			downloadReq.addRequestHeader(AUTHORIZATION, BEARER + authToken);
-			downloadReq.setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN);
-			downloadReq.setVisibleInDownloadsUi(false);
-			final DownloadManager downloadManager = (DownloadManager) SalesforceSDKManager.getInstance().getAppContext().getSystemService(Context.DOWNLOAD_SERVICE);
-			if (downloadManager != null) {
-				downloadManager.enqueue(downloadReq);
-			}
-		}
+		// Capture credentials now so a later token change can't affect this request.
+		final String url = photoUrl;
+		final String token = authToken;
+		final String type = tokenType;
+		final String credentialsId = credentialsIdentifier;
+		return PHOTO_EXECUTOR.submit(() -> AuthenticationUtilitiesKt.downloadProfilePhotoToFile(
+				url, file, token, type, credentialsId));
 	}
 
 	/**
@@ -1273,7 +1267,8 @@ public class UserAccount {
 		return toBundle(SalesforceSDKManager.getInstance().getAdditionalOauthKeys());
 	}
 
-	private File getProfilePhotoFile() {
+	@VisibleForTesting
+	File getProfilePhotoFile() {
 		final String filename = PROFILE_PHOTO_PATH_PREFIX + getUserLevelFilenameSuffix() + JPG;
 		File baseDir = SalesforceSDKManager.getInstance().getAppContext().getExternalCacheDir();
 		return baseDir != null ? new File(baseDir, filename) : null;

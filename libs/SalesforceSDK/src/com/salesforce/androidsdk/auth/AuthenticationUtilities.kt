@@ -85,12 +85,14 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Request.Builder
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 import java.net.HttpURLConnection.HTTP_FORBIDDEN
 import java.net.HttpURLConnection.HTTP_UNAUTHORIZED
 import java.net.URI
@@ -434,6 +436,85 @@ internal fun fetchIsSalesforceIntegrationUser(
 
     val responseString = response.body.string()
     return JSONObject(responseString).getBoolean("is_salesforce_integration_user")
+}
+
+/**
+ * Downloads a user's profile photo with OkHttp, authenticating the request the
+ * same way as other Salesforce API calls: `Authorization` scheme from
+ * [tokenType] plus, for a DPoP-bound credential, a signed proof (re-signed on
+ * every Salesforce redirect hop, with one retry on a `use_dpop_nonce`
+ * challenge).
+ *
+ * The body is streamed to a temporary file next to [destFile] and renamed over
+ * it only on a 200 response, so a failed download never disturbs an existing
+ * cached photo. This is non-fatal: failures are logged and reported through
+ * the return value, and never trigger a token refresh.
+ *
+ * @param photoUrl The photo URL
+ * @param destFile The cache file to write
+ * @param authToken The access token captured by the caller
+ * @param tokenType The token type captured by the caller
+ * @param credentialsIdentifier The DPoP credentials identifier captured by the caller
+ * @return True if the photo was downloaded and stored
+ */
+@VisibleForTesting
+internal fun downloadProfilePhotoToFile(
+    photoUrl: String,
+    destFile: File,
+    authToken: String?,
+    tokenType: String?,
+    credentialsIdentifier: String?,
+): Boolean {
+    val tempFile = File(destFile.parentFile, "${destFile.name}.download")
+    return try {
+        val httpUrl = photoUrl.toHttpUrlOrNull() ?: return false
+
+        fun buildAuthenticatedRequest(): Request {
+            val builder: Builder = Builder().url(httpUrl).get()
+            attachAuthHeaders(builder, authToken, tokenType, credentialsIdentifier)
+            return builder.build()
+        }
+
+        val client = HttpAccess.DEFAULT.okHttpClient.newBuilder()
+            .addNetworkInterceptor { chain: Interceptor.Chain ->
+                reattachAuthOnRedirect(
+                    chain, photoUrl, authToken, tokenType, credentialsIdentifier
+                )
+            }
+            .build()
+
+        var request = buildAuthenticatedRequest()
+        var response = client.newCall(request).execute()
+        val attachedDPoP = request.header(DPOP_HEADER) != null
+
+        if (attachedDPoP) {
+            harvestNonce(response, credentialsIdentifier, response.request.url.host)
+        }
+        if (attachedDPoP && isNonceChallenge(response)) {
+            response.close()
+            request = buildAuthenticatedRequest()
+            response = client.newCall(request).execute()
+            harvestNonce(response, credentialsIdentifier, response.request.url.host)
+        }
+
+        response.use {
+            if (!it.isSuccessful) {
+                w(TAG, "Profile photo download failed with status ${it.code}")
+                return false
+            }
+            tempFile.outputStream().use { out -> it.body.byteStream().copyTo(out) }
+        }
+        if (!tempFile.renameTo(destFile)) {
+            w(TAG, "Could not move downloaded profile photo into place")
+            return false
+        }
+        true
+    } catch (e: Exception) {
+        w(TAG, "Profile photo download failed", e)
+        false
+    } finally {
+        tempFile.delete()
+    }
 }
 
 /**

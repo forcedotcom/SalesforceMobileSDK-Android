@@ -137,6 +137,30 @@ request once. This inline retry requires the failed request to carry a `DPoP` pr
 sent as `Bearer <uiSid>` never enters DPoP nonce handling. A 401 remains the access-token-refresh
 path.
 
+### Profile photo download
+
+`UserAccount.downloadProfilePhoto()` fetches the full-size `photoUrl` (for example
+`/profilephoto/005/F` on the file domain) with OkHttp on a background thread, not through the system
+`DownloadManager`. A proof-less `Authorization: DPoP`/`Bearer` request to a DPoP-bound token makes
+the server revoke that token (W-24433518), so the request is authenticated like any other API call
+by the helpers in `AuthenticationUtilities.kt` that also serve `fetchIsSalesforceIntegrationUser`:
+
+- `Authorization` scheme from the token type, plus a fresh proof (`htm`, `htu`, `ath`, cached nonce)
+  for a DPoP-bound credential; Bearer credentials send no `DPoP` header.
+- The proof is re-signed for every redirect hop that lands on a Salesforce host
+  (`reattachAuthOnRedirect`).
+- One retry with the harvested nonce on a `use_dpop_nonce` challenge.
+- The access token, token type, and credentials identifier are captured when the download is
+  requested.
+
+The body is streamed to a temporary file beside the cached photo and renamed into place only on a
+200, so a failed download keeps any existing cached photo. Failures are logged and non-fatal and never
+trigger a token refresh.
+
+When it runs: after login (`addAccount`), always, replacing the cached photo; and after a successful
+token refresh (`ClientManager` and `AuthenticatorService`) via `downloadProfilePhotoIfMissing()`,
+which does nothing when a cached photo already exists.
+
 ---
 
 ## 4. Refresh Token Rotation (RTR) — Concurrency Model
