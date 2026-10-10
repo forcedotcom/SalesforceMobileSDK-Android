@@ -189,7 +189,7 @@ class LoginOptionsPageObject(composeTestRule: ComposeTestRule): BasePageObject(c
     /** Clicks the toggle only if it is currently off. */
     private fun toggleIfOff(contentDescription: String) {
         if (!isToggleOn(contentDescription)) {
-            composeTestRule.onNodeWithContentDescription(contentDescription).performClick()
+            composeTestRule.onNodeWithContentDescription(contentDescription).performScrollTo().performClick()
             composeTestRule.waitForIdle()
         }
     }
@@ -197,7 +197,7 @@ class LoginOptionsPageObject(composeTestRule: ComposeTestRule): BasePageObject(c
     /** Clicks the toggle only if it is currently on. */
     private fun toggleIfOn(contentDescription: String) {
         if (isToggleOn(contentDescription)) {
-            composeTestRule.onNodeWithContentDescription(contentDescription).performClick()
+            composeTestRule.onNodeWithContentDescription(contentDescription).performScrollTo().performClick()
             composeTestRule.waitForIdle()
         }
     }
