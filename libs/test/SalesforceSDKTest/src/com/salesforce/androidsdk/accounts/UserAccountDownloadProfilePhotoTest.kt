@@ -45,6 +45,7 @@ import io.mockk.mockk
 import okhttp3.Interceptor
 import okhttp3.Interceptor.Chain
 import okhttp3.MediaType.Companion.toMediaType
+import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.Protocol.HTTP_1_1
 import okhttp3.Request
@@ -217,9 +218,9 @@ class UserAccountDownloadProfilePhotoTest {
     fun refreshWithCachedPhoto_sendsNoRequest() {
         destFile.writeText("old-photo")
 
-        val future = buildAccount(tokenType = null).downloadProfilePhotoAsync(true)
+        val job = buildAccount(tokenType = null).downloadProfilePhotoAsync(true)
 
-        assertNull(future)
+        assertNull(job)
         assertTrue(httpAccess.allRequests().isEmpty())
         assertEquals("old-photo", destFile.readText())
     }
@@ -228,10 +229,10 @@ class UserAccountDownloadProfilePhotoTest {
     fun refreshWithoutCachedPhoto_sendsOneRequest() {
         httpAccess.enqueuePhoto()
 
-        val future = buildAccount(tokenType = null).downloadProfilePhotoAsync(true)
+        val job = buildAccount(tokenType = null).downloadProfilePhotoAsync(true)
 
-        assertNotNull(future)
-        future!!.get()
+        assertNotNull(job)
+        runBlocking { job!!.join() }
         assertEquals(1, httpAccess.allRequests().size)
         assertEquals(PHOTO_BYTES, destFile.readText())
     }
@@ -241,7 +242,7 @@ class UserAccountDownloadProfilePhotoTest {
         destFile.writeText("old-photo")
         httpAccess.enqueuePhoto()
 
-        buildAccount(tokenType = null).downloadProfilePhotoAsync(false)!!.get()
+        buildAccount(tokenType = null).downloadProfilePhotoAsync(false)!!.let { runBlocking { it.join() } }
 
         assertEquals(1, httpAccess.allRequests().size)
         assertEquals(PHOTO_BYTES, destFile.readText())

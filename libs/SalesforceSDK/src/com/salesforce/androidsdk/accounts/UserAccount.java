@@ -38,13 +38,14 @@ import androidx.annotation.VisibleForTesting;
 
 import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.auth.AuthenticationUtilitiesKt;
 import com.salesforce.androidsdk.auth.ScopeParser;
 import com.salesforce.androidsdk.util.MapUtil;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import kotlinx.coroutines.Job;
 
 import java.io.File;
 import java.util.Collections;
@@ -53,9 +54,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  * This class represents a single user account that is currently
@@ -116,11 +114,6 @@ public class UserAccount {
 	private static final String FORWARD_SLASH = "/";
 	private static final String UNDERSCORE = "_";
 	private static final String PROFILE_PHOTO_PATH_PREFIX = "profile_photo_";
-	private static final ExecutorService PHOTO_EXECUTOR = Executors.newSingleThreadExecutor(runnable -> {
-		final Thread thread = new Thread(runnable, "UserAccount-profile-photo");
-		thread.setDaemon(true);
-		return thread;
-	});
 	private static final String JPG = ".jpg";
 
 	private String authToken;
@@ -945,19 +938,8 @@ public class UserAccount {
 
 	@VisibleForTesting
 	@Nullable
-	Future<?> downloadProfilePhotoAsync(boolean onlyIfMissing) {
-		final File file = getProfilePhotoFile();
-		if (photoUrl == null || file == null || (onlyIfMissing && file.exists())) {
-			return null;
-		}
-
-		// Capture credentials now so a later token change can't affect this request.
-		final String url = photoUrl;
-		final String token = authToken;
-		final String type = tokenType;
-		final String credentialsId = credentialsIdentifier;
-		return PHOTO_EXECUTOR.submit(() -> AuthenticationUtilitiesKt.downloadProfilePhotoToFile(
-				url, file, token, type, credentialsId));
+	Job downloadProfilePhotoAsync(boolean onlyIfMissing) {
+		return UserAccountExtensionKt.launchProfilePhotoDownload(this, onlyIfMissing);
 	}
 
 	/**
