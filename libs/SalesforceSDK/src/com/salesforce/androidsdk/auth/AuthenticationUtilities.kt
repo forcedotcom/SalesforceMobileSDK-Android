@@ -148,7 +148,8 @@ internal suspend fun onAuthFlowComplete(
     addAccount: (account: UserAccount) -> Unit = ::addAccountHelper,
     persistScreenLockFeature: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit
         = { userIdentity, account -> com.salesforce.androidsdk.auth.persistScreenLockFeature(userIdentity, account) },
-    handleScreenLockPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleScreenLockPolicy,
+    handleScreenLockPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Boolean
+        = ::handleScreenLockPolicy,
     handleBiometricAuthPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleBiometricAuthPolicy,
     handleDuplicateUserAccount: (userAccountManager: UserAccountManager, account: UserAccount, userIdentity: OAuth2.IdServiceResponse?) -> Unit
         = { uam, acct, identity -> com.salesforce.androidsdk.auth.handleDuplicateUserAccount(uam, acct, identity) },
@@ -309,7 +310,7 @@ internal suspend fun onAuthFlowComplete(
 
     if (!tokenMigration) {
         withContext(IO) {
-            userAccountManager.createAccount(account, false)
+            userAccountManager.persistAccount(account)
             persistScreenLockFeature(userIdentity, account)
         }
         updateLoggingPrefs(account)
@@ -352,16 +353,15 @@ internal suspend fun onAuthFlowComplete(
     // is still in front, i.e. before startMainActivity() below occludes it.
     handleBiometricAuthPolicy(userIdentity, account)
 
+    val shouldLock = withContext(IO) { handleScreenLockPolicy(userIdentity, account) }
     withContext(Dispatchers.Main) {
         onAuthFlowFinished {
-            // Kickoff the end of the flow before storing mobile policy to prevent launching
-            // the main activity over/after the screen lock.
             if (!tokenMigration) {
                 startMainActivity()
             }
-
-            // Screen lock required by mobile policy
-            handleScreenLockPolicy(userIdentity, account)
+            if (shouldLock) {
+                (SalesforceSDKManager.getInstance().screenLockManager as ScreenLockManager?)?.lock()
+            }
         }
     }
 }
@@ -746,10 +746,11 @@ private fun updateLoggingPrefsHelper(account: UserAccount) {
 internal fun handleScreenLockPolicy(
     userIdentity: OAuth2.IdServiceResponse?,
     account: UserAccount,
-) {
+): Boolean {
     val internalScreenLockManager =
         SalesforceSDKManager.getInstance().screenLockManager as ScreenLockManager?
 
+    // Keep this feature-policy decision aligned with persistScreenLockFeature.
     // compareTo(0) is used to check if screenLockTimeout is non-null and greater than 0.
     if (userIdentity?.screenLockTimeout?.compareTo(0) == 1) {
         val timeoutInMills = userIdentity.screenLockTimeout * 1000 * 60
@@ -758,9 +759,11 @@ internal fun handleScreenLockPolicy(
             enabled = userIdentity.screenLock,
             timeoutInMills,
         )
+        return userIdentity.screenLock
     } else if (internalScreenLockManager?.enabled == true) {
         internalScreenLockManager.cleanUp(account)
     }
+    return false
 }
 
 /** Persists the screen-lock feature before the completed account becomes observable to the app. */
@@ -886,7 +889,7 @@ internal fun handleDuplicateUserAccount(
  * users where [UserAccountManager.createAccount] cannot be used because
  * it unconditionally calls [UserAccountManager.storeCurrentUserInfo].
  */
-private fun UserAccountManager.persistAccount(
+internal fun UserAccountManager.persistAccount(
     userAccount: UserAccount,
     accountType: String = SalesforceSDKManager.getInstance().accountType,
     acctManager: AccountManager = AccountManager.get(SalesforceSDKManager.getInstance().appContext),

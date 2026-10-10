@@ -39,7 +39,6 @@ import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RestrictTo;
 
 import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -477,18 +476,6 @@ public class UserAccountManager {
 	 * @return auth bundle with encrypted values
 	 */
 	public Bundle createAccount(UserAccount userAccount) {
-		return createAccount(userAccount, true);
-	}
-
-	/**
-	 * Creates or updates the persisted Android account.
-	 *
-	 * @param userAccount UserAccount object.
-	 * @param makeCurrentUser Whether to publish this account as the current user.
-	 * @return auth bundle with encrypted values.
-	 */
-	@RestrictTo(RestrictTo.Scope.LIBRARY)
-	public Bundle createAccount(UserAccount userAccount, boolean makeCurrentUser) {
 		final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
 		final Bundle extras = buildAuthBundle(userAccount);
 
@@ -520,9 +507,7 @@ public class UserAccountManager {
 		/*
 		 * Sets this user as the current user
 		 */
-		if (makeCurrentUser) {
-			storeCurrentUserInfo(userAccount.getUserId(), userAccount.getOrgId());
-		}
+		storeCurrentUserInfo(userAccount.getUserId(), userAccount.getOrgId());
 		return extras;
 	}
 
