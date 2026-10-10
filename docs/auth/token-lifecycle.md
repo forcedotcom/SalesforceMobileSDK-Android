@@ -294,6 +294,23 @@ if response is HTTP 400 use_dpop_nonce and the request carried a DPoP proof:
 The identity endpoint does not harvest or retry inline. Its 401/403 path refreshes through the
 token endpoint, and the subsequent identity request is rebuilt with the refreshed credentials.
 
+**Identity fetch at login** (`fetchUserIdentityWithRetry`), identical to iOS for every user:
+- The raw token-response `id` URL is used for the first request and every replay. No
+  instance-host substitution is applied (it is rejected with 403 `Wrong_Org` for community users and
+  for DPoP tokens from a pool server).
+- Any 401 or 403 is refreshable. The flow refreshes through the token endpoint, merges the
+  complete refreshed credentials (including a rotated refresh token), and replays. A rotation
+  during this fetch records `lastTokenRotationTime` and registers the `RT` feature flag, so an RTR
+  app can already show `RT` on the first screen (matches iOS). Right after
+  login the identity service can keep answering 401 or 403 (`Wrong_Org`, `Bad_OAuth_Token`) for a
+  valid token, so this repeats with no cap until the identity service accepts the token (community
+  logins have needed up to 17 cycles). Other statuses fail immediately, as does a 401/403 with no
+  refresh token, and a failed refresh is propagated.
+- One info-level line is logged when the fetch finishes, with no tokens or user data:
+  `IDENTITY_ATTEMPTS attempts=N refreshes=M status=... elapsedMs=... dpop=... community=...
+  pool=... host=...` (`attempts=1` means the first request was accepted). Each 401/403 also logs
+  its status and error code (`Wrong_Org`, `Bad_OAuth_Token` or `other`).
+
 ### Read path (interceptor + OAuth2.java)
 
 Every DPoP proof — whether selected by `DPoPRequestDecorator.applyAuthHeaders()` (API calls) or

@@ -48,6 +48,7 @@ import com.salesforce.samples.authflowtester.pageObjects.LoginOptionsPageObject
 import com.salesforce.samples.authflowtester.pageObjects.LoginPageObject
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.COMMUNITY_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.EMPTY
 import org.junit.After
@@ -123,7 +124,8 @@ abstract class AuthFlowTest {
         SalesforceSDKManager.getInstance().userAccountManager.currentUser?.username
             ?: throw AssertionError("No current user to read the RT feature-marker state for")
 
-    private fun expectedRtMarker(username: String): Boolean =
+    /** Tracked RT feature-marker expectation for a user, seeded at login from lastTokenRotationTime. */
+    protected fun expectedRtMarker(username: String): Boolean =
         expectedRtMarkerByUsername[username]
             ?: throw AssertionError("No RT feature-marker state recorded for user $username")
 
@@ -428,6 +430,9 @@ abstract class AuthFlowTest {
             useWelcomeDiscovery -> Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
             // Pool server (login.salesforce.com, login.*.salesforce.com) registers L1, not L4.
             useLoginPoolHost -> Features.FEATURE_LOGIN_SERVER_PRODUCTION
+            // community_auth is a *.my.site.com Experience Cloud site, not a *.my.salesforce.com
+            // My Domain host, so the SDK classifies it L5 (Other) rather than L4 (My Domain).
+            knownLoginHostConfig == COMMUNITY_AUTH -> Features.FEATURE_LOGIN_SERVER_OTHER
             else -> Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
         }
         val expectedAMarker = when {
@@ -460,7 +465,7 @@ abstract class AuthFlowTest {
             expectedRtMarker = expectedRtMarker(username),
             assertUsername = assertUsername,
         )
-        app.validateOAuthValues(knownAppConfig, scopeSelection, useHybridAuthToken = useHybridAuthToken, isDpop = useDPoP)
+        app.validateOAuthValues(knownAppConfig, scopeSelection, useHybridAuthToken = useHybridAuthToken, isDpop = useDPoP, knownLoginHostConfig = knownLoginHostConfig)
         app.validateApiRequest()
     }
 
@@ -518,10 +523,12 @@ abstract class AuthFlowTest {
         restartApp()
         val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
         val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
-        val expectedLMarker = if (usesWelcomeDiscovery) {
-            Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
-        } else {
-            Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+        val expectedLMarker = when {
+            usesWelcomeDiscovery -> Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
+            // community_auth is a *.my.site.com Experience Cloud site, not a *.my.salesforce.com
+            // My Domain host, so the SDK classifies it L5 (Other) rather than L4 (My Domain).
+            knownLoginHostConfig == COMMUNITY_AUTH -> Features.FEATURE_LOGIN_SERVER_OTHER
+            else -> Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
         }
         val expectedAMarker = when {
             useWebServerFlow && useHybridAuthToken -> Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
@@ -649,9 +656,11 @@ abstract class AuthFlowTest {
 
         app.waitForAppLoad()
         val appConfig = testConfig.getApp(knownAppConfig)
-        // Admin login is still an authorization-code login, so RT starts absent for this user.
-        // Reuse the username already resolved above for the Chrome login.
-        expectedRtMarkerByUsername[username] = false
+        // Admin login is still an authorization-code login: RT is expected only if its identity
+        // fetch refreshed and rotated (lastTokenRotationTime persisted). Reuse the username
+        // already resolved above for the Chrome login.
+        expectedRtMarkerByUsername[username] = SalesforceSDKManager.getInstance()
+            .userAccountManager.currentUser?.lastTokenRotationTime?.isNotBlank() == true
         app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true, isDpop = useDPoP, expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FOR_ADMIN, expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN, expectedAMarker = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID, isJwt = appConfig.issuesJwt, isBeacon = appConfig.isBeacon, expectedRtMarker = expectedRtMarker(username))
         app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY)
         app.validateApiRequest()
@@ -776,10 +785,19 @@ abstract class AuthFlowTest {
         val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
         val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
         val appConfig = testConfig.getApp(knownAppConfig)
-        // Migration re-issues tokens through the token-migration path, not the session refresher, so
-        // it never advances the RT marker. Assert with the RT state carried over from before this
-        // migration (a rotation from an earlier normal refresh stays sticky).
+        // The token migration itself does not rotate the refresh token, but the identity fetch that
+        // finishes it can: a login-host /id 403 (W-24433488) triggers a normal refresh, which
+        // rotates when the target app has RTR and persists lastTokenRotationTime. Fold that
+        // persisted metadata into the sticky RT state, as loginAndValidate does, so the assertion
+        // holds whether or not the refresh happened.
+        // TODO(W-24433488): once fixed on the test org, migration should no longer rotate, so
+        // assert the absence of RT again for the non-RTR -> RTR case.
         val username = usernameFor(knownLoginHostConfig, knownUserConfig)
+        recordRefreshTokenRotation(
+            username,
+            SalesforceSDKManager.getInstance().userAccountManager.currentUser
+                ?.lastTokenRotationTime?.isNotBlank() == true,
+        )
         app.validateUser(
             knownLoginHostConfig,
             knownUserConfig,
@@ -793,7 +811,7 @@ abstract class AuthFlowTest {
             isBeacon = appConfig.isBeacon,
             expectedRtMarker = expectedRtMarker(username),
         )
-        app.validateOAuthValues(knownAppConfig, scopeSelection)
+        app.validateOAuthValues(knownAppConfig, scopeSelection, knownLoginHostConfig = knownLoginHostConfig)
 
         // Assert new tokens work. This revoke forces a normal refresh through the session refresher —
         // the one path that registers the sticky RT marker.
@@ -841,13 +859,13 @@ abstract class AuthFlowTest {
         )
 
         // The consumer key is unchanged — same app, only the DPoP binding changed.
-        app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY, isDpop = true)
+        app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY, isDpop = true, knownLoginHostConfig = knownLoginHostConfig)
 
         // Assert the newly DPoP-bound tokens work. upgradeToDPoP delegates to the refresh-token
         // migration path, so the "TM" (token-migration) UA feature flag is legitimately registered
         // and persists across subsequent refreshes — the marker tracks the migration mechanism, not
         // whether the connected app changed. Assert its presence.
-        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = true, wasMigrated = true, isJwt = appConfig.issuesJwt)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = true, knownLoginHostConfig = knownLoginHostConfig, wasMigrated = true, isJwt = appConfig.issuesJwt)
     }
 
     /**
@@ -888,13 +906,13 @@ abstract class AuthFlowTest {
         )
 
         // The consumer key is unchanged — same app, only the DPoP binding changed.
-        app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY, isDpop = false)
+        app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY, isDpop = false, knownLoginHostConfig = knownLoginHostConfig)
 
         // Assert the newly Bearer tokens work with no DPoP proof. downgradeFromDPoP delegates to
         // the refresh-token migration path, so the "TM" (token-migration) UA feature flag is
         // legitimately registered and persists across subsequent refreshes — the marker tracks the
         // migration mechanism, not whether the connected app changed. Assert its presence.
-        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = false, wasMigrated = true, isJwt = appConfig.issuesJwt)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = false, knownLoginHostConfig = knownLoginHostConfig, wasMigrated = true, isJwt = appConfig.issuesJwt)
     }
 
     fun assertRevokeAndRefreshWorks(
@@ -940,10 +958,12 @@ abstract class AuthFlowTest {
         } else {
             null
         }
-        val expectedLMarker = if (useLoginPoolHost) {
-            Features.FEATURE_LOGIN_SERVER_PRODUCTION
-        } else {
-            Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+        val expectedLMarker = when {
+            useLoginPoolHost -> Features.FEATURE_LOGIN_SERVER_PRODUCTION
+            // community_auth is a *.my.site.com Experience Cloud site, not a *.my.salesforce.com
+            // My Domain host, so the SDK classifies it L5 (Other) rather than L4 (My Domain).
+            knownLoginHostConfig == COMMUNITY_AUTH -> Features.FEATURE_LOGIN_SERVER_OTHER
+            else -> Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
         }
         app.validateUserAgent(
             knownLoginHostConfig = knownLoginHostConfig,
@@ -970,7 +990,12 @@ abstract class AuthFlowTest {
         expectedAMarker: String? = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
         isJwt: Boolean = false,
     ) {
-        app.switchToUser(knownUserConfig)
+        // Pass the host through: the username/displayName lookup used to find the picker row
+        // depends on which login host provisioned this user. Every existing caller logs both
+        // users in from REGULAR_AUTH (the default), where this is a no-op, but community-ECA
+        // multi-host scenarios pair a COMMUNITY_AUTH user with a REGULAR_AUTH one, so the
+        // argument must be forwarded or the picker lookup resolves the wrong account.
+        app.switchToUser(knownUserConfig, knownLoginHostConfig)
         composeTestRule.waitForIdle()
         val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
         val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
