@@ -638,7 +638,7 @@ internal suspend fun fetchUserIdentityWithRetry(
     var refreshes = 0
     var refreshTokenRotated = false
 
-    fun finish(status: String) = logIdentityAttempts(
+    fun logAttemptsSummary(status: String) = logIdentityAttempts(
         tokenResponse, loginServer, attempts, refreshes, status,
         (System.nanoTime() - startNanos) / 1_000_000,
     )
@@ -647,7 +647,7 @@ internal suspend fun fetchUserIdentityWithRetry(
         try {
             attempts++
             val identity = identityFetcher(tokenResponse.idUrl, tokenResponse)
-            finish("200")
+            logAttemptsSummary("200")
             return IdentityFetchResult(
                 identity = identity,
                 refreshTokenRotationTime = if (refreshTokenRotated) Instant.now().toString() else null,
@@ -661,7 +661,7 @@ internal suspend fun fetchUserIdentityWithRetry(
             }
             if (!isRefreshableIdentityFailure(e) || tokenResponse.refreshToken.isNullOrBlank()) {
                 w(TAG, "Cannot fetch user identity due to an error.", e)
-                finish(statusCode?.toString() ?: "error")
+                logAttemptsSummary(statusCode?.toString() ?: "error")
                 throw e
             }
         }
@@ -678,7 +678,7 @@ internal suspend fun fetchUserIdentityWithRetry(
             throw e
         } catch (e: Exception) {
             w(TAG, "Cannot refresh credentials while fetching user identity.", e)
-            finish("refresh_failed")
+            logAttemptsSummary("refresh_failed")
             throw e
         }
     }
@@ -732,8 +732,8 @@ private suspend fun refreshCredentialsForIdentity(
     consumerKey: String,
 ): TokenEndpointResponse = withContext(IO) {
     // Login has not created a UserAccount yet, so ClientManager's per-account refresh coordinator
-    // cannot coordinate this request. This flow owns the response and permits exactly one refresh.
-    // If Android gains a credential-scoped pre-account coordinator, route this refresh through it.
+    // cannot coordinate this request. This flow owns the response, and each call performs one refresh;
+    // the caller's retry loop decides how many calls are made. If Android gains a credential-scoped pre-account coordinator, route this refresh through it.
     OAuth2.refreshAuthToken(
         HttpAccess.DEFAULT,
         OAuth2.overrideLoginServerIfNeeded(
