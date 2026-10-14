@@ -186,18 +186,21 @@ class LoginOptionsPageObject(composeTestRule: ComposeTestRule): BasePageObject(c
             .fetchSemanticsNode()
             .config[SemanticsProperties.ToggleableState] == ToggleableState.On
 
-    /** Clicks the toggle only if it is currently off. */
+    /**
+     * Clicks the toggle only if it is currently off.  Scrolls first because the Custom Tab browser
+     * selector can push lower toggles off-screen, where performClick's injected tap misses.
+     */
     private fun toggleIfOff(contentDescription: String) {
         if (!isToggleOn(contentDescription)) {
-            composeTestRule.onNodeWithContentDescription(contentDescription).performClick()
+            composeTestRule.onNodeWithContentDescription(contentDescription).performScrollTo().performClick()
             composeTestRule.waitForIdle()
         }
     }
 
-    /** Clicks the toggle only if it is currently on. */
+    /** Clicks the toggle only if it is currently on.  Scrolls first; see [toggleIfOff]. */
     private fun toggleIfOn(contentDescription: String) {
         if (isToggleOn(contentDescription)) {
-            composeTestRule.onNodeWithContentDescription(contentDescription).performClick()
+            composeTestRule.onNodeWithContentDescription(contentDescription).performScrollTo().performClick()
             composeTestRule.waitForIdle()
         }
     }
