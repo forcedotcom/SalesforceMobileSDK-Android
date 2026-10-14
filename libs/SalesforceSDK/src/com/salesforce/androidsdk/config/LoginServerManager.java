@@ -229,7 +229,15 @@ public class LoginServerManager {
 		final SharedPreferences selectedServerPrefs = ctx.getSharedPreferences(SERVER_SELECTION_FILE, MODE_PRIVATE);
 		final String selectedServerUrl = selectedServerPrefs.getString(SERVER_URL, null);
 		final List<LoginServer> loginServers = getLoginServers();
-		LoginServer selectedLoginServer = loginServers.get(0);
+		LoginServer selectedLoginServer;
+		if (loginServers.isEmpty()) {
+			selectedLoginServer = new LoginServer(ctx.getString(R.string.sf__auth_login_production),
+					PRODUCTION_LOGIN_URL, false);
+			persistLoginServer(selectedLoginServer.name, selectedLoginServer.url, false, settings);
+			loginServers.add(selectedLoginServer);
+		} else {
+			selectedLoginServer = loginServers.get(0);
+		}
 		for (LoginServer server : loginServers) {
 			if (selectedServerUrl != null && server.url.equals(selectedServerUrl.trim())) {
 				selectedLoginServer = server;
@@ -485,7 +493,8 @@ public class LoginServerManager {
 					continue;
 				}
 				final String url = mdmLoginServers[i].trim();
-				final String name = mdmLoginServersLabels[i] == null ? url : mdmLoginServersLabels[i].trim();
+				final String trimmedLabel = mdmLoginServersLabels[i] == null ? "" : mdmLoginServersLabels[i].trim();
+				final String name = trimmedLabel.isEmpty() ? url : trimmedLabel;
 				if (allServers.stream().anyMatch(server -> server.url.equals(url))) {
 					continue;
 				}

@@ -74,6 +74,7 @@ class LoginServerManagerMockTest {
     private fun manager(runtimeConfig: RuntimeConfig): LoginServerManager {
         val context = mockk<Context>()
         every { context.resources } returns getInstrumentation().context.resources
+        every { context.getString(sf__auth_login_production) } returns getInstrumentation().targetContext.getString(sf__auth_login_production)
         every { context.getSharedPreferences(any(), any()) } answers {
             getInstrumentation().targetContext.getSharedPreferences(firstArg(), MODE_PRIVATE)
         }
@@ -81,6 +82,31 @@ class LoginServerManagerMockTest {
     }
 
     private fun prefs(file: String) = getInstrumentation().targetContext.getSharedPreferences(file, MODE_PRIVATE)
+
+    @Test
+    fun test_givenEmptyLoginStoresAndStaleSelection_whenSelected_thenProductionPersistedWithoutDuplicates() {
+        val runtimeConfig = mockk<RuntimeConfig>(relaxed = true)
+        every { runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts) } returns emptyArray()
+        every { runtimeConfig.getBoolean(OnlyShowAuthorizedHosts) } returns true
+        val manager = manager(runtimeConfig)
+        manager.setSelectedLoginServer(LoginServer("Stale", "https://stale.example.com", true))
+        prefs(SERVER_URL_FILE).edit().clear().commit()
+        prefs(RUNTIME_PREFS_FILE).edit().clear().commit()
+        assertEquals(emptyList<LoginServer>(), manager.loginServers)
+        val production = LoginServer(getInstrumentation().targetContext.getString(sf__auth_login_production), LoginServerManager.PRODUCTION_LOGIN_URL, false)
+
+        val selected = runCatching { manager.selectedLoginServer }
+        assertEquals("Empty stores must select production: ${selected.exceptionOrNull()}", production, selected.getOrNull())
+        assertEquals(production, manager.selectedServer.value)
+        assertEquals(mapOf(SERVER_NAME to production.name, SERVER_URL to production.url, IS_CUSTOM to false), prefs(SERVER_SELECTION_FILE).all)
+        repeat(3) {
+            assertEquals(production, manager.selectedLoginServer)
+            assertEquals(listOf(production), manager.loginServers)
+            assertEquals(listOf(production), manager.loginServersFromPreferences)
+            assertEquals(1, prefs(SERVER_URL_FILE).getInt(NUMBER_OF_ENTRIES, 0))
+            assertEquals(emptyList<LoginServer>(), manager.getLoginServersFromPreferences(prefs(RUNTIME_PREFS_FILE)))
+        }
+    }
 
     @Test
     fun test_givenUnrestrictedMdm_whenComposed_thenMdmDefaultsAndBothCustomStores() {
@@ -304,6 +330,30 @@ class LoginServerManagerMockTest {
         reloaded.removeServer(reloaded.getLoginServerFromURL(url))
         assertNull(manager(runtimeConfig).getLoginServerFromURL(url))
         assertEquals(listOf("Runtime unrelated"), manager.getLoginServersFromPreferences(prefs(RUNTIME_PREFS_FILE)).filter { it.isCustom }.map { it.name })
+    }
+
+    @Test
+    fun test_givenNullBlankAndNonblankMdmLabels_whenParsed_thenFallbackAndTrimStayPairedWithHosts() {
+        val runtimeConfig = mockk<RuntimeConfig>(relaxed = true)
+        every { runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts) } returns arrayOf(
+            null, " https://null.example.com ", " https://empty.example.com ",
+            " https://whitespace.example.com ", " ", " https://padded.example.com ",
+            " https://nonblank.example.com "
+        )
+        every { runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHostLabels) } returns arrayOf(
+            "Skipped null host", null, "", " \t\n ", "Skipped blank host", " \tManaged Label \n ", "Real Label"
+        )
+        val manager = manager(runtimeConfig)
+        val expected = listOf(
+            LoginServer("https://null.example.com", "https://null.example.com", false),
+            LoginServer("https://empty.example.com", "https://empty.example.com", false),
+            LoginServer("https://whitespace.example.com", "https://whitespace.example.com", false),
+            LoginServer("Managed Label", "https://padded.example.com", false),
+            LoginServer("Real Label", "https://nonblank.example.com", false)
+        )
+        assertEquals(expected, manager.loginServersFromRuntimeConfig)
+        assertEquals(expected, manager.getLoginServersFromPreferences(prefs(RUNTIME_PREFS_FILE)))
+        assertEquals(expected, manager.loginServers.take(expected.size))
     }
 
     @Test
