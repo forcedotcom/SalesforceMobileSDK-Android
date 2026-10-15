@@ -63,8 +63,11 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.net.InetAddress
+import java.net.ServerSocket
 import java.security.MessageDigest
 import java.util.UUID.randomUUID
+import kotlin.concurrent.thread
 
 /**
  * Coverage for the profile photo download: it must be authenticated like any
@@ -193,6 +196,79 @@ class UserAccountDownloadProfilePhotoTest {
     }
 
     @Test
+    fun realRedirect_resignsProofForEachRequestUrl() {
+        generateOrLoadKeyPair(alias)
+        DEFAULT = object : HttpAccess(null, "dummy-agent") {
+            override fun createNewClientBuilder(): OkHttpClient.Builder = OkHttpClient.Builder()
+                .dns { listOf(InetAddress.getLoopbackAddress()) }
+        }
+
+        ServerSocket(0, 2, InetAddress.getLoopbackAddress()).use { server ->
+            server.soTimeout = 15_000
+            val initialUrl = "http://files.salesforce.com:${server.localPort}/profilephoto/005/F"
+            val redirectedUrl = "http://files.my.salesforce.com:${server.localPort}/profilephoto/005/F"
+            val requests = mutableListOf<WireRequest>()
+            var serverFailure: Throwable? = null
+            val serverThread = thread(name = "profile-photo-redirect-test") {
+                try {
+                    repeat(2) { hop ->
+                        server.accept().use { socket ->
+                            socket.soTimeout = 15_000
+                            val reader = socket.getInputStream().bufferedReader()
+                            val requestLine = reader.readLine()
+                            val headers = mutableMapOf<String, String>()
+                            while (true) {
+                                val line = reader.readLine()
+                                if (line.isNullOrEmpty()) break
+                                val separator = line.indexOf(':')
+                                if (separator > 0) {
+                                    headers[line.substring(0, separator).lowercase()] =
+                                        line.substring(separator + 1).trim()
+                                }
+                            }
+                            requests += WireRequest(checkNotNull(requestLine), headers)
+                            val response = if (hop == 0) {
+                                "HTTP/1.1 302 Found\r\nLocation: $redirectedUrl\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                            } else {
+                                "HTTP/1.1 200 OK\r\nContent-Length: ${PHOTO_BYTES.length}\r\nConnection: close\r\n\r\n$PHOTO_BYTES"
+                            }
+                            socket.getOutputStream().write(response.toByteArray(Charsets.UTF_8))
+                        }
+                    }
+                } catch (failure: Throwable) {
+                    serverFailure = failure
+                }
+            }
+
+            try {
+                assertTrue(downloadProfilePhotoToFile(initialUrl, destFile, TOKEN, "DPoP", credentialsIdentifier))
+            } finally {
+                server.close()
+                serverThread.join(15_000)
+            }
+
+            assertFalse("Redirect server did not stop", serverThread.isAlive)
+            assertNull("Redirect server failed", serverFailure)
+            assertEquals(PHOTO_BYTES, destFile.readText())
+            assertEquals(2, requests.size)
+            val first = requests[0]
+            val second = requests[1]
+            assertEquals("GET /profilephoto/005/F HTTP/1.1", first.requestLine)
+            assertEquals("GET /profilephoto/005/F HTTP/1.1", second.requestLine)
+            assertEquals("DPoP $TOKEN", first.headers["authorization"])
+            assertEquals("DPoP $TOKEN", second.headers["authorization"])
+            val firstProof = dpopProofPayload(first.headers["dpop"])
+            val secondProof = dpopProofPayload(second.headers["dpop"])
+            assertEquals("GET", firstProof.getString("htm"))
+            assertEquals(initialUrl, firstProof.getString("htu"))
+            assertEquals(redirectedUrl, secondProof.getString("htu"))
+            assertEquals("GET", secondProof.getString("htm"))
+            assertEquals(firstProof.getString("ath"), secondProof.getString("ath"))
+            assertNotEquals(firstProof.getString("jti"), secondProof.getString("jti"))
+        }
+    }
+
+    @Test
     fun failedDownload_keepsExistingCachedPhoto() {
         destFile.writeText("old-photo")
         httpAccess.enqueue(404, "{}")
@@ -269,14 +345,18 @@ class UserAccountDownloadProfilePhotoTest {
         .photoUrl(PHOTO_URL)
         .build()
 
-    private fun dpopProofPayload(request: Request): JSONObject {
-        val parts = checkNotNull(request.header("DPoP")).split(".")
+    private fun dpopProofPayload(request: Request): JSONObject = dpopProofPayload(request.header("DPoP"))
+
+    private fun dpopProofPayload(proof: String?): JSONObject {
+        val parts = checkNotNull(proof).split(".")
         assertEquals("DPoP proof should be a three-part JWT", 3, parts.size)
         val payload = Base64.decode(
             parts[1], Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP
         )
         return JSONObject(String(payload, Charsets.UTF_8))
     }
+
+    private data class WireRequest(val requestLine: String, val headers: Map<String, String>)
 
     /** Records outbound requests and returns canned responses without touching the network. */
     private class CapturingHttpAccess : HttpAccess(null, "dummy-agent") {
