@@ -40,6 +40,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -767,6 +768,8 @@ public class RestClient {
      */
     public static class OAuthRefreshInterceptor implements Interceptor {
 
+        private static final String BAD_OAUTH_TOKEN = "Bad_OAuth_Token";
+
         private final AuthTokenProvider authTokenProvider;
         private String authToken;
         String tokenType;
@@ -829,15 +832,21 @@ public class RestClient {
         }
 
         private boolean shouldRefresh(Response response) throws IOException {
+            if (authTokenProvider == null) {
+                return false;
+            }
+
             int responseCode = response.code();
 
             // most calls return 401 if oauth access token is not valid
             boolean isNotAuthorized = responseCode == HttpURLConnection.HTTP_UNAUTHORIZED;
 
-            // service/oauth2 calls return 403 with Bad_OAuth_Token response if oauth access is not valid
+            // OAuth and identity endpoints can return 403 with Bad_OAuth_Token.
             boolean hasBadOAuthToken = responseCode == HttpURLConnection.HTTP_FORBIDDEN
-                    && response.request().url().encodedPath().startsWith(RestRequest.SERVICES_OAUTH2)
-                    && (response.body() != null && response.body().string().equals("Bad_OAuth_Token"));
+                    && (response.request().url().encodedPath().startsWith(RestRequest.SERVICES_OAUTH2)
+                        || isIdentityEndpoint(response.request().url()))
+                    && response.body() != null
+                    && BAD_OAUTH_TOKEN.equals(response.peekBody(BAD_OAUTH_TOKEN.length() + 1L).string());
 
             if (isNotAuthorized || hasBadOAuthToken) {
                 SalesforceSDKLogger.d(TAG, "response request url: " + response.request().url());
@@ -850,6 +859,14 @@ public class RestClient {
             } else {
                 return false;
             }
+        }
+
+        private static boolean isIdentityEndpoint(HttpUrl url) {
+            List<String> pathSegments = url.pathSegments();
+            return pathSegments.size() == 3
+                    && "id".equals(pathSegments.get(0))
+                    && !pathSegments.get(1).isEmpty()
+                    && !pathSegments.get(2).isEmpty();
         }
 
         @Override
