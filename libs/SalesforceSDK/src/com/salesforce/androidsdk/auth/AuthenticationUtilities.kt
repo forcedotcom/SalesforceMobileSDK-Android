@@ -96,6 +96,7 @@ import java.io.File
 import java.net.HttpURLConnection.HTTP_FORBIDDEN
 import java.net.HttpURLConnection.HTTP_OK
 import java.net.HttpURLConnection.HTTP_UNAUTHORIZED
+import java.net.ProtocolException
 import java.net.URI
 import java.time.Instant
 import java.util.function.Consumer
@@ -473,13 +474,14 @@ internal fun downloadProfilePhotoToFile(
         fun buildAuthenticatedRequest(): Request {
             val builder: Builder = Builder().url(httpUrl).get()
             attachAuthHeaders(builder, authToken, tokenType, credentialsIdentifier)
-            return builder.build()
+            return requirePhotoProof(builder.build())
         }
 
         val client = HttpAccess.DEFAULT.okHttpClient.newBuilder()
             .addNetworkInterceptor { chain: Interceptor.Chain ->
                 reattachAuthOnRedirect(
-                    chain, photoUrl, authToken, tokenType, credentialsIdentifier
+                    chain, httpUrl.toString(), authToken, tokenType, credentialsIdentifier,
+                    requireFreshDPoPProof = true,
                 )
             }
             .build()
@@ -533,10 +535,18 @@ private fun attachAuthHeaders(
     attachProof(builder, credentialsIdentifier, tokenType, authToken)
 }
 
+private fun requirePhotoProof(request: Request): Request {
+    val usesDPoP = request.header("Authorization")
+        ?.startsWith("${DPoPKeyManager.DPOP_TOKEN_TYPE} ", ignoreCase = true) == true
+    if (usesDPoP && request.header(DPOP_HEADER).isNullOrEmpty()) {
+        throw ProtocolException("Could not attach a DPoP proof to the profile photo request")
+    }
+    return request
+}
+
 /**
- * Network interceptor body for [fetchIsSalesforceIntegrationUser]. Re-attaches
- * the Authorization/DPoP headers when [chain]'s request URL no longer matches
- * [originalUrl] (i.e. we were redirected) and the new URL is a Salesforce host.
+ * Re-attaches authentication on Salesforce redirects. The photo path also removes
+ * any prior proof and stops before network I/O if a DPoP proof cannot be signed.
  */
 @VisibleForTesting
 internal fun reattachAuthOnRedirect(
@@ -545,18 +555,28 @@ internal fun reattachAuthOnRedirect(
     authToken: String?,
     tokenType: String?,
     credentialsIdentifier: String?,
+    requireFreshDPoPProof: Boolean = false,
 ): Response {
     val url = chain.request().url
     val interceptedRequestBuilder = chain.request().newBuilder()
+    val redirected = url.toString() != originalUrl
 
-    // if the url no longer matches we were redirected
-    if (url.toString() != originalUrl && url.isSalesforceUrl()) {
+    if (requireFreshDPoPProof && redirected) {
+        // OkHttp carries custom headers across redirects, including the old proof.
+        interceptedRequestBuilder.removeHeader(DPOP_HEADER)
+    }
+
+    if (redirected && url.isSalesforceUrl()) {
         attachAuthHeaders(
             interceptedRequestBuilder, authToken, tokenType, credentialsIdentifier
         )
     }
 
-    return chain.proceed(interceptedRequestBuilder.build())
+    val request = interceptedRequestBuilder.build()
+    if (requireFreshDPoPProof) {
+        requirePhotoProof(request)
+    }
+    return chain.proceed(request)
 }
 
 private fun HttpUrl.isSalesforceUrl(): Boolean {

@@ -38,10 +38,14 @@ import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager.aliasForCredentialsIde
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager.deleteKeyPair
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager.generateOrLoadKeyPair
 import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache.clear
+import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder
 import com.salesforce.androidsdk.auth.downloadProfilePhotoToFile
 import com.salesforce.androidsdk.auth.reattachAuthOnRedirect
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
+import io.mockk.verify
 import okhttp3.Interceptor
 import okhttp3.Interceptor.Chain
 import okhttp3.MediaType.Companion.toMediaType
@@ -58,12 +62,14 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.net.InetAddress
+import java.net.ProtocolException
 import java.net.ServerSocket
 import java.security.MessageDigest
 import java.util.UUID.randomUUID
@@ -131,6 +137,25 @@ class UserAccountDownloadProfilePhotoTest {
     }
 
     @Test
+    fun signingFailure_doesNotSendPhotoRequestOrReplaceCache() {
+        generateOrLoadKeyPair(alias)
+        destFile.writeText("old-photo")
+        mockkObject(DPoPProofBuilder)
+        try {
+            every { DPoPProofBuilder.buildProof(any(), any(), any(), any(), any()) } throws
+                IllegalStateException("signing unavailable")
+
+            val ok = downloadProfilePhotoToFile(PHOTO_URL, destFile, TOKEN, "DPoP", credentialsIdentifier)
+
+            assertFalse(ok)
+            assertTrue(httpAccess.allRequests().isEmpty())
+            assertEquals("old-photo", destFile.readText())
+        } finally {
+            unmockkObject(DPoPProofBuilder)
+        }
+    }
+
+    @Test
     fun bearerCredential_sendsBearerAndNoDPoPHeader() {
         httpAccess.enqueuePhoto()
 
@@ -159,6 +184,29 @@ class UserAccountDownloadProfilePhotoTest {
         assertEquals("photo-nonce", retry.getString("nonce"))
         assertNotEquals(first.getString("jti"), retry.getString("jti"))
         assertEquals(PHOTO_URL, retry.getString("htu"))
+    }
+
+    @Test
+    fun nonceRetrySigningFailure_doesNotSendRetry() {
+        val keyPair = generateOrLoadKeyPair(alias)
+        val firstProof = DPoPProofBuilder.buildProof("GET", PHOTO_URL, keyPair, null, TOKEN)
+        httpAccess.enqueue(401, """{"error":"use_dpop_nonce"}""", mapOf("DPoP-Nonce" to "photo-nonce"))
+        var proofAttempts = 0
+        mockkObject(DPoPProofBuilder)
+        try {
+            every { DPoPProofBuilder.buildProof(any(), any(), any(), any(), any()) } answers {
+                if (proofAttempts++ == 0) firstProof else throw IllegalStateException("signing unavailable")
+            }
+
+            val ok = downloadProfilePhotoToFile(PHOTO_URL, destFile, TOKEN, "DPoP", credentialsIdentifier)
+
+            assertFalse(ok)
+            assertEquals(2, proofAttempts)
+            assertEquals(1, httpAccess.allRequests().size)
+            assertFalse(destFile.exists())
+        } finally {
+            unmockkObject(DPoPProofBuilder)
+        }
     }
 
     @Test
@@ -193,6 +241,38 @@ class UserAccountDownloadProfilePhotoTest {
 
         assertEquals("DPoP $TOKEN", captured?.header("Authorization"))
         assertEquals(redirectedUrl, dpopProofPayload(checkNotNull(captured)).getString("htu"))
+    }
+
+    @Test
+    fun redirectSigningFailure_doesNotSendStaleProof() {
+        generateOrLoadKeyPair(alias)
+        val redirected = Request.Builder()
+            .url("https://files.my.salesforce.com/profilephoto/005/F")
+            .header("Authorization", "DPoP $TOKEN")
+            .header("DPoP", "proof-for-previous-url")
+            .build()
+        val chain = mockk<Chain> {
+            every { request() } returns redirected
+            every { proceed(any()) } answers {
+                Response.Builder().request(firstArg()).protocol(HTTP_1_1).code(200).message("OK")
+                    .body("".toResponseBody()).build()
+            }
+        }
+        mockkObject(DPoPProofBuilder)
+        try {
+            every { DPoPProofBuilder.buildProof(any(), any(), any(), any(), any()) } throws
+                IllegalStateException("signing unavailable")
+
+            assertThrows(ProtocolException::class.java) {
+                reattachAuthOnRedirect(
+                    chain, PHOTO_URL, TOKEN, "DPoP", credentialsIdentifier,
+                    requireFreshDPoPProof = true,
+                )
+            }
+            verify(exactly = 0) { chain.proceed(any()) }
+        } finally {
+            unmockkObject(DPoPProofBuilder)
+        }
     }
 
     @Test
