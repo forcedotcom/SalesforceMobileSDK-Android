@@ -205,6 +205,18 @@ class UserAccountDownloadProfilePhotoTest {
     }
 
     @Test
+    fun noContentResponse_keepsExistingCachedPhoto() {
+        destFile.writeText("old-photo")
+        httpAccess.enqueue(204, "")
+
+        val ok = downloadProfilePhotoToFile(PHOTO_URL, destFile, TOKEN, null, null)
+
+        assertFalse(ok)
+        assertEquals("old-photo", destFile.readText())
+        assertFalse(File(destFile.parentFile, "${destFile.name}.download").exists())
+    }
+
+    @Test
     fun successfulDownload_replacesExistingCachedPhoto() {
         destFile.writeText("old-photo")
         httpAccess.enqueuePhoto()

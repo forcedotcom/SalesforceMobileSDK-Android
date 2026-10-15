@@ -94,6 +94,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection.HTTP_FORBIDDEN
+import java.net.HttpURLConnection.HTTP_OK
 import java.net.HttpURLConnection.HTTP_UNAUTHORIZED
 import java.net.URI
 import java.time.Instant
@@ -498,7 +499,7 @@ internal fun downloadProfilePhotoToFile(
         }
 
         response.use {
-            if (!it.isSuccessful) {
+            if (it.code != HTTP_OK) {
                 w(TAG, "Profile photo download failed with status ${it.code}")
                 return false
             }
