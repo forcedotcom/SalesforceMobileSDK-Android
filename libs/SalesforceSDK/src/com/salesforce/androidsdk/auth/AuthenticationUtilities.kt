@@ -146,7 +146,10 @@ internal suspend fun onAuthFlowComplete(
     startMainActivity: () -> Unit = ::startMainActivityHelper,
     setAdministratorPreferences: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::setAdministratorPreferences,
     addAccount: (account: UserAccount) -> Unit = ::addAccountHelper,
-    handleScreenLockPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleScreenLockPolicy,
+    persistScreenLockFeature: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit
+        = { userIdentity, account -> com.salesforce.androidsdk.auth.persistScreenLockFeature(userIdentity, account) },
+    handleScreenLockPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Boolean
+        = ::handleScreenLockPolicy,
     handleBiometricAuthPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleBiometricAuthPolicy,
     handleDuplicateUserAccount: (userAccountManager: UserAccountManager, account: UserAccount, userIdentity: OAuth2.IdServiceResponse?) -> Unit
         = { uam, acct, identity -> com.salesforce.androidsdk.auth.handleDuplicateUserAccount(uam, acct, identity) },
@@ -303,25 +306,26 @@ internal suspend fun onAuthFlowComplete(
                 sdkManager.unregisterUsedAppFeature(FEATURE_BEACON, account)
             }
         }
-        userAccountManager.createAccount(account)
-        userAccountManager.switchToUser(account)
+    }
 
-        // Init user logging
+    if (!tokenMigration) {
+        withContext(IO) {
+            userAccountManager.persistAccount(account)
+            persistScreenLockFeature(userIdentity, account)
+        }
         updateLoggingPrefs(account)
-
-        // Send User Switch Intent, create user and switch to user.
         val numAuthenticatedUsers = userAccountManager.authenticatedUsers?.size ?: 0
         val userSwitchType = when {
-            // We've already authenticated the first user, so there should be one
             numAuthenticatedUsers == 1 -> USER_SWITCH_TYPE_FIRST_LOGIN
-
-            // Otherwise we're logging in with an additional user
             numAuthenticatedUsers > 1 -> USER_SWITCH_TYPE_LOGIN
-
-            // This should never happen but if it does, pass in the "unknown" value
             else -> USER_SWITCH_TYPE_DEFAULT
         }
+        userAccountManager.storeCurrentUserInfo(account.userId, account.orgId)
         userAccountManager.sendUserSwitchIntent(userSwitchType, null)
+    } else {
+        withContext(IO) {
+            persistScreenLockFeature(userIdentity, account)
+        }
     }
 
     // Registration persists the per-user feature flag, so it must happen only after the account
@@ -349,16 +353,15 @@ internal suspend fun onAuthFlowComplete(
     // is still in front, i.e. before startMainActivity() below occludes it.
     handleBiometricAuthPolicy(userIdentity, account)
 
+    val shouldLock = withContext(IO) { handleScreenLockPolicy(userIdentity, account) }
     withContext(Dispatchers.Main) {
         onAuthFlowFinished {
-            // Kickoff the end of the flow before storing mobile policy to prevent launching
-            // the main activity over/after the screen lock.
             if (!tokenMigration) {
                 startMainActivity()
             }
-
-            // Screen lock required by mobile policy
-            handleScreenLockPolicy(userIdentity, account)
+            if (shouldLock) {
+                (SalesforceSDKManager.getInstance().screenLockManager as ScreenLockManager?)?.lock()
+            }
         }
     }
 }
@@ -773,22 +776,37 @@ private fun updateLoggingPrefsHelper(account: UserAccount) {
 internal fun handleScreenLockPolicy(
     userIdentity: OAuth2.IdServiceResponse?,
     account: UserAccount,
-) {
+): Boolean {
     val internalScreenLockManager =
         SalesforceSDKManager.getInstance().screenLockManager as ScreenLockManager?
 
+    // Keep this feature-policy decision aligned with persistScreenLockFeature.
     // compareTo(0) is used to check if screenLockTimeout is non-null and greater than 0.
     if (userIdentity?.screenLockTimeout?.compareTo(0) == 1) {
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SCREEN_LOCK, account)
         val timeoutInMills = userIdentity.screenLockTimeout * 1000 * 60
         internalScreenLockManager?.storeMobilePolicy(
             account,
             enabled = userIdentity.screenLock,
             timeoutInMills,
         )
+        return userIdentity.screenLock
     } else if (internalScreenLockManager?.enabled == true) {
-        SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_SCREEN_LOCK, account)
         internalScreenLockManager.cleanUp(account)
+    }
+    return false
+}
+
+/** Persists the screen-lock feature before the completed account becomes observable to the app. */
+@VisibleForTesting
+internal fun persistScreenLockFeature(
+    userIdentity: OAuth2.IdServiceResponse?,
+    account: UserAccount,
+    sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
+) {
+    if (userIdentity?.screenLockTimeout?.compareTo(0) == 1) {
+        sdkManager.registerUsedAppFeature(FEATURE_SCREEN_LOCK, account)
+    } else if ((sdkManager.screenLockManager as ScreenLockManager?)?.enabled == true) {
+        sdkManager.unregisterUsedAppFeature(FEATURE_SCREEN_LOCK, account)
     }
 }
 
@@ -901,7 +919,7 @@ internal fun handleDuplicateUserAccount(
  * users where [UserAccountManager.createAccount] cannot be used because
  * it unconditionally calls [UserAccountManager.storeCurrentUserInfo].
  */
-private fun UserAccountManager.persistAccount(
+internal fun UserAccountManager.persistAccount(
     userAccount: UserAccount,
     accountType: String = SalesforceSDKManager.getInstance().accountType,
     acctManager: AccountManager = AccountManager.get(SalesforceSDKManager.getInstance().appContext),

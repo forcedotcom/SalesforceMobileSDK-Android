@@ -31,6 +31,7 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.ui.ScreenLockActivity
 import com.salesforce.androidsdk.util.EventsObservable
+import androidx.core.content.edit
 
 internal class ScreenLockManager: AppLockManager(
     MOBILE_POLICY_PREF, SCREEN_LOCK, SCREEN_LOCK_TIMEOUT
@@ -47,13 +48,12 @@ internal class ScreenLockManager: AppLockManager(
         if (enabled) {
             val globalPrefs = getGlobalPrefs()
             val currentTimeout = globalPrefs.getInt(SCREEN_LOCK_TIMEOUT, 0)
-            val globalPrefsEditor = globalPrefs.edit()
-            globalPrefsEditor.putBoolean(SCREEN_LOCK, true)
-            if (currentTimeout == 0 || timeout < currentTimeout) {
-                globalPrefsEditor.putInt(SCREEN_LOCK_TIMEOUT, timeout)
+            globalPrefs.edit {
+                putBoolean(SCREEN_LOCK, true)
+                if (currentTimeout == 0 || timeout < currentTimeout) {
+                    putInt(SCREEN_LOCK_TIMEOUT, timeout)
+                }
             }
-            globalPrefsEditor.apply()
-            lock()
         }
     }
 
@@ -98,9 +98,9 @@ internal class ScreenLockManager: AppLockManager(
                 }
             }
             if (lowestTimeout < Int.MAX_VALUE) {
-                getGlobalPrefs().edit()
-                    .putInt(SCREEN_LOCK_TIMEOUT, lowestTimeout)
-                    .apply()
+                getGlobalPrefs().edit {
+                    putInt(SCREEN_LOCK_TIMEOUT, lowestTimeout)
+                }
                 return
             }
         }
@@ -110,10 +110,10 @@ internal class ScreenLockManager: AppLockManager(
     }
 
     fun reset() {
-        getGlobalPrefs().edit()
-            .remove(SCREEN_LOCK)
-            .remove(SCREEN_LOCK_TIMEOUT)
-            .apply()
+        getGlobalPrefs().edit {
+            remove(SCREEN_LOCK)
+            remove(SCREEN_LOCK_TIMEOUT)
+        }
         onUnlock()
     }
 
