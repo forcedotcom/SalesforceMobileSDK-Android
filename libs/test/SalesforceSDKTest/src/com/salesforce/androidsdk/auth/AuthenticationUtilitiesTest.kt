@@ -272,6 +272,63 @@ class AuthenticationUtilitiesTest {
     }
 
     @Test
+    fun testOnAuthFlowComplete_screenLockFeatureFailure_doesNotPublishCurrentUser() = runTest {
+        val userIdentity = createIdServiceResponse()
+        val featureWriteFailure = IllegalStateException("Screen-lock feature write failed")
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+        every { persistScreenLockFeature.invoke(any(), any()) } throws featureWriteFailure
+
+        try {
+            callOnAuthFlowComplete()
+        } catch (actual: IllegalStateException) {
+            assertSame(featureWriteFailure, actual)
+        }
+
+        verify(exactly = 0) { mockUserAccountManager.storeCurrentUserInfo(any(), any()) }
+        verify(exactly = 0) { mockUserAccountManager.sendUserSwitchIntent(any(), any()) }
+        verify(exactly = 0) { onAuthFlowSuccess.invoke(any()) }
+    }
+
+    @Test
+    fun testOnAuthFlowComplete_proceedStartsMainActivityBeforeScreenLock() = runTest {
+        val tokenResponse = createTokenEndpointResponse()
+        val userIdentity = createIdServiceResponse()
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+        every { handleScreenLockPolicy.invoke(any(), any()) } returns true
+        val screenLockManager = mockk<ScreenLockManager>(relaxed = true)
+        val mockSdkManager = setupMockSdkManager(screenLockManager = screenLockManager)
+        every { mockSdkManager.accountType } returns "test_account_type"
+        every { mockSdkManager.appContext } returns testContext
+
+        onAuthFlowComplete(
+            tokenResponse = tokenResponse,
+            loginServer = "https://login.salesforce.com",
+            consumerKey = "test_consumer_key",
+            onAuthFlowError = onAuthFlowError,
+            onAuthFlowSuccess = onAuthFlowSuccess,
+            buildAccountName = buildAccountName,
+            context = testContext,
+            userAccountManager = mockUserAccountManager,
+            runtimeConfig = mockRuntimeConfig,
+            updateLoggingPrefs = updateLoggingPrefs,
+            fetchUserIdentity = fetchUserIdentity,
+            startMainActivity = startMainActivity,
+            setAdministratorPreferences = setAdministratorPreferences,
+            addAccount = addAccount,
+            persistScreenLockFeature = persistScreenLockFeature,
+            handleScreenLockPolicy = handleScreenLockPolicy,
+            handleBiometricAuthPolicy = handleBiometricAuthPolicy,
+            handleDuplicateUserAccount = handleDuplicateUserAccount,
+            onAuthFlowFinished = { proceed -> proceed() },
+        )
+
+        verifyOrder {
+            startMainActivity.invoke()
+            screenLockManager.lock()
+        }
+    }
+
+    @Test
     fun testOnAuthFlowComplete_onAuthFlowFinished_proceedInvokesStartMainActivityAndScreenLockPolicy() = runTest {
         // Given
         val tokenResponse = createTokenEndpointResponse()
@@ -968,7 +1025,7 @@ class AuthenticationUtilitiesTest {
         val mockScreenLockManager = mockk<ScreenLockManager>(relaxed = true) {
             every { enabled } returns false
         }
-        val mockSdkManager = setupMockSdkManager(screenLockManager = mockScreenLockManager)
+        setupMockSdkManager(screenLockManager = mockScreenLockManager)
 
         val userIdentity = createIdServiceResponse()
         val account = mockk<UserAccount>()
@@ -982,12 +1039,12 @@ class AuthenticationUtilitiesTest {
     }
 
     @Test
-    fun testHandleScreenLockPolicy_nullIdentity_enabledManager_unregistersAndCleansUp() {
+    fun testHandleScreenLockPolicy_nullIdentity_enabledManager_cleansUp() {
         // Given
         val mockScreenLockManager = mockk<ScreenLockManager>(relaxed = true) {
             every { enabled } returns true
         }
-        val mockSdkManager = setupMockSdkManager(screenLockManager = mockScreenLockManager)
+        setupMockSdkManager(screenLockManager = mockScreenLockManager)
 
         val account = mockk<UserAccount>()
 
