@@ -33,6 +33,8 @@ import android.net.Uri;
 import android.text.TextUtils;
 import android.webkit.WebView;
 
+import androidx.annotation.VisibleForTesting;
+
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.util.AuthConfigUtil;
 import com.salesforce.androidsdk.util.EventsObservable;
@@ -136,7 +138,8 @@ public class SalesforceWebViewClientHelper {
         return false;
     }
 
-    private static String isLoginRedirect(Context ctx, String url) {
+    @VisibleForTesting
+    static String isLoginRedirect(Context ctx, String url) {
         final Uri uri = Uri.parse(url);
         final Map<String, String> params = UriFragmentParser.parse(uri);
         String retURL = params.get(RET_URL_PARAM);
@@ -144,6 +147,8 @@ public class SalesforceWebViewClientHelper {
         if (TextUtils.isEmpty(retURL) || retURL.contains(FRONTDOOR)) {
             retURL = BootConfig.getBootConfig(ctx).getStartPage();
         }
+        // TODO: Replace substring-based redirect recognition with parsed URL matching in a
+        // separate compatibility review; changing these checks can affect SAML and VF flows.
         if (isSessionExpirationRedirect(url) || isSamlLoginRedirect(ctx, url) || isVFPageRedirect(params)) {
             return retURL;
         }
@@ -181,7 +186,13 @@ public class SalesforceWebViewClientHelper {
 
     private static boolean isVFPageRedirect(Map<String, String> params) {
         final String ec = params.get(EC_PARAM);
-        int ecInt = (ec != null ? Integer.parseInt(ec) : -1);
+        final int ecInt;
+        try {
+            ecInt = (ec != null ? Integer.parseInt(ec) : -1);
+        } catch (NumberFormatException e) {
+            // An invalid redirect code is an ordinary navigation, not a session refresh.
+            return false;
+        }
         return (ecInt == HttpURLConnection.HTTP_MOVED_PERM
                 || ecInt == HttpURLConnection.HTTP_MOVED_TEMP);
     }

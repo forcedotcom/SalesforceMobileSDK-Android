@@ -10,6 +10,8 @@
     <allow-navigation href="https://*.force.com" />
     <allow-navigation href="https://*.salesforce.com" />
     <allow-navigation href="https://*.visualforce.com" />
+    <allow-navigation href="https://hybrid-test.example.com" />
+    <allow-navigation href="https://path-scoped.example.com/allowed/*" />
     <allow-navigation href="https://*.documentforce.com" />
     <allow-navigation href="https://*.salesforce-communities.com" />
 
