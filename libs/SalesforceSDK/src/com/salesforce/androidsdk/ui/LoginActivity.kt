@@ -77,6 +77,9 @@ import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.activity.viewModels
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.CoroutineStart
+import com.salesforce.androidsdk.auth.NativeLoginManager
 import androidx.annotation.OptIn
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.Companion.PROTECTED
@@ -295,6 +298,13 @@ open class LoginActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        lifecycleScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            NativeLoginManager.onFallbackActivityStarted(intent)
+            initializeLogin(savedInstanceState)
+        }
+    }
+
+    private fun initializeLogin(savedInstanceState: Bundle?) {
         customTabResultHandled = savedInstanceState?.getBoolean(CUSTOM_TAB_RESULT_HANDLED) ?: false
         pendingCustomTabCancellation = savedInstanceState?.getBoolean(PENDING_CUSTOM_TAB_CANCELLATION) ?: false
         enableEdgeToEdge()
@@ -418,8 +428,11 @@ open class LoginActivity : FragmentActivity() {
 
         // Store the new intent and apply it to the activity.
         setIntent(intent)
-        applyIntent()
-        viewModel.applyPendingServer(pendingLoginServer = viewModel.pendingServer.value)
+        lifecycleScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            NativeLoginManager.onFallbackActivityStarted(intent)
+            applyIntent()
+            viewModel.applyPendingServer(pendingLoginServer = viewModel.pendingServer.value)
+        }
     }
 
     @VisibleForTesting
