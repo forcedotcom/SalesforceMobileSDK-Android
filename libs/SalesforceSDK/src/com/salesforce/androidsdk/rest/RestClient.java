@@ -861,7 +861,17 @@ public class RestClient {
             }
         }
 
-        private static boolean isIdentityEndpoint(HttpUrl url) {
+        private boolean isIdentityEndpoint(HttpUrl url) {
+            if (clientInfo.identityUrl != null) {
+                HttpUrl identityUrl = HttpUrl.get(clientInfo.identityUrl);
+                if (url.scheme().equals(identityUrl.scheme())
+                        && url.host().equals(identityUrl.host())
+                        && url.port() == identityUrl.port()
+                        && url.encodedPath().equals(identityUrl.encodedPath())) {
+                    return true;
+                }
+            }
+
             List<String> pathSegments = url.pathSegments();
             return pathSegments.size() == 3
                     && "id".equals(pathSegments.get(0))

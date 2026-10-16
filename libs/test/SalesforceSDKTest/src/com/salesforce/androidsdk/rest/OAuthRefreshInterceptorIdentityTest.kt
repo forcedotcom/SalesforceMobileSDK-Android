@@ -193,6 +193,30 @@ class OAuthRefreshInterceptorIdentityTest {
     }
 
     @Test
+    fun test_givenCommunityIdentity403_whenIntercept_thenRefreshes() {
+        val communityIdentityUrl = "https://identity.example.com/customers/id/orgId/userId"
+        val (_, sent, refreshCount) = exercise(
+            communityIdentityUrl,
+            configuredIdentityUrl = URI.create(communityIdentityUrl),
+        )
+
+        assertEquals(1, refreshCount)
+        assertEquals(2, sent.size)
+    }
+
+    @Test
+    fun test_givenCommunityIdentity403WithQuery_whenIntercept_thenRefreshes() {
+        val communityIdentityUrl = "https://identity.example.com/customers/id/orgId/userId"
+        val (_, sent, refreshCount) = exercise(
+            "$communityIdentityUrl?format=json&version=latest",
+            configuredIdentityUrl = URI.create(communityIdentityUrl),
+        )
+
+        assertEquals(1, refreshCount)
+        assertEquals(2, sent.size)
+    }
+
+    @Test
     fun test_givenIdentity403WithoutConfiguredIdentityUrl_whenIntercept_thenRefreshes() {
         val (_, sent, refreshCount) = exercise(identityUrl, configuredIdentityUrl = null)
 
@@ -203,6 +227,30 @@ class OAuthRefreshInterceptorIdentityTest {
     @Test
     fun test_givenOtherIdPath403_whenIntercept_thenDoesNotRefresh() {
         val (_, sent, refreshCount) = exercise("https://identity.example.com/id/orgId/userId/other")
+
+        assertEquals(0, refreshCount)
+        assertEquals(1, sent.size)
+    }
+
+    @Test
+    fun test_givenCommunityIdentityPathWithExtraSegment_whenIntercept_thenDoesNotRefresh() {
+        val communityIdentityUrl = "https://identity.example.com/customers/id/orgId/userId"
+        val (_, sent, refreshCount) = exercise(
+            "$communityIdentityUrl/other",
+            configuredIdentityUrl = URI.create(communityIdentityUrl),
+        )
+
+        assertEquals(0, refreshCount)
+        assertEquals(1, sent.size)
+    }
+
+    @Test
+    fun test_givenCommunityIdentityPathOnDifferentHost_whenIntercept_thenDoesNotRefresh() {
+        val communityIdentityUrl = "https://identity.example.com/customers/id/orgId/userId"
+        val (_, sent, refreshCount) = exercise(
+            "https://other.example.com/customers/id/orgId/userId?format=json",
+            configuredIdentityUrl = URI.create(communityIdentityUrl),
+        )
 
         assertEquals(0, refreshCount)
         assertEquals(1, sent.size)
