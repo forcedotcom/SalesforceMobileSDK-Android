@@ -58,6 +58,32 @@ class DPoPURLHelperTest {
         )
     }
 
+    // WORKAROUND (W-24564590): remove the internal site path tests below once the server bug is fixed.
+    @Test
+    fun test_givenInternalSitePath_whenCanonicalize_thenPublicSitePathUsed() {
+        assertEquals(
+            "https://example.my.site.com/headless/services/oauth2/token",
+            DPoPURLHelper.canonicalize("https://example.my.site.com/headlessvforcesite/services/oauth2/token?q=1")
+        )
+    }
+
+    @Test
+    fun test_givenInternalSitePathOnly_whenCanonicalize_thenPublicSitePathUsed() {
+        assertEquals(
+            "https://example.my.site.com/headless",
+            DPoPURLHelper.canonicalize("https://example.my.site.com/headlessvforcesite")
+        )
+    }
+
+    @Test
+    fun test_givenVforcesiteOutsideFirstSegmentOrBare_whenCanonicalize_thenUnchanged() {
+        listOf(
+            "https://example.my.site.com/vforcesite/services/data/v66.0/",
+            "https://example.my.site.com/headless/services/apexrest/vforcesite",
+            "https://example.my.site.com/headlessvforcesitex/services/oauth2/token",
+        ).forEach { assertEquals(it, DPoPURLHelper.canonicalize(it)) }
+    }
+
     @Test
     fun test_givenCleanUrl_whenCanonicalize_thenUnchanged() {
         assertEquals(

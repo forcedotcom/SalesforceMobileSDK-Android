@@ -29,6 +29,21 @@ package com.salesforce.androidsdk.auth.dpop
 import android.net.Uri
 
 object DPoPURLHelper {
-    fun canonicalize(url: String): String =
-        Uri.parse(url).buildUpon().clearQuery().fragment(null).build().toString()
+
+    // WORKAROUND (W-24564590): server-side DPoP htu validation bug.
+    // Experience Cloud sites with a URL path prefix (e.g. "/site") return an internal
+    // community URL ("/sitevforcesite"). The server validates htu against the public
+    // path and rejects the internal one with invalid_dpop_proof (token, refresh) or
+    // INVALID_AUTH_HEADER (REST), so the internal suffix is dropped from the first path segment.
+    // TODO: Remove this regex and its use in canonicalize() once W-24564590 is fixed.
+    private val internalSitePrefix = Regex("^/([^/]+)vforcesite(?=/|$)", RegexOption.IGNORE_CASE)
+
+    fun canonicalize(url: String): String {
+        val uri = Uri.parse(url).buildUpon().clearQuery().fragment(null).build()
+        val path = uri.encodedPath ?: return uri.toString()
+        // WORKAROUND (W-24564590): see internalSitePrefix.
+        val publicPath = internalSitePrefix.replaceFirst(path, "/$1")
+        return if (publicPath == path) uri.toString()
+            else uri.buildUpon().encodedPath(publicPath).build().toString()
+    }
 }
