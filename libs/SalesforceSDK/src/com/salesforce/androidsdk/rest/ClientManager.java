@@ -946,7 +946,7 @@ public class ClientManager {
                             /* requireRefreshFields = */ false) == null) {
                         return null;
                     }
-                    updatedUserAccount.downloadProfilePhoto();
+                    updatedUserAccount.downloadProfilePhotoIfMissing();
                     UserAccountManager.getInstance().clearCachedCurrentUser();
 
                     if (refreshTokenRotated) {

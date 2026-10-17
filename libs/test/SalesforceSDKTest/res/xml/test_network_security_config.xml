@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">files.salesforce.com</domain>
+        <domain includeSubdomains="false">files.my.salesforce.com</domain>
+    </domain-config>
+</network-security-config>

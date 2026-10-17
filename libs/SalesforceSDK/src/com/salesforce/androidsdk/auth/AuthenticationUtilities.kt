@@ -85,14 +85,18 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Request.Builder
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 import java.net.HttpURLConnection.HTTP_FORBIDDEN
+import java.net.HttpURLConnection.HTTP_OK
 import java.net.HttpURLConnection.HTTP_UNAUTHORIZED
+import java.net.ProtocolException
 import java.net.URI
 import java.time.Instant
 import java.util.function.Consumer
@@ -440,6 +444,86 @@ internal fun fetchIsSalesforceIntegrationUser(
 }
 
 /**
+ * Downloads a user's profile photo with OkHttp, authenticating the request the
+ * same way as other Salesforce API calls: `Authorization` scheme from
+ * [tokenType] plus, for a DPoP-bound credential, a signed proof (re-signed on
+ * every Salesforce redirect hop, with one retry on a `use_dpop_nonce`
+ * challenge).
+ *
+ * The body is streamed to a temporary file next to [destFile] and renamed over
+ * it only on a 200 response, so a failed download never disturbs an existing
+ * cached photo. This is non-fatal: failures are logged and reported through
+ * the return value, and never trigger a token refresh.
+ *
+ * @param photoUrl The photo URL
+ * @param destFile The cache file to write
+ * @param authToken The access token captured by the caller
+ * @param tokenType The token type captured by the caller
+ * @param credentialsIdentifier The DPoP credentials identifier captured by the caller
+ * @return True if the photo was downloaded and stored
+ */
+@VisibleForTesting
+internal fun downloadProfilePhotoToFile(
+    photoUrl: String,
+    destFile: File,
+    authToken: String?,
+    tokenType: String?,
+    credentialsIdentifier: String?,
+): Boolean {
+    val tempFile = File(destFile.parentFile, "${destFile.name}.download")
+    return try {
+        val httpUrl = photoUrl.toHttpUrlOrNull() ?: return false
+
+        fun buildAuthenticatedRequest(): Request {
+            val builder: Builder = Builder().url(httpUrl).get()
+            attachAuthHeaders(builder, authToken, tokenType, credentialsIdentifier)
+            return requirePhotoProof(builder.build())
+        }
+
+        val client = HttpAccess.DEFAULT.okHttpClient.newBuilder()
+            .addNetworkInterceptor { chain: Interceptor.Chain ->
+                reattachAuthOnRedirect(
+                    chain, httpUrl.toString(), authToken, tokenType, credentialsIdentifier,
+                    requireFreshDPoPProof = true,
+                )
+            }
+            .build()
+
+        var request = buildAuthenticatedRequest()
+        var response = client.newCall(request).execute()
+        val attachedDPoP = request.header(DPOP_HEADER) != null
+
+        if (attachedDPoP) {
+            harvestNonce(response, credentialsIdentifier, response.request.url.host)
+        }
+        if (attachedDPoP && isNonceChallenge(response)) {
+            response.close()
+            request = buildAuthenticatedRequest()
+            response = client.newCall(request).execute()
+            harvestNonce(response, credentialsIdentifier, response.request.url.host)
+        }
+
+        response.use {
+            if (it.code != HTTP_OK) {
+                w(TAG, "Profile photo download failed with status ${it.code}")
+                return false
+            }
+            tempFile.outputStream().use { out -> it.body.byteStream().copyTo(out) }
+        }
+        if (!tempFile.renameTo(destFile)) {
+            w(TAG, "Could not move downloaded profile photo into place")
+            return false
+        }
+        true
+    } catch (e: Exception) {
+        w(TAG, "Profile photo download failed", e)
+        false
+    } finally {
+        tempFile.delete()
+    }
+}
+
+/**
  * Attaches the Authorization header and, for a DPoP-bound credential, a
  * signed DPoP proof to [builder]. Shared by the initial request and the
  * redirect-reattachment path so both stay in sync.
@@ -454,10 +538,18 @@ private fun attachAuthHeaders(
     attachProof(builder, credentialsIdentifier, tokenType, authToken)
 }
 
+private fun requirePhotoProof(request: Request): Request {
+    val usesDPoP = request.header("Authorization")
+        ?.startsWith("${DPoPKeyManager.DPOP_TOKEN_TYPE} ", ignoreCase = true) == true
+    if (usesDPoP && request.header(DPOP_HEADER).isNullOrEmpty()) {
+        throw ProtocolException("Could not attach a DPoP proof to the profile photo request")
+    }
+    return request
+}
+
 /**
- * Network interceptor body for [fetchIsSalesforceIntegrationUser]. Re-attaches
- * the Authorization/DPoP headers when [chain]'s request URL no longer matches
- * [originalUrl] (i.e. we were redirected) and the new URL is a Salesforce host.
+ * Re-attaches authentication on Salesforce redirects. The photo path also removes
+ * any prior proof and stops before network I/O if a DPoP proof cannot be signed.
  */
 @VisibleForTesting
 internal fun reattachAuthOnRedirect(
@@ -466,18 +558,28 @@ internal fun reattachAuthOnRedirect(
     authToken: String?,
     tokenType: String?,
     credentialsIdentifier: String?,
+    requireFreshDPoPProof: Boolean = false,
 ): Response {
     val url = chain.request().url
     val interceptedRequestBuilder = chain.request().newBuilder()
+    val redirected = url.toString() != originalUrl
 
-    // if the url no longer matches we were redirected
-    if (url.toString() != originalUrl && url.isSalesforceUrl()) {
+    if (requireFreshDPoPProof && redirected) {
+        // OkHttp carries custom headers across redirects, including the old proof.
+        interceptedRequestBuilder.removeHeader(DPOP_HEADER)
+    }
+
+    if (redirected && url.isSalesforceUrl()) {
         attachAuthHeaders(
             interceptedRequestBuilder, authToken, tokenType, credentialsIdentifier
         )
     }
 
-    return chain.proceed(interceptedRequestBuilder.build())
+    val request = interceptedRequestBuilder.build()
+    if (requireFreshDPoPProof) {
+        requirePhotoProof(request)
+    }
+    return chain.proceed(request)
 }
 
 private fun HttpUrl.isSalesforceUrl(): Boolean {
@@ -560,7 +662,7 @@ internal suspend fun fetchUserIdentityWithRetry(
     var refreshes = 0
     var refreshTokenRotated = false
 
-    fun finish(status: String) = logIdentityAttempts(
+    fun logAttemptsSummary(status: String) = logIdentityAttempts(
         tokenResponse, loginServer, attempts, refreshes, status,
         (System.nanoTime() - startNanos) / 1_000_000,
     )
@@ -569,7 +671,7 @@ internal suspend fun fetchUserIdentityWithRetry(
         try {
             attempts++
             val identity = identityFetcher(tokenResponse.idUrl, tokenResponse)
-            finish("200")
+            logAttemptsSummary("200")
             return IdentityFetchResult(
                 identity = identity,
                 refreshTokenRotationTime = if (refreshTokenRotated) Instant.now().toString() else null,
@@ -583,7 +685,7 @@ internal suspend fun fetchUserIdentityWithRetry(
             }
             if (!isRefreshableIdentityFailure(e) || tokenResponse.refreshToken.isNullOrBlank()) {
                 w(TAG, "Cannot fetch user identity due to an error.", e)
-                finish(statusCode?.toString() ?: "error")
+                logAttemptsSummary(statusCode?.toString() ?: "error")
                 throw e
             }
         }
@@ -600,7 +702,7 @@ internal suspend fun fetchUserIdentityWithRetry(
             throw e
         } catch (e: Exception) {
             w(TAG, "Cannot refresh credentials while fetching user identity.", e)
-            finish("refresh_failed")
+            logAttemptsSummary("refresh_failed")
             throw e
         }
     }
@@ -654,8 +756,8 @@ private suspend fun refreshCredentialsForIdentity(
     consumerKey: String,
 ): TokenEndpointResponse = withContext(IO) {
     // Login has not created a UserAccount yet, so ClientManager's per-account refresh coordinator
-    // cannot coordinate this request. This flow owns the response and permits exactly one refresh.
-    // If Android gains a credential-scoped pre-account coordinator, route this refresh through it.
+    // cannot coordinate this request. This flow owns the response, and each call performs one refresh;
+    // the caller's retry loop decides how many calls are made. If Android gains a credential-scoped pre-account coordinator, route this refresh through it.
     OAuth2.refreshAuthToken(
         HttpAccess.DEFAULT,
         OAuth2.overrideLoginServerIfNeeded(
