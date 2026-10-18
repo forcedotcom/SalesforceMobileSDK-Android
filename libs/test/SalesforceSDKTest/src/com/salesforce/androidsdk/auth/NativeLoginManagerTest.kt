@@ -1110,18 +1110,23 @@ class NativeLoginManagerTest {
                 200 to "{\"code\":\"test-code\",\"sfdc_community_url\":\"https://community.example.test/site\"}",
                 200 to "{\"access_token\":\"test-access\",\"instance_url\":\"https://community.example.test\",\"id\":\"https://identity.example.test/id/00D000000000001/005000000000001\",\"token_type\":\"DPoP\",\"scope\":\"api\"}",
             ))
+            var persistedAccount: com.salesforce.androidsdk.accounts.UserAccount? = null
             try {
                 val result = runCatching { createNativeLoginManagerForTest(client).login(TEST_USERNAME, TEST_PASSWORD) }
                 if (cancelled) Assert.assertTrue(result.exceptionOrNull() is kotlinx.coroutines.CancellationException)
                 else assertEquals(NativeLoginResult.UnknownError, result.getOrThrow())
-                assertEquals(identifier, realUserAccountManager.currentUser.credentialsIdentifier)
+                persistedAccount = realUserAccountManager.authenticatedUsers
+                    ?.singleOrNull { it.credentialsIdentifier == identifier }
+                assertEquals(identifier, persistedAccount?.credentialsIdentifier)
                 Assert.assertTrue("Persisted account must retain its key before the success callback",
                     DPoPKeyManager.hasKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(checkNotNull(identifier))))
             } finally {
-                realUserAccountManager.currentAccount?.let {
-                    android.accounts.AccountManager.get(SalesforceSDKManager.getInstance().appContext).setPassword(it, null)
+                (persistedAccount ?: identifier?.let { credentialsIdentifier ->
+                    realUserAccountManager.authenticatedUsers
+                        ?.singleOrNull { it.credentialsIdentifier == credentialsIdentifier }
+                })?.let {
+                    realUserAccountManager.signoutUser(it, null, false, OAuth2.LogoutReason.USER_LOGOUT)
                 }
-                realUserAccountManager.signoutCurrentUser(null, false, OAuth2.LogoutReason.USER_LOGOUT)
                 identifier?.let {
                     DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(it))
                     DPoPNonceCache.clear(it)
@@ -1178,7 +1183,6 @@ class NativeLoginManagerTest {
     fun test_givenPendingNativeCompletion_whenCancelled_thenCannotRetainAbandonedKey() = runTest {
         SalesforceSDKManager.getInstance().useDPoP = true
         val entered = CompletableDeferred<String>()
-        val release = CompletableDeferred<Unit>()
         mockkStatic("com.salesforce.androidsdk.auth.AuthenticationUtilitiesKt")
         coEvery {
             onAuthFlowComplete(
@@ -1193,8 +1197,7 @@ class NativeLoginManagerTest {
             )
         } coAnswers {
             entered.complete(checkNotNull(arg<String?>(9)))
-            release.await()
-            arg<(com.salesforce.androidsdk.accounts.UserAccount) -> Unit>(5)(mockk(relaxed = true))
+            kotlinx.coroutines.awaitCancellation()
         }
         val requests = mutableListOf<RestRequest>()
         val client = scriptedNativeClient(requests, listOf(
@@ -1205,7 +1208,6 @@ class NativeLoginManagerTest {
         val job = launch { manager.login(TEST_USERNAME, TEST_PASSWORD) }
         val identifier = entered.await()
         job.cancel()
-        release.complete(Unit)
         job.join()
         val alias = DPoPKeyManager.aliasForCredentialsIdentifier(identifier)
         try {
