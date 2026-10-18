@@ -882,6 +882,7 @@ internal class NativeLoginManager(
             transaction.ensureActiveAndCurrent()
             DPoPKeyManager.generateOrLoadKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(identifier))
         }
+
         suspend fun freshRequest(): RestRequest = withContext(IO) {
             transaction.ensureActiveAndCurrent()
             RestRequest(
@@ -894,6 +895,7 @@ internal class NativeLoginManager(
                 },
             )
         }
+
         fun harvest(response: RestResponse): String? {
             val nonce = response.rawResponse.header(DPoPRequestDecorator.DPOP_NONCE_HEADER)
             if (!nonce.isNullOrEmpty()) DPoPNonceCache.store(identifier, url.host, nonce)
@@ -909,6 +911,7 @@ internal class NativeLoginManager(
         }
         if (!challenge) return response
         response.consumeQuietly()
+
         return sendCurrent(freshRequest())?.also(::harvest)
     }
 

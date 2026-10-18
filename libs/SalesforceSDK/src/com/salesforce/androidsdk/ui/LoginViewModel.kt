@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.ui
 
-import android.annotation.SuppressLint
 import android.net.Uri
 import android.webkit.CookieManager
 import android.webkit.URLUtil
@@ -513,7 +512,6 @@ open class LoginViewModel(
      * Called when the webview portion of the User Agent flow or the code exchange
      * portion of the Web Server is finished to create and the user.
      */
-    @SuppressLint("VisibleForTests") // onAuthFlowComplete cannot be otherwise internal.
     internal suspend fun onAuthFlowComplete(
         tr: TokenEndpointResponse,
         onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
