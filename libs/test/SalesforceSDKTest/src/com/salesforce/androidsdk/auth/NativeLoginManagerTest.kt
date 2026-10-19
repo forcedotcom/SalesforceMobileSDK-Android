@@ -1093,8 +1093,9 @@ class NativeLoginManagerTest {
                     credentialsIdentifier = any(), context = any(), userAccountManager = any(),
                     blockIntegrationUser = any(), runtimeConfig = any(), updateLoggingPrefs = any(),
                     fetchUserIdentity = any(), fetchUserIdentityResult = any(), startMainActivity = any(),
-                    setAdministratorPreferences = any(), addAccount = any(), handleScreenLockPolicy = any(),
-                    handleBiometricAuthPolicy = any(), handleDuplicateUserAccount = any(), onAuthFlowFinished = any(),
+                    setAdministratorPreferences = any(), addAccount = any(), persistScreenLockFeature = any(),
+                    handleScreenLockPolicy = any(), handleBiometricAuthPolicy = any(),
+                    handleDuplicateUserAccount = any(), onAuthFlowFinished = any(),
                 )
             } coAnswers {
                 identifier = checkNotNull(arg<String?>(9))
@@ -1192,8 +1193,9 @@ class NativeLoginManagerTest {
                 credentialsIdentifier = any(), context = any(), userAccountManager = any(),
                 blockIntegrationUser = any(), runtimeConfig = any(), updateLoggingPrefs = any(),
                 fetchUserIdentity = any(), fetchUserIdentityResult = any(), startMainActivity = any(),
-                setAdministratorPreferences = any(), addAccount = any(), handleScreenLockPolicy = any(),
-                handleBiometricAuthPolicy = any(), handleDuplicateUserAccount = any(), onAuthFlowFinished = any(),
+                setAdministratorPreferences = any(), addAccount = any(), persistScreenLockFeature = any(),
+                handleScreenLockPolicy = any(), handleBiometricAuthPolicy = any(),
+                handleDuplicateUserAccount = any(), onAuthFlowFinished = any(),
             )
         } coAnswers {
             entered.complete(checkNotNull(arg<String?>(9)))
