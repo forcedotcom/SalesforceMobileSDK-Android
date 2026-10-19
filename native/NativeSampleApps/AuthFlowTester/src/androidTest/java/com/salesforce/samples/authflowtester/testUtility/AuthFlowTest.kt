@@ -38,6 +38,7 @@ import androidx.test.rule.GrantPermissionRule
 import androidx.test.uiautomator.UiDevice
 import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.ui.components.LoginViewTestTags
 import com.salesforce.samples.authflowtester.AuthFlowTesterActivity
 import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
@@ -53,7 +54,9 @@ import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.RE
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.EMPTY
 import org.junit.After
 import org.junit.Before
+import org.junit.Assert.assertTrue
 import org.junit.Rule
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * Total polling window after submitting credentials we expect to be
@@ -156,6 +159,53 @@ abstract class AuthFlowTest {
         // Each test logs in fresh users; cleanup() logs everyone out, clearing the SDK's per-user
         // markers. Reset the mirrored observed-RT state so it cannot leak across tests.
         expectedRtMarkerByUsername.clear()
+    }
+
+    /**
+     * Records requests sent through the SDK's shared [HttpAccess] that claim DPoP authentication
+     * (`Authorization: DPoP ...`) but carry no `DPoP` proof header. Such a request, e.g. an
+     * unproofed profile photo download, makes the server revoke the token. Wraps the client via
+     * `newBuilder()` so the connection pool and the SDK's interceptors are preserved; this
+     * interceptor is added last so it sees the final headers.
+     */
+    private class DPoPProofAuditHttpAccess(
+        private val delegate: HttpAccess,
+        private val violations: MutableList<String>,
+    ) : HttpAccess(null, delegate.userAgent) {
+        override fun getOkHttpClient() = delegate.okHttpClient.newBuilder()
+            .addInterceptor { chain ->
+                val request = chain.request()
+                val scheme = request.header("Authorization")?.substringBefore(' ')
+                if (scheme.equals("DPoP", ignoreCase = true) && request.header("DPoP") == null) {
+                    violations.add("${request.method} ${request.url.host}${request.url.encodedPath}")
+                }
+                chain.proceed(request)
+            }
+            .build()
+
+        override fun hasNetwork() = delegate.hasNetwork()
+    }
+
+    private val dpopProofViolations = CopyOnWriteArrayList<String>()
+    private var unauditedHttpAccess: HttpAccess? = null
+
+    @Before
+    fun installDPoPProofAudit() {
+        dpopProofViolations.clear()
+        val current = HttpAccess.DEFAULT
+        unauditedHttpAccess = current
+        HttpAccess.DEFAULT = DPoPProofAuditHttpAccess(current, dpopProofViolations)
+    }
+
+    /** Fails the test if any recorded request sent `Authorization: DPoP` without a proof. */
+    @After
+    fun assertNoDPoPAuthorizationWithoutProof() {
+        unauditedHttpAccess?.let { HttpAccess.DEFAULT = it }
+        unauditedHttpAccess = null
+        assertTrue(
+            "Requests sent with Authorization: DPoP but no DPoP proof header: $dpopProofViolations",
+            dpopProofViolations.isEmpty(),
+        )
     }
 
     @After
