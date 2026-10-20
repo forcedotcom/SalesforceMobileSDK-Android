@@ -904,8 +904,9 @@ internal class NativeLoginManager(
         val response = sendCurrent(freshRequest()) ?: return null
         val nonce = harvest(response)
         val challenge = !nonce.isNullOrEmpty() && when (response.statusCode) {
-            401 -> true
-            400 -> runCatching { response.asJSONObject().optString("error") == "use_dpop_nonce" }
+            // Nonces may accompany ordinary failures; do not replay a password/OTP
+            // or authorization code unless the server explicitly challenges the proof.
+            400, 401 -> runCatching { response.asJSONObject().optString("error") == "use_dpop_nonce" }
                 .getOrDefault(false)
             else -> false
         }

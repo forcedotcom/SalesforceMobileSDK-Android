@@ -326,6 +326,18 @@ internal suspend fun onAuthFlowComplete(
         }
     }
 
+    // Native login bypasses LoginActivity.onAuthFlowSuccess. Publish the final
+    // binding marker only after persistence, including DPoP-to-Bearer reauthentication.
+    if (nativeLogin && !tokenMigration) {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        if (DPoPKeyManager.isDPoPTokenType(account.tokenType)) {
+            sdkManager.registerUsedAppFeature(FEATURE_DPOP, account)
+        } else {
+            sdkManager.unregisterUsedAppFeature(FEATURE_DPOP, account)
+        }
+        sdkManager.synchronizeUserFeatureFlags(account)
+    }
+
     // Registration persists the per-user feature flag, so it must happen only after the account
     // has been created or updated above. The timestamp was included in the primary persistence.
     if (identityResult.refreshTokenRotationTime != null) {

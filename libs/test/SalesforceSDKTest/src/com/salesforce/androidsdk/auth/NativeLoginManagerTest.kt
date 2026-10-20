@@ -635,7 +635,7 @@ class NativeLoginManagerTest {
             val client = scriptedNativeClient(requests, listOf(
                 400 to "{\"error\":\"use_dpop_nonce\"}",
                 200 to "{\"code\":\"test-code\",\"sfdc_community_url\":\"https://community.example.test/site\"}",
-                401 to "{}",
+                401 to "{\"error\":\"use_dpop_nonce\"}",
                 400 to "{\"error\":\"invalid_grant\"}",
             ), listOf("authorize-challenge", "authorize-success", "token-challenge", "token-final")) {
                 SalesforceSDKManager.getInstance().useDPoP = false
@@ -716,6 +716,56 @@ class NativeLoginManagerTest {
         assertEquals(2, requests.size)
         requests.forEach { Assert.assertNull(it.additionalHttpHeaders?.get("DPoP")) }
         verify(exactly = 0) { DPoPKeyManager.generateOrLoadKeyPair(any()) }
+    }
+
+    @Test
+    fun test_givenNativeNonChallenge401WithNonce_whenAuthorizeOrToken_thenDoesNotReplayCredentials() = runTest {
+        SalesforceSDKManager.getInstance().useDPoP = true
+        for (flow in 0..2) {
+            for (tokenEndpoint in listOf(false, true)) {
+                for (body in listOf("{\"error\":\"invalid_client\"}", "{\"error\":\"invalid_grant\"}", "{}", "not-json",
+                    "{\"error_description\":\"use_dpop_nonce\"}")) {
+                    val requests = mutableListOf<RestRequest>()
+                    val responses = buildList {
+                        if (tokenEndpoint) add(200 to "{\"code\":\"test-code\",\"sfdc_community_url\":\"https://community.example.test/site\"}")
+                        add(401 to body)
+                        // A replay must be observable without throwing inside the transport mock.
+                        add(400 to "{\"error\":\"invalid_grant\"}")
+                    }
+                    val client = scriptedNativeClient(requests, responses, List(responses.size) { "nonce" })
+                    val manager = NativeLoginManager(TEST_CLIENT_ID, TEST_REDIRECT_URI, TEST_LOGIN_URL, restClient = client)
+                    val result = when (flow) {
+                        0 -> manager.login(TEST_USERNAME, TEST_PASSWORD)
+                        1 -> manager.submitPasswordlessAuthorizationRequest("test-otp", "test-id", OtpVerificationMethod.Email)
+                        else -> manager.completeRegistration("test-otp", "test-id", OtpVerificationMethod.Sms)
+                    }
+                    Assert.assertNotEquals(NativeLoginResult.Success, result)
+                    assertEquals("Unrelated 401 must not replay credentials: flow=$flow token=$tokenEndpoint body=$body",
+                        if (tokenEndpoint) 2 else 1, requests.size)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun test_givenNativeNonceChallenges_whenMissingNonceOrRepeatedAtEitherEndpoint_thenStopsWithinRetryBound() = runTest {
+        SalesforceSDKManager.getInstance().useDPoP = true
+        for (tokenEndpoint in listOf(false, true)) {
+            for (statusCode in listOf(400, 401)) {
+                for (hasNonce in listOf(false, true)) {
+                    val requests = mutableListOf<RestRequest>()
+                    val responses = buildList {
+                        if (tokenEndpoint) add(200 to """{"code":"test-code","sfdc_community_url":"https://community.example.test/site"}""")
+                        repeat(2) { add(statusCode to """{"error":"use_dpop_nonce"}""") }
+                    }
+                    val client = scriptedNativeClient(requests, responses, List(responses.size) { if (hasNonce) "challenge-nonce" else null })
+                    val manager = NativeLoginManager(TEST_CLIENT_ID, TEST_REDIRECT_URI, TEST_LOGIN_URL, restClient = client)
+                    assertEquals(if (tokenEndpoint) NativeLoginResult.UnknownError else NativeLoginResult.InvalidCredentials,
+                        manager.login(TEST_USERNAME, TEST_PASSWORD))
+                    assertEquals((if (tokenEndpoint) 1 else 0) + (if (hasNonce) 2 else 1), requests.size)
+                }
+            }
+        }
     }
 
     private fun proofClaims(proof: String) = JSONObject(String(Base64.decode(proof.split('.')[1], Base64.URL_SAFE)))
@@ -1410,6 +1460,42 @@ class NativeLoginManagerTest {
             realUserAccountManager.signoutCurrentUser(null, false, OAuth2.LogoutReason.USER_LOGOUT)
             HttpAccess.DEFAULT = originalHttpAccess
             SalesforceSDKManager.getInstance().biometricAuthenticationManager = originalBioAuthManager
+        }
+    }
+
+    @Test
+    fun test_givenNativeDPoPAccount_whenSameUserReauthenticatesWithBearer_thenPersistedDPMarkerIsRemoved() = runTest {
+        val sdk = SalesforceSDKManager.getInstance()
+        val originalBio = sdk.biometricAuthenticationManager
+        val originalHttp = HttpAccess.DEFAULT
+        sdk.biometricAuthenticationManager = null
+        val http = OkHttpClient.Builder().addInterceptor { chain ->
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("scripted")
+                .body("""{"username":"native@example.test","email":"native@example.test","first_name":"Native","last_name":"Test","display_name":"Native Test","id":"https://identity.example.test/id/00D000000000001/005000000000001","user_id":"005000000000001","organization_id":"00D000000000001","nick_name":"native","user_type":"Standard","language":"en_US","locale":"en_US","last_modified_date":"2026-01-01T00:00:00.000Z","is_salesforce_integration_user":false}""".toResponseBody()).build()
+        }.build()
+        HttpAccess.DEFAULT = mockk<HttpAccess>().apply { every { okHttpClient } returns http }
+        try {
+            for (tokenType in listOf("DPoP", "DPoP", "Bearer")) {
+                sdk.useDPoP = tokenType == "DPoP"
+                val client = scriptedNativeClient(mutableListOf(), listOf(
+                    200 to """{"code":"test-code","sfdc_community_url":"https://community.example.test/site"}""",
+                    200 to """{"access_token":"test-access","instance_url":"https://community.example.test","id":"https://identity.example.test/id/00D000000000001/005000000000001","token_type":"$tokenType","scope":"api"}""",
+                ))
+                val manager = NativeLoginManager(TEST_CLIENT_ID, TEST_REDIRECT_URI, TEST_LOGIN_URL, restClient = client)
+                assertEquals(NativeLoginResult.Success, manager.login(TEST_USERNAME, TEST_PASSWORD))
+                realUserAccountManager.clearCachedCurrentUser()
+                val account = realUserAccountManager.currentUser
+                assertEquals(tokenType, account.tokenType)
+                assertEquals("The same user's persisted binding must determine the DP marker", tokenType == "DPoP",
+                    sdk.isUserFeatureRegistered(com.salesforce.androidsdk.app.Features.FEATURE_DPOP, account))
+                assertEquals("DP must also match after reloading the account from AccountManager", tokenType == "DPoP",
+                    account.featureFlags.contains(com.salesforce.androidsdk.app.Features.FEATURE_DPOP))
+                assertEquals("Reauthentication replaces the account", 1, realUserAccountManager.authenticatedUsers.size)
+            }
+        } finally {
+            realUserAccountManager.signoutCurrentUser(null, false, OAuth2.LogoutReason.USER_LOGOUT)
+            HttpAccess.DEFAULT = originalHttp
+            sdk.biometricAuthenticationManager = originalBio
         }
     }
 
