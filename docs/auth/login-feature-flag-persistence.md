@@ -11,8 +11,9 @@ Feature writes must be awaited and must not be fire-and-forget. Account persiste
 Native Login bypasses `LoginActivity.onAuthFlowSuccess()`. After account persistence,
 `AuthenticationUtilities.onAuthFlowComplete()` handles `nativeLogin && !tokenMigration` by
 registering `FEATURE_DPOP` for an actual DPoP token or removing it for a non-DPoP token.
-This happens before the eventual authentication-success callback. It does not move the
-screen-lock persistence boundary described above.
+This occurs after `sendUserSwitchIntent()` and before the eventual authentication-success
+callback; it is not a guarantee that every user-switch observer sees DP synchronized already.
+It does not move the screen-lock persistence boundary described above.
 
 Same-user reauthentication can replace the account snapshot while its per-user feature cache
 is already populated. Public `registerUsedAppFeature` / `unregisterUsedAppFeature` intentionally

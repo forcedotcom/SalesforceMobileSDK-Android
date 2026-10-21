@@ -26,7 +26,9 @@ After the user completes the OAuth2 authorization code flow in the login WebView
 
 1. Builds a `POST /services/oauth2/token` form body with `grant_type=authorization_code`
    (or `hybrid_auth_code` when hybrid authentication is enabled).
-2. If `isUseDPoP()` is `true` and a `credentialsIdentifier` was generated at login start:
+2. `makeTokenEndpointRequest()` uses `DPoPKeyManager.shouldAttachDPoP(credentialsIdentifier,
+   tokenType)`. For initial code exchange, `tokenType` is null and the gate checks for the
+   identifier's existing key material (created when authorize requested DPoP):
    - Looks up (or generates) the EC keypair via `DPoPKeyManager.generateOrLoadKeyPair()`.
    - Proactively reads any cached nonce via `DPoPNonceCache.get(credentialsIdentifier, tokenHost)` — null on first ever login.
    - Builds a DPoP proof JWT via `DPoPProofBuilder.buildProof()` and attaches it as the `DPoP` header.
@@ -36,11 +38,13 @@ After the user completes the OAuth2 authorization code flow in the login WebView
    into the cache immediately.
 5. On `use_dpop_nonce` (400/401 with that error body): the nonce was just harvested (step 4);
    rebuild the proof with it and retry once. Fail-closed on a second nonce failure.
-6. `TokenEndpointResponse` is returned to `LoginActivity`, which persists the tokens into
-   `AccountManager` and calls `callIdentityService()` to fetch the user's identity record.
+6. `TokenEndpointResponse` is returned to the login flow. Shared
+   `AuthenticationUtilities.onAuthFlowComplete()` retrieves identity first, builds the account
+   and handles duplicates, then persists it to `AccountManager` before completing login.
 
 **DPoP note:** the `credentialsIdentifier` is a UUID generated at login start and stored on
-`UserAccount` as the `dpopScope` AccountManager extra. It is the stable key for the DPoP
+`UserAccount` via the `credentialsIdentifier` AccountManager extra
+(`AuthenticatorService.KEY_CREDENTIALS_IDENTIFIER`). It is the stable key for the DPoP
 keypair and nonce cache for this user's session.
 
 ---
@@ -71,7 +75,8 @@ than `OAuth2.exchangeCode()` / `makeTokenEndpointRequest()`.
    the existing retry/refresh implementation with the owning credentials. Acquire the
    completion mutex after identity network work, then validate authority and serialize the
    remaining account-completion/policy work before reporting success.
-5. After account persistence, set/remove DP from the actual resulting token type and
+5. After account persistence and the user-switch intent, set/remove DP from the actual
+   resulting token type (before the authentication-success callback) and
    synchronize the account snapshot's cached feature set. See
    [Native Login DP-marker persistence](login-feature-flag-persistence.md#native-login-dp-marker-persistence).
 
@@ -80,12 +85,16 @@ a nonce. DPoP-disabled native attempts skip proof/key creation but retain the sa
 protection. Subsequent refresh and REST requests use the persisted token type, independent
 of later changes to the global flag.
 
+For diagnostics, do not consume a successful native `RestResponse` before nonce harvesting
+or token completion: `getRawResponse()` returns null once consumed. A debug observer can use
+OkHttp `peekBody()` to inspect a bounded copy without closing the original response.
+
 ### 1.2 Cancellation, cleanup and fallback
 
 Native completion checks cancellation and ownership after acquiring the completion mutex.
 Persistence and policy work can still suspend; only final cleanup explicitly runs in
-`NonCancellable + IO` under the completion mutex;
-it clears active authority only if the transaction still owns it. It reclaims credentials
+`NonCancellable + IO` under the completion mutex.
+It clears active authority only if the transaction still owns it. It reclaims credentials
 only when no actual AccountManager account references the identifier; account-reference read
 errors preserve the key rather than risking deletion of a live account's material. Old
 identifiers from same-user replacement are checked separately from the replacement key.
@@ -313,7 +322,8 @@ HTTP calls in the worst case — happens entirely outside the lock.
 ## 5. DPoP Nonce Lifecycle
 
 `DPoPURLHelper.canonicalize()` strips query/fragment and temporarily removes a case-insensitive
-`vforcesite` suffix from the first nonempty path segment:
+`vforcesite` suffix from the first path segment immediately after the leading slash, with
+a nonempty prefix before the suffix:
 `/sitevforcesite/services/oauth2/token` → `/site/services/oauth2/token`. It does not rewrite
 `/site/vforcesite/...` or a suffix in a later segment. Only proof canonicalization changes;
 the outbound URL is unchanged. This helper is shared by native, refresh and resource proofs.
