@@ -1625,6 +1625,18 @@ open class SalesforceSDKManager protected constructor(
         }
     }
 
+    /**
+     * Copies cached feature flags to a newly persisted Native Login account.
+     * Registration may be a no-op when reauthentication keeps the same marker,
+     * even though the replacement account snapshot does not contain those flags.
+     */
+    internal fun synchronizeUserFeatureFlags(user: UserAccount) {
+        val flags = perUserFeatures["${user.orgId}/${user.userId}"] ?: return
+        if (user.featureFlags != flags) {
+            persistUserFeatureFlags(user, flags)
+        }
+    }
+
     private fun persistUserFeatureFlags(user: UserAccount, flags: Set<String>) {
         user.featureFlags = HashSet(flags)
         val account = userAccountManager.buildAccount(user) ?: return

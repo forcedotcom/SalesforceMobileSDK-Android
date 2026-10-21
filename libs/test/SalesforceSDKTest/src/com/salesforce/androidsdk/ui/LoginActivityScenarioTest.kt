@@ -70,6 +70,44 @@ import org.junit.runner.RunWith
 class LoginActivityScenarioTest {
 
     @Test
+    fun test_givenNativeCompletionLocked_whenFallbackCreatedAndRecreated_thenActivityContentIsReady() {
+        val field = com.salesforce.androidsdk.auth.NativeLoginManager::class.java
+            .getDeclaredField("nativeCompletionMutex").apply { isAccessible = true }
+        val mutex = field.get(null) as kotlinx.coroutines.sync.Mutex
+        val sdk = SalesforceSDKManager.getInstance()
+        val originalBio = sdk.biometricAuthenticationManager
+        sdk.biometricAuthenticationManager = null
+        kotlinx.coroutines.runBlocking { mutex.lock() }
+        var ownsLock = true
+        try {
+            val intent = Intent(getApplicationContext(), CancellationObservingLoginActivity::class.java)
+                .putExtra("com.salesforce.androidsdk.auth.NATIVE_FALLBACK", true)
+            launch<CancellationObservingLoginActivity>(intent).use { scenario ->
+                fun assertReady() = scenario.onActivity { activity ->
+                    val content = activity.findViewById<android.view.ViewGroup>(android.R.id.content)
+                    assertTrue("Fallback must install content before native completion unlocks", content.childCount > 0)
+                    assertNotNull("Browser callback must be installed synchronously", activity.viewModel.onBrowserCustomTabReady)
+                    assertTrue("Authentication must still await native completion",
+                        activity.intent.getBooleanExtra("com.salesforce.androidsdk.auth.NATIVE_FALLBACK", false))
+                }
+                assertReady()
+                scenario.recreate()
+                assertReady()
+                mutex.unlock()
+                ownsLock = false
+                androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+                scenario.onActivity { activity ->
+                    assertFalse("Fallback authentication must resume after native publication",
+                        activity.intent.getBooleanExtra("com.salesforce.androidsdk.auth.NATIVE_FALLBACK", false))
+                }
+            }
+        } finally {
+            if (ownsLock) mutex.unlock()
+            sdk.biometricAuthenticationManager = originalBio
+        }
+    }
+
+    @Test
     fun cancellationCallback_recreationAndClose_doNotNotify() = withCancellationActivity { scenario ->
         scenario.recreate()
         assertEquals(0, CancellationObservingLoginActivity.cancellations)

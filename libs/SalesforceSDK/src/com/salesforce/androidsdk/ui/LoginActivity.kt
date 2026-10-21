@@ -77,6 +77,9 @@ import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.activity.viewModels
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.CoroutineStart
+import com.salesforce.androidsdk.auth.NativeLoginManager
 import androidx.annotation.OptIn
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.Companion.PROTECTED
@@ -295,14 +298,16 @@ open class LoginActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        initializeLogin(savedInstanceState)
+    }
+
+    private fun initializeLogin(savedInstanceState: Bundle?) {
         customTabResultHandled = savedInstanceState?.getBoolean(CUSTOM_TAB_RESULT_HANDLED) ?: false
         pendingCustomTabCancellation = savedInstanceState?.getBoolean(PENDING_CUSTOM_TAB_CANCELLATION) ?: false
         enableEdgeToEdge()
         if (viewModel.dynamicBackgroundTheme.value == DARK) {
             SalesforceSDKManager.getInstance().setViewNavigationVisibility(this)
         }
-
-        applyIntent()
 
         // Don't let sharedBrowserSession org setting stop a new user from logging in.
         if (intent.extras?.getBoolean(NEW_USER) == true) {
@@ -328,6 +333,38 @@ open class LoginActivity : FragmentActivity() {
             }
         }
 
+        // Observe front door bridge URL to load in the WebView when present.
+        viewModel.frontDoorBridgeUrl.observe(this) { url ->
+            if (url != null) {
+                viewModel.loading.value = true
+            }
+        }
+
+        // On API 33+ the predictive back gesture (enableOnBackInvokedCallback) bypasses
+        // onKeyDown, so route Back through the dispatcher. handleBackBehavior() no-ops while locked.
+        // TODO:  Remove SDK_INT check when min API > 33
+        if (SDK_INT >= TIRAMISU) {
+            onBackPressedDispatcher.addCallback(this) { handleBackBehavior() }
+        }
+
+        // Set callback for when browser custom tab URL is ready to launch.
+        viewModel.onBrowserCustomTabReady = ::handleBrowserCustomTabReady
+
+        // Only authentication startup waits for native publication. Content, state,
+        // callbacks and back handling are ready before onCreate returns, even if
+        // native account persistence currently holds the completion mutex.
+        lifecycleScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            NativeLoginManager.onFallbackActivityStarted(intent)
+            if (!isFinishing) startLoginAuthentication()
+        }
+
+        // Preserve notification ordering when authentication can start immediately.
+        EventsObservable.get().notifyEvent(LoginActivityCreateComplete, this)
+    }
+
+    private fun startLoginAuthentication() {
+        applyIntent()
+
         // Present Biometric Prompt if necessary.
         val biometricAuthenticationManager =
             SalesforceSDKManager.getInstance().biometricAuthenticationManager as? BiometricAuthenticationManager
@@ -343,28 +380,7 @@ open class LoginActivity : FragmentActivity() {
             certAuthOrLogin()
         }
 
-        // Observe front door bridge URL to load in the WebView when present.
-        viewModel.frontDoorBridgeUrl.observe(this) { url ->
-            if (url != null) {
-                viewModel.loading.value = true
-            }
-        }
-
-        // On API 33+ the predictive back gesture (enableOnBackInvokedCallback) bypasses
-        // onKeyDown, so route Back through the dispatcher. handleBackBehavior() no-ops while locked.
-        // TODO:  Remove SDK_INT check when min API > 33
-        if (SDK_INT >= TIRAMISU) {
-            onBackPressedDispatcher.addCallback(this) { handleBackBehavior() }
-        }
-
-        // Add view model observers.
         viewModel.pendingServer.observe(this, PendingServerObserver())
-
-        // Set callback for when browser custom tab URL is ready to launch.
-        viewModel.onBrowserCustomTabReady = ::handleBrowserCustomTabReady
-
-        // Let observers know onCreate is complete.
-        EventsObservable.get().notifyEvent(LoginActivityCreateComplete, this)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -418,8 +434,11 @@ open class LoginActivity : FragmentActivity() {
 
         // Store the new intent and apply it to the activity.
         setIntent(intent)
-        applyIntent()
-        viewModel.applyPendingServer(pendingLoginServer = viewModel.pendingServer.value)
+        lifecycleScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            NativeLoginManager.onFallbackActivityStarted(intent)
+            applyIntent()
+            viewModel.applyPendingServer(pendingLoginServer = viewModel.pendingServer.value)
+        }
     }
 
     @VisibleForTesting

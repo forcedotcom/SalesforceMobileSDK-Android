@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.auth
 
 import android.accounts.AccountManager.KEY_INTENT
+import android.accounts.AccountManager
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.content.pm.PackageManager.FEATURE_FACE
@@ -68,6 +69,11 @@ import com.salesforce.androidsdk.auth.OAuth2.REDIRECT_URI
 import com.salesforce.androidsdk.auth.OAuth2.RESPONSE_TYPE
 import com.salesforce.androidsdk.auth.OAuth2.SFDC_COMMUNITY_URL
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
+import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
+import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder
+import com.salesforce.androidsdk.auth.dpop.DPoPURLHelper
+import com.salesforce.androidsdk.auth.dpop.DPoPRequestDecorator
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginManager
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginManager.StartRegistrationResult
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult
@@ -93,16 +99,24 @@ import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import kotlinx.coroutines.Dispatchers.Default
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.jetbrains.annotations.VisibleForTesting
 import org.json.JSONObject
-import kotlin.coroutines.resume
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import java.util.UUID
+import java.security.interfaces.ECPublicKey
 import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * A native login manager implementation for internal use only by the Salesforce
@@ -145,7 +159,10 @@ internal class NativeLoginManager(
             }
         }
 
-    override suspend fun login(username: String, password: String): NativeLoginResult {
+    override suspend fun login(username: String, password: String): NativeLoginResult =
+        withNativeTransaction { transaction -> login(username, password, transaction) }
+
+    private suspend fun login(username: String, password: String, transaction: NativeTransaction): NativeLoginResult {
         val trimmedUsername = username.trim()
         val trimmedPassword = password.trim()
 
@@ -181,16 +198,17 @@ internal class NativeLoginManager(
         val authRequest = RestRequest(
             POST,
             LOGIN,
-            "$loginUrl$OAUTH_AUTH_PATH", // Full path for unauthenticated request
+            nativeAuthorizationUrl(transaction), // Full path for unauthenticated request
             authRequestBody,
             authRequestHeaders,
         )
 
         // First REST Call - Authorization
-        val authResponse = suspendedRestCall(authRequest) ?: return UnknownError
+        val authResponse = nativeRestCall(authRequest, transaction) ?: return UnknownError
         return submitAccessTokenRequest(
             authorizationResponse = authResponse,
-            codeVerifier = codeVerifier
+            codeVerifier = codeVerifier,
+            transaction = transaction,
         )
     }
 
@@ -199,6 +217,7 @@ internal class NativeLoginManager(
         val intent = Intent(context, SalesforceSDKManager.getInstance().webViewLoginActivityClass)
         intent.setFlags(FLAG_ACTIVITY_SINGLE_TOP)
         intent.putExtras(bundleOf(SHOW_BIOMETRIC to false))
+        intent.putExtra(NATIVE_FALLBACK, true)
         Bundle().putParcelable(KEY_INTENT, intent)
 
         return intent
@@ -237,47 +256,108 @@ internal class NativeLoginManager(
                 && password.toByteArray().size <= MAX_PASSWORD_LENGTH_BYTES
     }
 
-    private suspend fun suspendFinishAuthFlow(tokenResponse: RestResponse): NativeLoginResult {
+    private suspend fun suspendFinishAuthFlow(tokenResponse: RestResponse, transaction: NativeTransaction): NativeLoginResult {
         val tokenEndpointResponse = TokenEndpointResponse(tokenResponse.rawResponse)
-        tokenResponse.consumeQuietly()
+        tokenEndpointResponse.credentialsIdentifier = transaction.credentialsIdentifier
 
         return withContext(Default) {
-            suspendCoroutine { continuation ->
-                runBlocking {
-                    onAuthFlowComplete(
-                        tokenResponse = tokenEndpointResponse,
-                        loginServer = loginUrl,
-                        consumerKey = clientId,
-                        onAuthFlowError = { error, errorDesc, e ->
-                            SalesforceSDKLogger.e(TAG, "$error: $errorDesc", e)
-                            continuation.resume(UnknownError)
-                        },
-                        onAuthFlowSuccess = { userAccount ->
-                            SalesforceSDKLogger.d(TAG, "onAuthFlowSuccess $userAccount")
-                            continuation.resume(Success)
-                        },
-                        nativeLogin = true,
-                    )
+            transaction.ensureCurrent()
+            var result: NativeLoginResult = UnknownError
+            var ownsCompletionLock = false
+            var replacedCredentialsIdentifier: String? = null
+            try {
+                onAuthFlowComplete(
+                    tokenResponse = tokenEndpointResponse,
+                    loginServer = loginUrl,
+                    consumerKey = clientId,
+                    redirectUri = redirectUri,
+                    credentialsIdentifier = transaction.credentialsIdentifier,
+                    onAuthFlowError = { _, _, _ ->
+                        SalesforceSDKLogger.w(TAG, "Native account completion failed.")
+                    },
+                    onAuthFlowSuccess = {
+                        result = Success
+                    },
+                    nativeLogin = true,
+                    fetchUserIdentityResult = { response ->
+                        val identity = fetchUserIdentityWithRetry(
+                            response, loginUrl, clientId,
+                            identityFetcher = { url, credentials ->
+                                withContext(IO) {
+                                    transaction.ensureActiveAndCurrent()
+                                    try {
+                                        OAuth2.callIdentityService(HttpAccess.DEFAULT, url, credentials.authToken,
+                                            credentials.tokenType, credentials.credentialsIdentifier)
+                                    } finally {
+                                        transaction.ensureActiveAndCurrent()
+                                    }
+                                }
+                            },
+                            tokenRefresher = { credentials, server, consumerKey ->
+                                withContext(IO) {
+                                    transaction.ensureActiveAndCurrent()
+                                    try {
+                                        OAuth2.refreshAuthToken(
+                                            HttpAccess.DEFAULT,
+                                            OAuth2.overrideLoginServerIfNeeded(server, credentials.instanceUrl,
+                                                credentials.communityId, credentials.communityUrl),
+                                            consumerKey, checkNotNull(credentials.refreshToken),
+                                            credentials.additionalOauthValues, credentials.credentialsIdentifier,
+                                            credentials.tokenType,
+                                        )
+                                    } finally {
+                                        transaction.ensureActiveAndCurrent()
+                                    }
+                                }
+                            },
+                        )
+                        // Identity can finish after another manager starts a login. Serialize
+                        // the authority check and all subsequent account/key mutations with
+                        // attempt registration, not the network fetch itself.
+                        nativeCompletionMutex.lock()
+                        ownsCompletionLock = true
+                        currentCoroutineContext().ensureActive()
+                        transaction.ensureCurrent()
+                        identity
+                    },
+                    handleDuplicateUserAccount = { manager, account, identity ->
+                        replacedCredentialsIdentifier = manager.authenticatedUsers
+                            ?.firstOrNull { it == account }?.credentialsIdentifier
+                        handleDuplicateUserAccount(manager, account, identity)
+                    },
+                )
+                result
+            } finally {
+                try {
+                    // Replacement persistence can precede completion failure or cancellation.
+                    // Reclaim only identifiers no persisted account still references.
+                    replacedCredentialsIdentifier?.takeIf { it != transaction.credentialsIdentifier }
+                        ?.let(::reclaimUnreferencedCredentials)
+                } finally {
+                    if (ownsCompletionLock) nativeCompletionMutex.unlock()
                 }
             }
         }
     }
 
     private suspend fun suspendedRestCall(request: RestRequest): RestResponse? {
-        return suspendCoroutine { continuation ->
-            restClient.sendAsync(request, object : AsyncRequestCallback {
+        return suspendCancellableCoroutine { continuation ->
+            val call = restClient.sendAsync(request, object : AsyncRequestCallback {
 
                     override fun onSuccess(request: RestRequest?, response: RestResponse?) {
-                        continuation.resume(response)
+                        continuation.resume(response) { _, undeliveredResponse, _ ->
+                            undeliveredResponse?.consumeQuietly()
+                        }
                     }
 
                     override fun onError(exception: Exception?) {
-                        if (exception != null) {
+                        if (continuation.isActive) {
                             SalesforceSDKLogger.e(TAG, "Authentication call was unsuccessful.", exception)
-                            continuation.resumeWithException(exception)
+                            continuation.resumeWithException(exception ?: IllegalStateException("Authentication call failed"))
                         }
                     }
                 })
+            continuation.invokeOnCancellation { call.cancel() }
         }
     }
 
@@ -708,6 +788,135 @@ internal class NativeLoginManager(
     // region Private Implementation
 
     /**
+     * Owns one Native Login attempt from authorize through account completion and cleanup.
+     *
+     * The active instance is the authority token that prevents stale native callbacks from
+     * completing after a newer native attempt or browser fallback starts. When DPoP is enabled,
+     * [credentialsIdentifier] also selects this attempt's protected key and nonce scope; it is
+     * null for DPoP-disabled attempts, which still need the same lifecycle protection.
+     */
+    private class NativeTransaction(val credentialsIdentifier: String?) {
+        fun ensureCurrent() {
+            check(activeNativeTransaction === this) { "Native authentication attempt was superseded" }
+        }
+
+        suspend fun ensureActiveAndCurrent() {
+            currentCoroutineContext().ensureActive()
+            ensureCurrent()
+        }
+    }
+
+    private fun reclaimUnreferencedCredentials(identifier: String) {
+        // Persistence can precede success or fail partway through createAccount. Read
+        // actual account references, not cached currentUser, and fail closed on read errors.
+        val referenced = runCatching {
+            val sdkManager = SalesforceSDKManager.getInstance()
+            val manager = AccountManager.get(sdkManager.appContext)
+            manager.getAccountsByType(sdkManager.accountType).any { account ->
+                SalesforceSDKManager.decrypt(
+                    manager.getUserData(account, AuthenticatorService.KEY_CREDENTIALS_IDENTIFIER),
+                    SalesforceSDKManager.encryptionKey,
+                ) == identifier
+            }
+        }.getOrDefault(true)
+        if (!referenced) {
+            DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(identifier))
+            DPoPNonceCache.clear(identifier)
+        }
+    }
+
+    private suspend fun nativeAuthorizationUrl(transaction: NativeTransaction): String {
+        transaction.ensureActiveAndCurrent()
+        val path = "$loginUrl$OAUTH_AUTH_PATH"
+        val identifier = transaction.credentialsIdentifier ?: return path
+        // Bind the authorization code to the same transaction key used by both proofs.
+        return withContext(IO) {
+            transaction.ensureActiveAndCurrent()
+            val keyPair = DPoPKeyManager.generateOrLoadKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(identifier))
+            transaction.ensureActiveAndCurrent()
+            path.toHttpUrl().newBuilder()
+                .addQueryParameter("dpop_jkt", DPoPProofBuilder.jwkThumbprint(keyPair.public as ECPublicKey))
+                .build().toString()
+        }
+    }
+
+    private suspend fun withNativeTransaction(operation: suspend (NativeTransaction) -> NativeLoginResult): NativeLoginResult {
+        val transaction = nativeCompletionMutex.withLock {
+            NativeTransaction(
+                if (SalesforceSDKManager.getInstance().useDPoP) UUID.randomUUID().toString() else null
+            ).also { activeNativeTransaction = it }
+        }
+        try {
+            return operation(transaction)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            SalesforceSDKLogger.w(TAG, "Native authentication failed.")
+            return UnknownError
+        } finally {
+            withContext(NonCancellable + IO) {
+                nativeCompletionMutex.withLock {
+                    if (activeNativeTransaction === transaction) activeNativeTransaction = null
+                    transaction.credentialsIdentifier?.let(::reclaimUnreferencedCredentials)
+                }
+            }
+        }
+    }
+
+    private suspend fun nativeRestCall(request: RestRequest, transaction: NativeTransaction): RestResponse? {
+        transaction.ensureCurrent()
+        suspend fun sendCurrent(request: RestRequest): RestResponse? {
+            transaction.ensureActiveAndCurrent()
+            val response = suspendedRestCall(request)
+            try {
+                transaction.ensureCurrent()
+            } catch (e: Exception) {
+                response?.consumeQuietly()
+                throw e
+            }
+            return response
+        }
+        val identifier = transaction.credentialsIdentifier ?: return sendCurrent(request)
+        val url = request.path.toHttpUrl()
+        val keyPair = withContext(IO) {
+            transaction.ensureActiveAndCurrent()
+            DPoPKeyManager.generateOrLoadKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(identifier))
+        }
+
+        suspend fun freshRequest(): RestRequest = withContext(IO) {
+            transaction.ensureActiveAndCurrent()
+            RestRequest(
+                request.method, LOGIN, request.path, request.requestBody,
+                (request.additionalHttpHeaders ?: emptyMap()).toMutableMap().apply {
+                    put(DPoPRequestDecorator.DPOP_HEADER, DPoPProofBuilder.buildProof(
+                        "POST", DPoPURLHelper.canonicalize(request.path), keyPair,
+                        DPoPNonceCache.get(identifier, url.host),
+                    ))
+                },
+            )
+        }
+
+        fun harvest(response: RestResponse): String? {
+            val nonce = response.rawResponse.header(DPoPRequestDecorator.DPOP_NONCE_HEADER)
+            if (!nonce.isNullOrEmpty()) DPoPNonceCache.store(identifier, url.host, nonce)
+            return nonce
+        }
+        val response = sendCurrent(freshRequest()) ?: return null
+        val nonce = harvest(response)
+        val challenge = !nonce.isNullOrEmpty() && when (response.statusCode) {
+            // Nonces may accompany ordinary failures; do not replay a password/OTP
+            // or authorization code unless the server explicitly challenges the proof.
+            400, 401 -> runCatching { response.asJSONObject().optString("error") == "use_dpop_nonce" }
+                .getOrDefault(false)
+            else -> false
+        }
+        if (!challenge) return response
+        response.consumeQuietly()
+
+        return sendCurrent(freshRequest())?.also(::harvest)
+    }
+
+    /**
      * Generates a Base64 encoded value by concatenating the provided values
      * with a colon, which is commonly used in the Headless Identity API request
      * headers.
@@ -807,6 +1016,16 @@ internal class NativeLoginManager(
         otp: String,
         identifier: String,
         otpVerificationMethod: OtpVerificationMethod
+    ): NativeLoginResult = withNativeTransaction { transaction ->
+        submitAuthorizationRequest(authRequestType, otp, identifier, otpVerificationMethod, transaction)
+    }
+
+    private suspend fun submitAuthorizationRequest(
+        authRequestType: String,
+        otp: String,
+        identifier: String,
+        otpVerificationMethod: OtpVerificationMethod,
+        transaction: NativeTransaction,
     ): NativeLoginResult {
         // Validate parameters.
         val trimmedOtp = otp.trim()
@@ -841,7 +1060,7 @@ internal class NativeLoginManager(
         val authorizationRequest = RestRequest(
             POST,
             LOGIN,
-            "$loginUrl$OAUTH_AUTH_PATH",
+            nativeAuthorizationUrl(transaction),
             authorizationRequestBodyString,
             authorizationRequestHeaders,
         )
@@ -852,10 +1071,11 @@ internal class NativeLoginManager(
          * result.
          */
         return submitAccessTokenRequest(
-            authorizationResponse = suspendedRestCall(
-                authorizationRequest
+            authorizationResponse = nativeRestCall(
+                authorizationRequest, transaction
             ) ?: return UnknownError,
-            codeVerifier = codeVerifier
+            codeVerifier = codeVerifier,
+            transaction = transaction,
         )
     }
 
@@ -870,7 +1090,8 @@ internal class NativeLoginManager(
      */
     private suspend fun submitAccessTokenRequest(
         authorizationResponse: RestResponse,
-        codeVerifier: String
+        codeVerifier: String,
+        transaction: NativeTransaction,
     ): NativeLoginResult {
         if (authorizationResponse.isSuccess) {
             val code = authorizationResponse.asJSONObject().get(CODE).toString()
@@ -894,17 +1115,21 @@ internal class NativeLoginManager(
             )
 
             // Second REST Call - token request with code verifier
-            val tokenResponse = suspendedRestCall(tokenRequest) ?: return UnknownError
+            val tokenResponse = nativeRestCall(tokenRequest, transaction) ?: return UnknownError
             return when {
                 tokenResponse.isSuccess -> {
                     // Returns Success or UnknownError based on if the user is created.
-                    suspendFinishAuthFlow(tokenResponse)
+                    suspendFinishAuthFlow(tokenResponse, transaction)
                 }
 
-                else -> UnknownError
+                else -> {
+                    tokenResponse.consumeQuietly()
+                    UnknownError
+                }
             }
         } else {
-            SalesforceSDKLogger.e(TAG, "Native Login Authorization Error: $authorizationResponse")
+            authorizationResponse.consumeQuietly()
+            SalesforceSDKLogger.e(TAG, "Native Login Authorization Error.")
             return InvalidCredentials
         }
     }
@@ -999,6 +1224,21 @@ internal class NativeLoginManager(
     // endregion
 
     companion object {
+        // Native managers for different sites/clients still switch the same app account.
+        // Supersession is therefore app-wide, including attempts without DPoP.
+        private val nativeCompletionMutex = Mutex()
+        @Volatile private var activeNativeTransaction: NativeTransaction? = null
+        private const val NATIVE_FALLBACK = "com.salesforce.androidsdk.auth.NATIVE_FALLBACK"
+
+        internal suspend fun onFallbackActivityStarted(intent: Intent) {
+            if (!intent.getBooleanExtra(NATIVE_FALLBACK, false)) return
+            // A cached intent grants no authority. Revoke only when the browser receives it,
+            // serialized with native persistence, without carrying any credentials to the browser.
+            nativeCompletionMutex.withLock {
+                activeNativeTransaction = null
+                intent.removeExtra(NATIVE_FALLBACK)
+            }
+        }
         private const val MAX_USERNAME_LENGTH = 80
         private const val MIN_PASSWORD_LENGTH = 8
         private const val MAX_PASSWORD_LENGTH_BYTES = 16000

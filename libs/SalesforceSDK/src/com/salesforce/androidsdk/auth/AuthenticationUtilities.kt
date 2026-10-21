@@ -111,7 +111,6 @@ private const val TAG = "AuthenticationUtilities"
 private const val BAD_OAUTH_TOKEN = "Bad_OAuth_Token"
 private const val WRONG_ORG = "Wrong_Org"
 
-@VisibleForTesting
 internal data class IdentityFetchResult(
     val identity: OAuth2.IdServiceResponse?,
     val refreshTokenRotationTime: String? = null,
@@ -127,7 +126,6 @@ internal data class IdentityFetchResult(
  *  * Creates an Account.
  *  * Checks for any CA/ECA settings such as Screen Lock or Biometric Authentication.
  */
-@VisibleForTesting
 internal suspend fun onAuthFlowComplete(
     tokenResponse: TokenEndpointResponse,
     loginServer: String,
@@ -330,6 +328,18 @@ internal suspend fun onAuthFlowComplete(
         withContext(IO) {
             persistScreenLockFeature(userIdentity, account)
         }
+    }
+
+    // Native login bypasses LoginActivity.onAuthFlowSuccess. Publish the final
+    // binding marker only after persistence, including DPoP-to-Bearer reauthentication.
+    if (nativeLogin && !tokenMigration) {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        if (DPoPKeyManager.isDPoPTokenType(account.tokenType)) {
+            sdkManager.registerUsedAppFeature(FEATURE_DPOP, account)
+        } else {
+            sdkManager.unregisterUsedAppFeature(FEATURE_DPOP, account)
+        }
+        sdkManager.synchronizeUserFeatureFlags(account)
     }
 
     // Registration persists the per-user feature flag, so it must happen only after the account
@@ -644,7 +654,6 @@ private fun logAddAccount(account: UserAccount?, loginServerManager: LoginServer
  * One `IDENTITY_ATTEMPTS` info line is logged when the fetch finishes (see [logIdentityAttempts]),
  * and one line per 401/403 received. Neither contains tokens or user data.
  */
-@VisibleForTesting
 internal suspend fun fetchUserIdentityWithRetry(
     tokenResponse: TokenEndpointResponse,
     loginServer: String,
