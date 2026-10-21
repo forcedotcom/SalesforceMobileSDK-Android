@@ -85,6 +85,13 @@ a nonce. DPoP-disabled native attempts skip proof/key creation but retain the sa
 protection. Subsequent refresh and REST requests use the persisted token type, independent
 of later changes to the global flag.
 
+Native completion bypasses `LoginActivity.onAuthFlowSuccess()`, so shared completion handles
+DP registration/removal. Public feature registration skips writes when membership is unchanged;
+a replacement account snapshot can therefore miss already-cached flags. Native completion
+calls `synchronizeUserFeatureFlags(account)` to persist the final cached set when it differs
+from the snapshot. This preserves other cached markers and repeated DPoP → DPoP / DPoP →
+Bearer correctness without changing public registration no-op behavior.
+
 For diagnostics, do not consume a successful native `RestResponse` before nonce harvesting
 or token completion: `getRawResponse()` returns null once consumed. A debug observer can use
 OkHttp `peekBody()` to inspect a bounded copy without closing the original response.
