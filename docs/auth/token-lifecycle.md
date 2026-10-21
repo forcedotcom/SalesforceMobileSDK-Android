@@ -20,7 +20,7 @@ The primary classes are:
 
 **Entry point:** `OAuth2.exchangeCode()`
 
-After the user completes the OAuth2 authorization code flow in the login WebView,
+After the user completes web authentication (embedded WebView or system browser),
 `LoginActivity` calls `exchangeCode()` with the authorization `code` and `code_verifier`
 (PKCE). This method:
 
@@ -106,13 +106,13 @@ only when no actual AccountManager account references the identifier; account-re
 errors preserve the key rather than risking deletion of a live account's material. Old
 identifiers from same-user replacement are checked separately from the replacement key.
 
-Browser fallback is independent: no native credential identifier, key, nonce or proof is
+Web fallback is independent: no native credential identifier, key, nonce or proof is
 handed over. Creating the fallback intent does not revoke authority. Receipt of its native
 fallback marker calls `onFallbackActivityStarted()` under the same completion mutex, revokes
 native authority and consumes the marker. `LoginActivity.onCreate()` installs restored state,
 content, back handling and callbacks synchronously. Only authentication startup waits for that
 invalidation, so mutex contention must not leave an uninitialized Activity. `onNewIntent()`
-also coordinates invalidation before starting its authentication work. The browser flow uses
+also coordinates invalidation before starting its authentication work. The web flow uses
 its own existing settings and transaction state.
 
 ---
