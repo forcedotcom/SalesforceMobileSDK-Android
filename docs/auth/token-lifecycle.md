@@ -5,7 +5,9 @@ proof JWTs are attached, how nonces are managed, and how Refresh Token Rotation 
 handled safely under concurrency.
 
 The primary classes are:
-- **`OAuth2.java`** — all calls to the Salesforce token and identity endpoints
+- **`NativeLoginManager.kt`** — direct native authorize/token exchange and transaction ownership
+- **`AuthenticationUtilities.kt`** — shared identity/account completion, including native DP markers
+- **`OAuth2.java`** — shared token and identity endpoint calls
 - **`ClientManager.java`** (`AccMgrAuthTokenProvider`) — RTR-safe token refresh coordination
 - **`RestClient.java`** (`OAuthRefreshInterceptor`) — per-request auth header attachment and
   automatic refresh on 401
@@ -40,6 +42,62 @@ After the user completes the OAuth2 authorization code flow in the login WebView
 **DPoP note:** the `credentialsIdentifier` is a UUID generated at login start and stored on
 `UserAccount` as the `dpopScope` AccountManager extra. It is the stable key for the DPoP
 keypair and nonce cache for this user's session.
+
+---
+
+### 1.1 Native Login code exchange
+
+**Entry points:** `NativeLoginManager.login()`, `submitPasswordlessAuthorizationRequest()`
+and `completeRegistration()`. Their direct REST exchange uses `nativeRestCall()` rather
+than `OAuth2.exchangeCode()` / `makeTokenEndpointRequest()`.
+
+1. Under `nativeCompletionMutex`, create an app-wide `NativeTransaction` that captures the
+   current `useDPoP` setting as an optional fresh credentials identifier. A newer attempt
+   supersedes the previous one, including attempts with DPoP disabled.
+2. With DPoP enabled, create/load that identifier's key off the main thread. The authorize
+   URL carries `dpop_jkt`. POST the authorization form with a DPoP proof, then parse the JSON
+   code/community response and POST the token form to that community's token endpoint.
+   The grant is `authorization_code` or `hybrid_auth_code` according to the hybrid setting.
+   Both native proofs omit `ath` and use the same transaction key.
+3. `nativeRestCall()` checks active ownership before sending and after receiving a response.
+   It harvests nonempty nonce headers from both the initial and retried response. Each
+   authorize/token request may retry once only for HTTP 400/401, exact JSON
+   `error=use_dpop_nonce`, and a nonempty `DPoP-Nonce`. An unrelated error/header alone,
+   malformed JSON, missing nonce or repeated challenge does not permit another replay.
+   Retain the request body/key and generate a fresh proof. Native key/proof errors abort the
+   attempt; they do not send unsigned fallback requests.
+4. `suspendFinishAuthFlow()` carries the identifier into `TokenEndpointResponse` and calls
+   `AuthenticationUtilities.onAuthFlowComplete(nativeLogin=true)`. Identity retrieval uses
+   the existing retry/refresh implementation with the owning credentials. Acquire the
+   completion mutex after identity network work, then validate authority and serialize the
+   remaining account-completion/policy work before reporting success.
+5. After account persistence, set/remove DP from the actual resulting token type and
+   synchronize the account snapshot's cached feature set. See
+   [Native Login DP-marker persistence](login-feature-flag-persistence.md#native-login-dp-marker-persistence).
+
+Authorize can seed the token nonce cache, so the first token request need not start without
+a nonce. DPoP-disabled native attempts skip proof/key creation but retain the same lifecycle
+protection. Subsequent refresh and REST requests use the persisted token type, independent
+of later changes to the global flag.
+
+### 1.2 Cancellation, cleanup and fallback
+
+Native completion checks cancellation and ownership after acquiring the completion mutex.
+Persistence and policy work can still suspend; only final cleanup explicitly runs in
+`NonCancellable + IO` under the completion mutex;
+it clears active authority only if the transaction still owns it. It reclaims credentials
+only when no actual AccountManager account references the identifier; account-reference read
+errors preserve the key rather than risking deletion of a live account's material. Old
+identifiers from same-user replacement are checked separately from the replacement key.
+
+Browser fallback is independent: no native credential identifier, key, nonce or proof is
+handed over. Creating the fallback intent does not revoke authority. Receipt of its native
+fallback marker calls `onFallbackActivityStarted()` under the same completion mutex, revokes
+native authority and consumes the marker. `LoginActivity.onCreate()` installs restored state,
+content, back handling and callbacks synchronously. Only authentication startup waits for that
+invalidation, so mutex contention must not leave an uninitialized Activity. `onNewIntent()`
+also coordinates invalidation before starting its authentication work. The browser flow uses
+its own existing settings and transaction state.
 
 ---
 
@@ -253,6 +311,17 @@ HTTP calls in the worst case — happens entirely outside the lock.
 ---
 
 ## 5. DPoP Nonce Lifecycle
+
+`DPoPURLHelper.canonicalize()` strips query/fragment and temporarily removes a case-insensitive
+`vforcesite` suffix from the first nonempty path segment:
+`/sitevforcesite/services/oauth2/token` → `/site/services/oauth2/token`. It does not rewrite
+`/site/vforcesite/...` or a suffix in a later segment. Only proof canonicalization changes;
+the outbound URL is unchanged. This helper is shared by native, refresh and resource proofs.
+Remove the rewrite when server validation is corrected.
+
+The native authorize/token rule is documented in §1.1. The shared helper behavior below is
+separate: `OAuth2.makeTokenEndpointRequest()` harvests the first response before testing its
+400/401 error body and does not harvest its retry response in that helper.
 
 Salesforce normally seeds and rotates the session nonce at the **`/token` endpoint**. The SDK
 also implements RFC 9449 resource-server challenge handling so it remains correct if a resource
