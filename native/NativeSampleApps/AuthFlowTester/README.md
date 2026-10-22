@@ -117,7 +117,7 @@ Native Login sessions carry the `NL` and `A5` markers in `ftr_` (plus `DP` for D
 |------|-----------|------|-------|
 | `testNativeLogin_OptionalEca_DPoPOff_Bearer` | Headless ECA (optional DPoP) | Off | Form login; Bearer session; revoke+refresh works |
 | `testNativeLogin_OptionalEca_DPoPOn_DPoP` | Headless ECA (optional DPoP) | On | DPoP-bound session; thumbprint matches the stored key; revoke+refresh preserves binding |
-| `testNativeLogin_RequiredEca_DPoPOff_RejectedNoAccount` | Headless ECA (required DPoP) | Off | Authorize is rejected with 400 `invalid_request` (missing `dpop_jkt`), never `invalid_grant`, and no proof sent; error shown on the form; no account created |
+| `testNativeLogin_RequiredEca_DPoPOff_RejectedNoAccount` | Headless ECA (required DPoP) | Off | Login returns `InvalidCredentials`; authorize is rejected with 400 `invalid_request` (missing `dpop_jkt`), never `invalid_grant`, and no proof sent; error shown on the form; no account created |
 | `testNativeLogin_RequiredEca_DPoPOn_DPoP` | Headless ECA (required DPoP) | On | DPoP-bound session |
 | `testNativeLogin_CancelDuringLogin_NoNewAccount` | Headless ECA (optional DPoP) | Off | Cancel leaves no new account behind |
 | `testNativeLogin_BrowserFallback_UsesBrowserConfig` | Headless ECA, then browser ECA | - | The fallback button hands off to the browser login with the browser-mode boot config |
@@ -486,7 +486,7 @@ The Native Login screen has username and password fields, **Log In**, **Log In w
 
 (Values shown are placeholders.)
 
-After a Native Login, the **User Credentials** card shows the session's **OAuth Token Type**: `DPoP` when **Use DPoP** is on, `Bearer` when it is off. With the required-DPoP ECA and **Use DPoP** off, the form shows the authorize rejection (`400 invalid_request`, missing `dpop_jkt`) and no account is created.
+After a Native Login, the **User Credentials** card shows the session's **OAuth Token Type**: `DPoP` when **Use DPoP** is on, `Bearer` when it is off. With the required-DPoP ECA and **Use DPoP** off, login returns `InvalidCredentials`, the form shows the authorize rejection (`400 invalid_request`, missing `dpop_jkt`) and no account is created.
 
 | Native session (DPoP) | Native session (Bearer) | Required-DPoP ECA rejection |
 |---|---|---|

@@ -107,6 +107,10 @@ choice and its External Client App (consumer key, HTTPS callback URL, community 
 DPoP, hybrid) persist in `SalesforceSDKManager.debugLoginSettings` (`NativeLoginDebugSettings`),
 apart from the boot config and the global `useDPoP` / `useHybridAuthentication` flags. They are
 inert unless `isDevSupportEnabled()` is true and the app registered no `nativeLoginActivity`.
+For automation, `debugLoginSettings.apply(json)` takes the same JSON keys as the Login Options
+import and iOS (`consumerKey`, `redirectUri`, `communityUrl`, `useDPoP`, `useHybridFlow`,
+`authenticationMode` = `browser|native`); it saves nothing when the JSON is malformed or Native
+mode would have an incomplete config. `reset()` restores Browser mode with no native config.
 
 - **Routing.** `loginActivityClass` resolves at each read: the app's `nativeLoginActivity`, else
   `DebugNativeLoginActivity` in debug Native mode, else the web login activity. A
