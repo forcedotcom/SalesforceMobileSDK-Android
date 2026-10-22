@@ -28,7 +28,6 @@ package com.salesforce.samples.authflowtester
 
 import android.app.Application
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.auth.HttpAccess
 
 class AuthFlowTesterApplication : Application() {
 
@@ -38,17 +37,10 @@ class AuthFlowTesterApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        AuthModeStore.init(applicationContext)
-        // The router decides per attempt between SDK (browser) login and NativeLoginActivity.
         SalesforceSDKManager.initNative(
             applicationContext,
             AuthFlowTesterActivity::class.java,
-            nativeLoginActivity = LoginRouterActivity::class.java,
         )
-        // Browser/Native mode picker and Native Login settings in the debug Login Options screen.
-        SalesforceSDKManager.getInstance().loginOptionsExtension = AuthFlowLoginOptionsExtension
-        // Installed before any login so Native Login requests are traced too.
-        HttpAccess.DEFAULT = TokenRequestCapturingHttpAccess(applicationContext)
 
         with(SalesforceSDKManager.getInstance()) {
             registerUsedAppFeature(FEATURE_APP_USES_KOTLIN)

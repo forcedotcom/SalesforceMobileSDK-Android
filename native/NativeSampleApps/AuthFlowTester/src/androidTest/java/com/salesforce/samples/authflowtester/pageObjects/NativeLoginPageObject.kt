@@ -41,23 +41,23 @@ import androidx.test.espresso.Espresso
 import androidx.test.espresso.Espresso.closeSoftKeyboard
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
-import com.salesforce.samples.authflowtester.AUTH_MODE_BROWSER_TAG
-import com.salesforce.samples.authflowtester.AUTH_MODE_NATIVE_TAG
-import com.salesforce.samples.authflowtester.AuthMode
-import com.salesforce.samples.authflowtester.NATIVE_BROWSER_FALLBACK_TAG
-import com.salesforce.samples.authflowtester.NATIVE_CALLBACK_URL_TAG
-import com.salesforce.samples.authflowtester.NATIVE_CANCEL_BUTTON_TAG
-import com.salesforce.samples.authflowtester.NATIVE_CLIENT_ID_TAG
-import com.salesforce.samples.authflowtester.NATIVE_COMMUNITY_URL_TAG
-import com.salesforce.samples.authflowtester.NATIVE_DIAGNOSTICS_TAG
-import com.salesforce.samples.authflowtester.NATIVE_DPOP_TOGGLE_TAG
-import com.salesforce.samples.authflowtester.NATIVE_ERROR_DETAIL_TAG
-import com.salesforce.samples.authflowtester.NATIVE_LOADING_TAG
-import com.salesforce.samples.authflowtester.NATIVE_LOGIN_BUTTON_TAG
-import com.salesforce.samples.authflowtester.NATIVE_LOGIN_OPTIONS_TAG
-import com.salesforce.samples.authflowtester.NATIVE_PASSWORD_TAG
-import com.salesforce.samples.authflowtester.NATIVE_RESULT_TAG
-import com.salesforce.samples.authflowtester.NATIVE_USERNAME_TAG
+import com.salesforce.androidsdk.ui.AuthenticationMode
+import com.salesforce.androidsdk.ui.NativeLoginDebugTestTags.AUTH_MODE_BROWSER
+import com.salesforce.androidsdk.ui.NativeLoginDebugTestTags.AUTH_MODE_NATIVE
+import com.salesforce.androidsdk.ui.NativeLoginDebugTestTags.BROWSER_FALLBACK_BUTTON
+import com.salesforce.androidsdk.ui.NativeLoginDebugTestTags.CALLBACK_URL_FIELD
+import com.salesforce.androidsdk.ui.NativeLoginDebugTestTags.CANCEL_BUTTON
+import com.salesforce.androidsdk.ui.NativeLoginDebugTestTags.CLIENT_ID_FIELD
+import com.salesforce.androidsdk.ui.NativeLoginDebugTestTags.COMMUNITY_URL_FIELD
+import com.salesforce.androidsdk.ui.NativeLoginDebugTestTags.DIAGNOSTICS_LABEL
+import com.salesforce.androidsdk.ui.NativeLoginDebugTestTags.ERROR_DETAIL
+import com.salesforce.androidsdk.ui.NativeLoginDebugTestTags.LOADING_INDICATOR
+import com.salesforce.androidsdk.ui.NativeLoginDebugTestTags.LOGIN_BUTTON
+import com.salesforce.androidsdk.ui.NativeLoginDebugTestTags.LOGIN_OPTIONS_BUTTON
+import com.salesforce.androidsdk.ui.NativeLoginDebugTestTags.PASSWORD_FIELD
+import com.salesforce.androidsdk.ui.NativeLoginDebugTestTags.RESULT_LABEL
+import com.salesforce.androidsdk.ui.NativeLoginDebugTestTags.USERNAME_FIELD
+import com.salesforce.androidsdk.ui.NativeLoginDebugTestTags.USE_DPOP_TOGGLE
 import com.salesforce.samples.authflowtester.testUtility.AppConfig
 import com.salesforce.samples.authflowtester.testUtility.LoginHost
 import com.salesforce.samples.authflowtester.testUtility.User
@@ -66,8 +66,9 @@ private const val NATIVE_SCREEN_TIMEOUT_MS = 30_000L
 private const val NATIVE_LOGIN_TIMEOUT_MS = 60_000L
 
 /**
- * Page object for the AuthFlowTester's own Native Login form and Login Options screen, both
- * Compose screens addressed by test tag (shared with the iOS accessibility identifiers).
+ * Page object for the SDK's debug Native Login form and the Authentication Mode section of its
+ * Login Options screen, both Compose screens addressed by the SDK's test tags (shared with the iOS
+ * accessibility identifiers).
  */
 class NativeLoginPageObject(composeTestRule: ComposeTestRule) : BasePageObject(composeTestRule) {
 
@@ -97,75 +98,78 @@ class NativeLoginPageObject(composeTestRule: ComposeTestRule) : BasePageObject(c
 
     // region Native Login form
 
-    fun waitForNativeLogin() = waitForTag(NATIVE_LOGIN_BUTTON_TAG)
+    fun waitForNativeLogin() = waitForTag(LOGIN_BUTTON)
 
-    fun isNativeLoginShowing() = exists(NATIVE_LOGIN_BUTTON_TAG)
+    fun isNativeLoginShowing() = exists(LOGIN_BUTTON)
 
-    fun hasCancelButton() = exists(NATIVE_CANCEL_BUTTON_TAG)
+    fun hasCancelButton() = exists(CANCEL_BUTTON)
 
     fun enterCredentials(user: User) {
         waitForNativeLogin()
-        composeTestRule.onNodeWithTag(NATIVE_USERNAME_TAG).performTextReplacement(user.username)
-        composeTestRule.onNodeWithTag(NATIVE_PASSWORD_TAG).performTextReplacement(user.password)
+        composeTestRule.onNodeWithTag(USERNAME_FIELD).performTextReplacement(user.username)
+        composeTestRule.onNodeWithTag(PASSWORD_FIELD).performTextReplacement(user.password)
         closeSoftKeyboard()
         composeTestRule.waitForIdle()
     }
 
     fun enterUsernameOnly(username: String) {
         waitForNativeLogin()
-        composeTestRule.onNodeWithTag(NATIVE_USERNAME_TAG).performTextReplacement(username)
+        composeTestRule.onNodeWithTag(USERNAME_FIELD).performTextReplacement(username)
         closeSoftKeyboard()
     }
 
     fun usernameFieldText(): String =
-        composeTestRule.onNodeWithTag(NATIVE_USERNAME_TAG).fetchSemanticsNode()
+        composeTestRule.onNodeWithTag(USERNAME_FIELD).fetchSemanticsNode()
             .config[SemanticsProperties.EditableText].text
 
     /** True when the password field holds text. The value itself is never read into test output. */
     fun passwordFieldHasText(): Boolean =
-        composeTestRule.onNodeWithTag(NATIVE_PASSWORD_TAG).fetchSemanticsNode()
+        composeTestRule.onNodeWithTag(PASSWORD_FIELD).fetchSemanticsNode()
             .config[SemanticsProperties.EditableText].text.isNotEmpty()
 
-    fun tapLogin() = tap(NATIVE_LOGIN_BUTTON_TAG)
+    fun tapLogin() = tap(LOGIN_BUTTON)
 
-    fun tapCancel() = tap(NATIVE_CANCEL_BUTTON_TAG)
+    fun tapCancel() = tap(CANCEL_BUTTON)
 
-    fun tapBrowserFallback() = tap(NATIVE_BROWSER_FALLBACK_TAG)
+    fun tapBrowserFallback() = tap(BROWSER_FALLBACK_BUTTON)
 
-    fun isLoading() = exists(NATIVE_LOADING_TAG)
+    fun isLoading() = exists(LOADING_INDICATOR)
 
-    fun waitForLoading(timeoutMillis: Long = NATIVE_SCREEN_TIMEOUT_MS) = waitForTag(NATIVE_LOADING_TAG, timeoutMillis)
+    fun waitForLoading(timeoutMillis: Long = NATIVE_SCREEN_TIMEOUT_MS) = waitForTag(LOADING_INDICATOR, timeoutMillis)
 
     /** Waits for the rejected state and returns its error detail, e.g. `InvalidCredentials`. */
     fun waitForRejection(timeoutMillis: Long = NATIVE_LOGIN_TIMEOUT_MS): String {
-        waitForTag(NATIVE_RESULT_TAG, timeoutMillis)
-        return text(NATIVE_ERROR_DETAIL_TAG)
+        waitForTag(RESULT_LABEL, timeoutMillis)
+        return text(ERROR_DETAIL)
     }
 
-    fun isRejected() = exists(NATIVE_RESULT_TAG)
+    fun isRejected() = exists(RESULT_LABEL)
 
-    fun diagnostics(): String = if (exists(NATIVE_DIAGNOSTICS_TAG)) text(NATIVE_DIAGNOSTICS_TAG) else ""
+    /** The error detail and redacted OAuth trace shown by the form, or empty when it shows none. */
+    fun diagnostics(): String = listOf(ERROR_DETAIL, DIAGNOSTICS_LABEL)
+        .filter(::exists)
+        .joinToString(" | ") { text(it) }
 
     // endregion
 
     // region Login Options
 
-    fun openLoginOptions() = tap(NATIVE_LOGIN_OPTIONS_TAG)
+    fun openLoginOptions() = tap(LOGIN_OPTIONS_BUTTON)
 
-    fun selectMode(mode: AuthMode) = tap(
-        if (mode == AuthMode.NATIVE) AUTH_MODE_NATIVE_TAG else AUTH_MODE_BROWSER_TAG,
+    fun selectMode(mode: AuthenticationMode) = tap(
+        if (mode == AuthenticationMode.NATIVE) AUTH_MODE_NATIVE else AUTH_MODE_BROWSER,
     )
 
     fun setNativeSettings(app: AppConfig, host: LoginHost) {
-        waitForTag(NATIVE_CLIENT_ID_TAG)
-        setField(NATIVE_CLIENT_ID_TAG, app.consumerKey)
-        setField(NATIVE_CALLBACK_URL_TAG, app.redirectUri)
-        setField(NATIVE_COMMUNITY_URL_TAG, host.url)
+        waitForTag(CLIENT_ID_FIELD)
+        setField(CLIENT_ID_FIELD, app.consumerKey)
+        setField(CALLBACK_URL_FIELD, app.redirectUri)
+        setField(COMMUNITY_URL_FIELD, host.url)
     }
 
     fun setDPoP(enabled: Boolean) {
-        waitForTag(NATIVE_DPOP_TOGGLE_TAG)
-        val node = composeTestRule.onNodeWithTag(NATIVE_DPOP_TOGGLE_TAG).performScrollTo()
+        waitForTag(USE_DPOP_TOGGLE)
+        val node = composeTestRule.onNodeWithTag(USE_DPOP_TOGGLE).performScrollTo()
         val isOn = node.fetchSemanticsNode().config[SemanticsProperties.ToggleableState] == ToggleableState.On
         if (isOn != enabled) node.performClick()
         composeTestRule.waitForIdle()
@@ -186,7 +190,7 @@ class NativeLoginPageObject(composeTestRule: ComposeTestRule) : BasePageObject(c
     /** Opens the SDK Login Options from the Native Login form, applies [app]/[host]/[dpop] and returns. */
     fun configureNative(app: AppConfig, host: LoginHost, dpop: Boolean) {
         openLoginOptions()
-        selectMode(AuthMode.NATIVE)
+        selectMode(AuthenticationMode.NATIVE)
         setNativeSettings(app, host)
         setDPoP(dpop)
         closeLoginOptions()

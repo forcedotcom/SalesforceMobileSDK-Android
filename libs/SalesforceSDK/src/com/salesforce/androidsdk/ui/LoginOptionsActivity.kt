@@ -115,6 +115,11 @@ class LoginOptionsActivity: ComponentActivity() {
     )
     val useDPoP = MutableLiveData(SalesforceSDKManager.getInstance().useDPoP)
 
+    // Debug authentication mode and Native Login configuration, saved as they are edited.
+    private val debugLoginSettings get() = SalesforceSDKManager.getInstance().debugLoginSettings
+    val authenticationMode = MutableLiveData(debugLoginSettings.mode)
+    val nativeLoginConfig = MutableLiveData(debugLoginSettings.config)
+
     // The configured browser at creation time is offered as the "App default" option.
     val customTabBrowser = MutableLiveData(SalesforceSDKManager.getInstance().customTabBrowser)
     private val customTabBrowserOptions by lazy {
@@ -172,6 +177,18 @@ class LoginOptionsActivity: ComponentActivity() {
                 value -> SalesforceSDKManager.getInstance().customTabBrowser = value
             },
         )
+        authenticationMode.observe(
+            /* owner = */ this,
+            Observer<AuthenticationMode> {
+                value -> debugLoginSettings.mode = value
+            },
+        )
+        nativeLoginConfig.observe(
+            /* owner = */ this,
+            Observer<NativeLoginDebugConfig> {
+                value -> debugLoginSettings.config = value
+            },
+        )
 
         setContent {
             MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme()) {
@@ -185,7 +202,7 @@ class LoginOptionsActivity: ComponentActivity() {
                         )
                     }
                 ) { innerPadding ->
-                    val extension = SalesforceSDKManager.getInstance().loginOptionsExtension
+                    val mode by authenticationMode.observeAsState(initial = authenticationMode.value)
                     LoginOptionsScreen(
                         innerPadding,
                         useWebServer,
@@ -202,9 +219,23 @@ class LoginOptionsActivity: ComponentActivity() {
                                 onSelect = { customTabBrowser.value = it },
                             )
                         },
-                        topContent = extension?.let { { it.TopContent() } },
-                        // Read during composition so state-backed extensions hide and show the sections.
-                        showBrowserOptions = extension?.showsBrowserOptions ?: true,
+                        // Apps with their own native login activity always use it.
+                        authenticationModeContent = if (debugLoginSettings.isAvailable) {
+                            {
+                                AuthenticationModeSection(
+                                    authenticationMode,
+                                    nativeLoginConfig,
+                                    onImport = { json ->
+                                        debugLoginSettings.apply(json)
+                                        authenticationMode.value = debugLoginSettings.mode
+                                        nativeLoginConfig.value = debugLoginSettings.config
+                                    },
+                                )
+                            }
+                        } else {
+                            null
+                        },
+                        showBrowserOptions = mode != AuthenticationMode.NATIVE,
                     )
                 }
             }
@@ -214,7 +245,6 @@ class LoginOptionsActivity: ComponentActivity() {
     override fun finish() {
         super.finish()
         SalesforceSDKManager.getInstance().loginDevMenuReload = true
-        SalesforceSDKManager.getInstance().loginOptionsExtension?.onLoginOptionsDismissed(this)
     }
 }
 
@@ -389,7 +419,7 @@ fun LoginOptionsScreen(
     bootConfig: BootConfig = BootConfig.getBootConfig(LocalContext.current),
     sdkManager: SalesforceSDKManager? = SalesforceSDKManager.getInstance(),
     customTabBrowserContent: (@Composable () -> Unit)? = null,
-    topContent: (@Composable () -> Unit)? = null,
+    authenticationModeContent: (@Composable () -> Unit)? = null,
     showBrowserOptions: Boolean = true,
 ) {
     var useDynamicConfig by remember { mutableStateOf(overrideConfig != null) }
@@ -400,7 +430,10 @@ fun LoginOptionsScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
-        topContent?.invoke()
+        authenticationModeContent?.let {
+            it()
+            HorizontalDivider()
+        }
 
         if (showBrowserOptions) {
             OptionToggle(

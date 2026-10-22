@@ -109,7 +109,7 @@ Tests for login against a community (Experience Cloud) login host, using the `co
 | `testCommunityDPoP_And_RegularAuthDPoP_MultiHost_UniqueTokensAndIsolatedNonces` | ECA JWT DPoP | Yes | Yes | Community user + `regular_auth` ECA JWT DPoP user; unique tokens/keys, independent revoke+refresh and nonce rotation per user/host |
 
 #### NativeLoginTests
-Tests for Native Login (the SDK's `useNativeLogin` / `NativeLoginManager` path) against the community login host, with a Compose `NativeLoginActivity` owned by the app. Native Login talks to the community's headless login endpoints directly, so these tests use dedicated headless ECAs (`eca_jwt_headless`, DPoP-optional; `eca_jwt_dpop_headless`, DPoP-required) and the `community_auth` login host and user. Configure them with the `nativeLogin` block of `ui_test_config.json` (`loginHost`, `optionalDPoPApp`, `requiredDPoPApp`; see `shared/test/ui_test_config.json.sample`). Every test skips cleanly (`Assume.assumeTrue`) when the `nativeLogin` block is absent, so CI without it stays green. Tests select Native mode through the app's `AuthModeStore` (the state behind the Login Options mode picker) before the activity launches, and check the redacted OAuth trace in `NativeLoginDiagnostics` (stage, HTTP status, OAuth error, whether a DPoP proof was sent, whether a nonce was received; never tokens or passwords).
+Tests for Native Login (the SDK's `useNativeLogin` / `NativeLoginManager` path) against the community login host, using the SDK's debug Native Login form (`DebugNativeLoginActivity`). Native Login talks to the community's headless login endpoints directly, so these tests use dedicated headless ECAs (`eca_jwt_headless`, DPoP-optional; `eca_jwt_dpop_headless`, DPoP-required) and the `community_auth` login host and user. Configure them with the `nativeLogin` block of `ui_test_config.json` (`loginHost`, `optionalDPoPApp`, `requiredDPoPApp`; see `shared/test/ui_test_config.json.sample`). Every test skips cleanly (`Assume.assumeTrue`) when the `nativeLogin` block is absent, so CI without it stays green. Tests select Native mode through `SalesforceSDKManager.debugLoginSettings` (the state behind the Login Options **Authentication Mode** section) before the activity launches, or drive that section through its `NativeLoginDebugTestTags`, and check the redacted OAuth trace shown by the form (stage, HTTP status, OAuth error, whether a DPoP proof was sent, whether a nonce was received; never tokens or passwords).
 
 Native Login sessions carry the `NL` and `A5` markers in `ftr_` (plus `DP` for DPoP) and no `B` marker. They carry no `L` marker: those are registered only by `LoginActivity`, which Native Login never starts.
 
@@ -464,19 +464,21 @@ The Login Options screen allows you to override the default boot config for the 
 
 ### Native Login
 
-AuthFlowTester registers `LoginRouterActivity` as the SDK's Native Login activity. For every login attempt it forwards either to the Compose `NativeLoginActivity` (Native mode) or to the SDK's `LoginActivity` (Browser mode, the default), so browser behavior is unchanged unless you opt in.
+AuthFlowTester has no Native Login code of its own: it uses the SDK's debug Native Login mode, available in any debug build of an app that does not register its own Native Login activity. Browser login stays the default.
 
-To switch modes, use the SDK's **Login Options** screen. AuthFlowTester plugs into it through the `SalesforceSDKManager.loginOptionsExtension` hook (`LoginOptionsExtension`), which adds an **Authentication Mode** picker (Browser / Native) at the top of the screen. Login Options is reachable only in debug builds, through the Developer Support menu:
+To switch modes, use the SDK's **Login Options** screen, reachable only in debug builds through the Developer Support menu:
 
 1. Launch the debug app. The login screen appears (in Browser mode, the Chrome custom tab; press Back to close it if needed) and shows the **Login Server Picker** sheet.
 2. Tap the **Developer Support** icon (top right of the sheet), or close the sheet and use the **three-dot menu** → **Developer Support**, then choose **Login Options**.
 3. At the top, tap **Native** under **Authentication Mode**.
-4. Fill in **Client ID**, **Native Callback URL** and **Community Login URL**, or paste a JSON object (`consumerKey`, `redirectUri`, `communityUrl`, `useDPoP`, `useHybridFlow`) into **Import JSON** and tap **Import Native Config**. Use the **Use DPoP** and **Use Hybrid Auth Token** toggles as needed.
+4. Fill in **Client ID**, **Native Callback URL** and **Community Login URL** (the Experience Cloud site URL, including its path), or tap **Import JSON Configuration** and paste a JSON object (`consumerKey`, `redirectUri`, `communityUrl`, `useDPoP`, `useHybridFlow`). Use the **Use DPoP** and **Use Hybrid Authentication** toggles as needed.
 5. Press Back. Login restarts and shows the Native Login form.
 
-To return to Browser mode, open Login Options the same way (or tap **Login Options** on the Native Login screen, debug builds only) and tap **Browser**. In Native mode the browser-only options are hidden. Native and Browser settings (DPoP, hybrid) are stored separately, and switching back to Browser unregisters the Native Login feature markers. Tests select the mode through `AuthModeStore` before the activity launches, so they do not drive this UI.
+To return to Browser mode, open Login Options the same way (or tap **Login Options** on the Native Login screen) and tap **Browser**. In Native mode the browser-only options are hidden. The Native Login settings persist across launches and are stored apart from the browser settings: the browser login, including the Native Login browser fallback, keeps using the boot config and the browser DPoP and hybrid options. Switching back to Browser unregisters the Native Login feature markers.
 
-The Native Login screen has username and password fields, **Log In**, **Log In with Browser** (the SDK's fallback to the web login) and **Cancel** (shown only when an account already exists). Rejections, such as the required-DPoP ECA refusing an unbound authorize request, are shown on the form together with a redacted OAuth trace.
+For UI tests, `AuthFlowTesterActivity` also accepts two launch extras when UI testing: `NATIVE_LOGIN_CONFIG` (the JSON object above) and `AUTHENTICATION_MODE` (`native` or `browser`).
+
+The Native Login screen has username and password fields, **Log In**, **Log In with Browser** (the SDK's fallback to the web login) and **Cancel** (shown while a login is in progress, or when an account already exists). Rejections, such as the required-DPoP ECA refusing an unbound authorize request, are shown on the form with the HTTP status, the OAuth error and its description, and a redacted OAuth trace.
 
 | Login Options (Browser mode) | Login Options (Native mode) | Native Login screen |
 |---|---|---|

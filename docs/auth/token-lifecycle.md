@@ -93,8 +93,33 @@ from the snapshot. This preserves other cached markers and repeated DPoP → DPo
 Bearer correctness without changing public registration no-op behavior.
 
 For diagnostics, do not consume a successful native `RestResponse` before nonce harvesting
-or token completion: `getRawResponse()` returns null once consumed. A debug observer can use
-OkHttp `peekBody()` to inspect a bounded copy without closing the original response.
+or token completion: `getRawResponse()` returns null once consumed. In debug builds
+`nativeRestCall()` passes each response to the internal `NativeLoginDiagnostics`, which keeps
+only the stage, HTTP status, OAuth error and description, and whether a DPoP proof was sent and
+a nonce received. It reads failure bodies only, through OkHttp `peekBody()`, so the original
+response stays open.
+
+#### Debug Native Login mode
+
+Debug builds can switch any app without its own Native Login activity to Native Login from the
+developer support **Login Options** screen (**Authentication Mode**: Browser / Native). The
+choice and its External Client App (consumer key, HTTPS callback URL, community URL with path,
+DPoP, hybrid) persist in `SalesforceSDKManager.debugLoginSettings` (`NativeLoginDebugSettings`),
+apart from the boot config and the global `useDPoP` / `useHybridAuthentication` flags. They are
+inert unless `isDevSupportEnabled()` is true and the app registered no `nativeLoginActivity`.
+
+- **Routing.** `loginActivityClass` resolves at each read: the app's `nativeLoginActivity`, else
+  `DebugNativeLoginActivity` in debug Native mode, else the web login activity. A
+  `LoginActivity` already on screen when Login Options switches to Native hands its intent to
+  `DebugNativeLoginActivity` (`FLAG_ACTIVITY_FORWARD_RESULT`), and the reverse when switching back.
+- **Manager.** `DebugNativeLoginActivity` registers the Native Login features and creates a
+  `NativeLoginManager` from the debug config, passing its DPoP and hybrid choices explicitly so
+  the browser values are untouched. The token refresh of the resulting account follows the
+  global hybrid flag, like other refreshes.
+- **Fallback.** **Log In with Browser** uses `getFallbackWebAuthenticationIntent()` marked so
+  that `LoginActivity` does not redirect back; the browser login uses the boot config and
+  browser options.
+- **Leaving Native** unregisters `NL` and `A5` so later browser logins do not report them.
 
 ### 1.2 Cancellation, cleanup and fallback
 

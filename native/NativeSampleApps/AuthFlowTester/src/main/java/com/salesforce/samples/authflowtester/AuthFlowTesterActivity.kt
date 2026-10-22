@@ -124,6 +124,7 @@ import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.rest.ApiVersionStrings
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient
+import com.salesforce.androidsdk.ui.NativeLoginDebugSettings
 import com.salesforce.androidsdk.ui.SalesforceActivity
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
@@ -141,6 +142,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.json.JSONObject
 
 const val PADDING = 10
 const val INNER_CARD_PADDING = 16
@@ -206,19 +208,22 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         /** Intent extra: when true (in a debug build) shows UI-test-only affordances. */
         const val EXTRA_IS_UI_TESTING = "IS_UI_TESTING"
 
-        /** Intent extra: when true, resets Login Options to Browser mode with no Native Login settings. */
-        const val EXTRA_NATIVE_LOGIN_RESET = "NATIVE_LOGIN_RESET"
+        /** Intent extra: `browser` or `native`, the SDK debug Login Options authentication mode. */
+        const val EXTRA_AUTHENTICATION_MODE = "AUTHENTICATION_MODE"
 
-        /** Intent extra: JSON of Native Login settings to import; also selects Native mode. */
+        /** Intent extra: JSON applied to the SDK debug Native Login settings. */
         const val EXTRA_NATIVE_LOGIN_CONFIG = "NATIVE_LOGIN_CONFIG"
     }
 
-    /** UI-test hook: configures Login Options from launch extras, mirroring the iOS launch arguments. */
+    /**
+     * UI-test hook: seeds the SDK's debug Login Options from launch extras, mirroring the iOS
+     * launch arguments.  The configuration is applied before the mode, which it must make valid.
+     */
     private fun applyNativeLoginLaunchExtras() {
-        if (intent.getBooleanExtra(EXTRA_NATIVE_LOGIN_RESET, false)) AuthModeStore.reset()
-        intent.getStringExtra(EXTRA_NATIVE_LOGIN_CONFIG)?.let {
-            AuthModeStore.importNativeConfig(it)
-            AuthModeStore.applyMode(AuthMode.NATIVE)
+        val settings = SalesforceSDKManager.getInstance().debugLoginSettings
+        intent.getStringExtra(EXTRA_NATIVE_LOGIN_CONFIG)?.let { settings.apply(it) }
+        intent.getStringExtra(EXTRA_AUTHENTICATION_MODE)?.let { mode ->
+            settings.apply(JSONObject().put(NativeLoginDebugSettings.JSON_AUTHENTICATION_MODE, mode).toString())
         }
     }
 

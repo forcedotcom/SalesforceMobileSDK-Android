@@ -36,10 +36,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import okhttp3.OkHttpClient
 import java.util.concurrent.atomic.AtomicInteger
 
-/**
- * Records the final token-request User-Agent for UI-test assertions and a redacted trace of
- * OAuth requests in [NativeLoginDiagnostics].
- */
+/** Records the final token-request User-Agent for UI-test assertions. */
 class TokenRequestCapturingHttpAccess(context: Context) : HttpAccess(context, null) {
 
     override fun createNewClientBuilder(): OkHttpClient.Builder =
@@ -57,7 +54,7 @@ class TokenRequestCapturingHttpAccess(context: Context) : HttpAccess(context, nu
                     }
                 }
             }
-            chain.proceed(request).also { NativeLoginDiagnostics.record(request, it) }
+            chain.proceed(request)
         }
 
     companion object {

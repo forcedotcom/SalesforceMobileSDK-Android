@@ -35,6 +35,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.lifecycle.Stage
 import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.ui.AuthenticationMode
+import com.salesforce.androidsdk.ui.DebugNativeLoginActivity
+import com.salesforce.androidsdk.ui.NativeLoginDebugSettings
 import com.salesforce.samples.authflowtester.pageObjects.ChromeCustomTabPageObject
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
@@ -49,12 +52,13 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
+import org.json.JSONObject
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Native Login (username and password in the app's own form) against the community host named by
+ * Native Login (username and password in the SDK's debug Native Login form) against the community host named by
  * the `nativeLogin` section of `ui_test_config.json`.
  *
  * Two headless External Client Apps are used: one where DPoP is optional and one where it is
@@ -75,8 +79,14 @@ class NativeLoginTests : AuthFlowTest() {
     override fun beforeActivityLaunch() {
         val nativeSetup = runCatching { testConfig.nativeLoginSetup() }.getOrNull() ?: return
         val app = nativeSetup.optionalDPoPApp
-        AuthModeStore.nativeSettings = NativeLoginSettings(app.consumerKey, app.redirectUri, nativeSetup.host.url)
-        AuthModeStore.applyMode(AuthMode.NATIVE)
+        SalesforceSDKManager.getInstance().debugLoginSettings.apply(
+            JSONObject()
+                .put(NativeLoginDebugSettings.JSON_CONSUMER_KEY, app.consumerKey)
+                .put(NativeLoginDebugSettings.JSON_REDIRECT_URI, app.redirectUri)
+                .put(NativeLoginDebugSettings.JSON_COMMUNITY_URL, nativeSetup.host.url)
+                .put(NativeLoginDebugSettings.JSON_AUTHENTICATION_MODE, "native")
+                .toString(),
+        )
     }
 
     @Before
@@ -254,7 +264,7 @@ class NativeLoginTests : AuthFlowTest() {
         app.addNewAccount()
         nativeLogin.waitForNativeLogin()
         nativeLogin.openLoginOptions()
-        nativeLogin.selectMode(AuthMode.BROWSER)
+        nativeLogin.selectMode(AuthenticationMode.BROWSER)
         nativeLogin.closeLoginOptions()
         loginAndValidate(
             knownAppConfig = CA_OPAQUE,
@@ -283,8 +293,8 @@ class NativeLoginTests : AuthFlowTest() {
         instrumentation.runOnMainSync {
             val activity: Activity = ActivityLifecycleMonitorRegistry.getInstance()
                 .getActivitiesInStage(Stage.RESUMED)
-                .firstOrNull { it is NativeLoginActivity }
-                ?: throw AssertionError("No resumed NativeLoginActivity to recreate")
+                .firstOrNull { it is DebugNativeLoginActivity }
+                ?: throw AssertionError("No resumed DebugNativeLoginActivity to recreate")
             activity.recreate()
         }
         composeTestRule.waitForIdle()

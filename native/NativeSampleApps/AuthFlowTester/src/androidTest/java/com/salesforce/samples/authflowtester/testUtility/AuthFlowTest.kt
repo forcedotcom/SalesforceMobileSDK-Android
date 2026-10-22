@@ -39,11 +39,9 @@ import androidx.test.uiautomator.UiDevice
 import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess
+import com.salesforce.androidsdk.ui.AuthenticationMode
 import com.salesforce.androidsdk.ui.components.LoginViewTestTags
 import com.salesforce.samples.authflowtester.AuthFlowTesterActivity
-import com.salesforce.samples.authflowtester.AuthMode
-import com.salesforce.samples.authflowtester.AuthModeStore
-import com.salesforce.samples.authflowtester.NativeLoginDiagnostics
 import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
 import com.salesforce.samples.authflowtester.components.ConcurrentRequestTestHooks
 import com.salesforce.samples.authflowtester.pageObjects.AuthorizationPageObject
@@ -236,8 +234,7 @@ abstract class AuthFlowTest {
         ConcurrentRequestTestHooks.submittedCount = 0
         ConcurrentRequestTestHooks.lastInterruptionStatus = null
         // Restore Browser mode so Native Login settings never leak into a browser test.
-        AuthModeStore.reset()
-        NativeLoginDiagnostics.reset()
+        SalesforceSDKManager.getInstance().debugLoginSettings.reset()
         with(SalesforceSDKManager.getInstance()) {
             userAccountManager.authenticatedUsers?.forEach { userAccount ->
                 logout(
@@ -669,12 +666,13 @@ abstract class AuthFlowTest {
      */
     fun configureNativeLogin(setup: NativeLoginSetup, app: AppConfig, useDPoP: Boolean) {
         nativeLogin.waitForNativeLogin()
-        val stored = AuthModeStore.nativeSettings
-        val matches = AuthModeStore.mode == AuthMode.NATIVE &&
-            stored.clientId == app.consumerKey &&
-            stored.callbackUrl == app.redirectUri &&
+        val settings = SalesforceSDKManager.getInstance().debugLoginSettings
+        val stored = settings.config
+        val matches = settings.mode == AuthenticationMode.NATIVE &&
+            stored.consumerKey == app.consumerKey &&
+            stored.redirectUri == app.redirectUri &&
             stored.communityUrl == setup.host.url &&
-            SalesforceSDKManager.getInstance().useDPoP == useDPoP
+            stored.useDPoP == useDPoP
         if (!matches) nativeLogin.configureNative(app, setup.host, useDPoP)
     }
 
@@ -715,7 +713,7 @@ abstract class AuthFlowTest {
         try {
             this.app.waitForAppLoad()
         } catch (e: Throwable) {
-            throw AssertionError("Native login did not complete. OAuth trace: ${NativeLoginDiagnostics.summary}", e)
+            throw AssertionError("Native login did not complete. OAuth trace: ${nativeLogin.diagnostics()}", e)
         }
         val username = setup.user.username
         expectedRtMarkerByUsername[username] = SalesforceSDKManager.getInstance()
