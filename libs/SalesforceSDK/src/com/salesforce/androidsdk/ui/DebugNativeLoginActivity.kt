@@ -81,6 +81,7 @@ import com.salesforce.androidsdk.ui.NativeLoginDebugTestTags.LOGIN_OPTIONS_BUTTO
 import com.salesforce.androidsdk.ui.NativeLoginDebugTestTags.PASSWORD_FIELD
 import com.salesforce.androidsdk.ui.NativeLoginDebugTestTags.RESULT_LABEL
 import com.salesforce.androidsdk.ui.NativeLoginDebugTestTags.USERNAME_FIELD
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -123,13 +124,21 @@ internal class DebugNativeLoginViewModel(private val savedState: SavedStateHandl
     private var configuredWith: NativeLoginDebugConfig? = null
     private var loginJob: Job? = null
 
+    /** Incremented by each login and cancel; only the latest attempt may publish its result. */
+    private var currentAttempt = 0
+
     /** Builds the Native Login manager for [config] unless it is already in use. */
-    fun configure(config: NativeLoginDebugConfig, sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance()) {
+    fun configure(
+        config: NativeLoginDebugConfig,
+        createManager: (NativeLoginDebugConfig) -> NativeLoginManager = {
+            SalesforceSDKManager.getInstance().useDebugNativeLogin(it)
+        },
+    ) {
         if (config == configuredWith && manager != null) return
         cancel()
         configuredWith = config
         configurationError = config.validationError
-        manager = if (config.isComplete) sdkManager.useDebugNativeLogin(config) else null
+        manager = if (config.isComplete) createManager(config) else null
     }
 
     fun login() {
@@ -137,9 +146,17 @@ internal class DebugNativeLoginViewModel(private val savedState: SavedStateHandl
         if (mutableState.value == DebugNativeLoginState.Loading) return
         mutableState.value = DebugNativeLoginState.Loading
         NativeLoginDiagnostics.reset()
+        val attempt = ++currentAttempt
         loginJob = viewModelScope.launch {
-            val result = runCatching { manager.login(username, password) }
-                .getOrDefault(NativeLoginResult.UnknownError)
+            val result = try {
+                manager.login(username, password)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                NativeLoginResult.UnknownError
+            }
+            // A cancelled or replaced attempt that still completes must not overwrite the form.
+            if (attempt != currentAttempt) return@launch
             mutableState.value = if (result == NativeLoginResult.Success) {
                 DebugNativeLoginState.Success
             } else {
@@ -153,6 +170,7 @@ internal class DebugNativeLoginViewModel(private val savedState: SavedStateHandl
 
     /** Cancels an in-flight login, which then adds no account. */
     fun cancel() {
+        currentAttempt++
         loginJob?.cancel()
         loginJob = null
         if (mutableState.value == DebugNativeLoginState.Loading) mutableState.value = DebugNativeLoginState.Idle

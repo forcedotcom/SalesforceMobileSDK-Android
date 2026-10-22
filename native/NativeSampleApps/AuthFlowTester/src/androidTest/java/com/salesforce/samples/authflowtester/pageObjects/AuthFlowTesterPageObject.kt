@@ -680,10 +680,15 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, expectedRtMarker = expectedRtMarker, isDpop = isDpop, expectedBMarker = expectedBMarker, expectedLMarker = expectedLMarker, expectedAMarker = expectedAMarker, wasMigrated = wasMigrated, isJwt = isJwt, isBeacon = isBeacon)
     }
 
+    /** The current user's user agent, including its `ftr_` feature markers. */
+    fun getUserAgent(): String {
+        expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
+        return getText(USER_AGENT_CONTENT_DESC)
+    }
+
     /** Asserts the `ftr_` user-agent flags: every one of [present] is set and none of [absent] is. */
     fun validateUserAgentFlags(present: Set<String>, absent: Set<String> = emptySet()) {
-        expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
-        val userAgent = getText(USER_AGENT_CONTENT_DESC)
+        val userAgent = getUserAgent()
         val flags = userAgent.substringAfter("ftr_", missingDelimiterValue = "").substringBefore(" ").split(".").toSet()
         present.forEach { assert(it in flags) { "Expected '$it' in ftr_ flags of: $userAgent" } }
         absent.forEach { assert(it !in flags) { "Unexpected '$it' in ftr_ flags of: $userAgent" } }

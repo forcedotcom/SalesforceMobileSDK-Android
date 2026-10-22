@@ -35,7 +35,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.lifecycle.Stage
 import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult
+import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.ui.AuthenticationMode
 import com.salesforce.androidsdk.ui.DebugNativeLoginActivity
 import com.salesforce.androidsdk.ui.NativeLoginDebugSettings
@@ -59,9 +61,14 @@ import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.json.JSONObject
+import okhttp3.OkHttpClient
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit.SECONDS
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Native Login (username and password in the SDK's debug Native Login form) against the
@@ -187,9 +194,9 @@ class NativeLoginTests : AuthFlowTest() {
     @Test
     fun testNativeLogin_CancelDuringLogin_NoNewAccount() {
         loginNativeAndValidate(setup.ecaJwtHeadless, useDPoP = false)
-        val (accessTokenBefore, _) = app.getTokens()
+        val (accessTokenBefore, refreshTokenBefore) = app.getTokens()
 
-        // Idle cancel: deterministic.
+        // Idle cancel.
         app.addNewAccount()
         nativeLogin.waitForNativeLogin()
         assertTrue("Cancel should be offered when an account exists", nativeLogin.hasCancelButton())
@@ -199,14 +206,37 @@ class NativeLoginTests : AuthFlowTest() {
         assertEquals(1, SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers?.size)
         assertEquals(accessTokenBefore, app.getTokens().accessToken)
 
-        // Cancel right after submitting: the in-flight login must not add or replace an account.
+        // In-flight cancel: the token response is held until after the cancel, then delivered. The
+        // late response must not add or replace an account, or change the session.
+        val tokenTypeBefore = app.getTokenType()
+        val userAgentBefore = app.getUserAgent()
+        val holdingHttpAccess = holdTokenResponses()
         app.addNewAccount()
         nativeLogin.enterCredentials(setup.user)
         nativeLogin.tapLogin()
+        assertTrue(
+            "The Native Login token request was not sent",
+            holdingHttpAccess.responseHeld.await(HOLD_TIMEOUT_S, SECONDS),
+        )
         nativeLogin.tapCancel()
         app.waitForAppLoad()
-        Thread.sleep(LOGIN_SETTLE_MS)
-        assertEquals(1, SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers?.size)
+        holdingHttpAccess.release.countDown()
+        assertTrue(
+            "The held token response was not delivered",
+            holdingHttpAccess.responseDelivered.await(HOLD_TIMEOUT_S, SECONDS),
+        )
+        Thread.sleep(LATE_COMPLETION_SETTLE_MS)
+        composeTestRule.waitForIdle()
+
+        assertEquals(1, holdingHttpAccess.tokenRequestCount.get())
+        assertFalse("The cancelled login reopened the form", isNativeLoginResumed())
+        val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
+        assertEquals(1, userAccountManager.authenticatedUsers?.size)
+        assertEquals(accessTokenBefore, userAccountManager.currentUser?.authToken)
+        assertEquals(accessTokenBefore, app.getTokens().accessToken)
+        assertEquals(refreshTokenBefore, app.getTokens().refreshToken)
+        assertEquals(tokenTypeBefore, app.getTokenType())
+        assertEquals(userAgentBefore, app.getUserAgent())
     }
 
     // The fallback button hands off to the SDK's browser login, which uses the SDK's browser
@@ -303,6 +333,70 @@ class NativeLoginTests : AuthFlowTest() {
 
     // endregion
 
+    private var originalHttpAccess: HttpAccess? = null
+
+    @After
+    fun restoreHttpAccess() {
+        val current = HttpAccess.DEFAULT
+        if (current is TokenResponseHoldingHttpAccess) current.release.countDown()
+        originalHttpAccess?.let { HttpAccess.DEFAULT = it }
+        originalHttpAccess = null
+        RestClient.clearCaches(null)
+    }
+
+    /**
+     * Routes the next Native Login through [TokenResponseHoldingHttpAccess]. The Native Login
+     * manager is built when its form opens, from the cached unauthenticated client, so that cache
+     * is cleared here, before the form opens.
+     */
+    private fun holdTokenResponses(): TokenResponseHoldingHttpAccess {
+        val current = HttpAccess.DEFAULT
+        originalHttpAccess = current
+        return TokenResponseHoldingHttpAccess(current).also {
+            HttpAccess.DEFAULT = it
+            RestClient.clearCaches(null)
+        }
+    }
+
+    /**
+     * Sends `/services/oauth2/token` requests to the server, then holds each response until
+     * [release], so a cancel can land while the login is in flight.
+     */
+    private class TokenResponseHoldingHttpAccess(private val delegate: HttpAccess) : HttpAccess(null, delegate.userAgent) {
+        val responseHeld = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val responseDelivered = CountDownLatch(1)
+        val tokenRequestCount = AtomicInteger()
+
+        override fun createNewClientBuilder(): OkHttpClient.Builder =
+            delegate.createNewClientBuilder().addInterceptor { chain ->
+                val request = chain.request()
+                if (!request.url.encodedPath.endsWith(TOKEN_ENDPOINT_PATH)) return@addInterceptor chain.proceed(request)
+                tokenRequestCount.incrementAndGet()
+                try {
+                    val response = chain.proceed(request)
+                    responseHeld.countDown()
+                    release.await(HOLD_TIMEOUT_S, SECONDS)
+                    response
+                } finally {
+                    responseHeld.countDown()
+                    responseDelivered.countDown()
+                }
+            }
+
+        override fun hasNetwork() = delegate.hasNetwork()
+    }
+
+    private fun isNativeLoginResumed(): Boolean {
+        var resumed = false
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            resumed = ActivityLifecycleMonitorRegistry.getInstance()
+                .getActivitiesInStage(Stage.RESUMED)
+                .any { it is DebugNativeLoginActivity }
+        }
+        return resumed
+    }
+
     private fun recreateResumedActivity() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.runOnMainSync {
@@ -316,7 +410,9 @@ class NativeLoginTests : AuthFlowTest() {
     }
 
     private companion object {
-        const val LOGIN_SETTLE_MS = 5_000L
+        const val TOKEN_ENDPOINT_PATH = "/services/oauth2/token"
+        const val HOLD_TIMEOUT_S = 60L
+        const val LATE_COMPLETION_SETTLE_MS = 2_000L
     }
 }
 
