@@ -210,6 +210,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     }
 
     override fun setUsername(name: String) {
+        allowLocalNetworkAccess()
         // UiSelector.resourceId("username") matches Android View resource IDs, not HTML element
         // IDs inside Chrome — the quick check is a low-cost probe before the full wait.
         val usernameField = device.findObject(UiSelector().resourceId(USERNAME_ID))
@@ -233,6 +234,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     }
 
     override fun setPassword(password: String) {
+        allowLocalNetworkAccess()
         // Current Chrome exposes the HTML password element's ID as its accessibility resource ID.
         // Prefer that stable signal, then support combined forms by position. The final instance(0)
         // fallback is safe after advanceToPasswordStep has confirmed that the password screen is
