@@ -35,6 +35,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.lifecycle.Stage
 import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult
 import com.salesforce.androidsdk.ui.AuthenticationMode
 import com.salesforce.androidsdk.ui.DebugNativeLoginActivity
 import com.salesforce.androidsdk.ui.NativeLoginDebugSettings
@@ -133,7 +134,11 @@ class NativeLoginTests : AuthFlowTest() {
     @Test
     fun testNativeLogin_RequiredEca_DPoPOff_RejectedNoAccount() {
         val rejection = loginNativeExpectingRejection(setup.requiredDPoPApp, useDPoP = false)
-        assertTrue("Expected a rejection error, got '${rejection.error}'", rejection.error.isNotBlank())
+        // The SDK reports an authorize failure as InvalidCredentials; UnknownError would mean a later stage failed.
+        assertTrue(
+            "Expected the InvalidCredentials result, got '${rejection.error}'",
+            rejection.error.startsWith(NativeLoginResult.InvalidCredentials.name),
+        )
         // Enforced-DPoP ECA: 400 invalid_request for the missing dpop_jkt. invalid_grant would mean a
         // credential or user problem, and a 5xx an outage; neither proves the DPoP requirement.
         assertTrue(
