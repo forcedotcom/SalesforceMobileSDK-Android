@@ -87,8 +87,21 @@ All DPoP tests live here — basic login, RTR, multi-user, migration, server enf
 | `testECAJwtDPoPRtr_RevokedBeforeManyRequests_RotatesAndPreservesBinding` | ECA JWT DPoP RTR | — | Twenty concurrent 401s share one refresh; access and refresh tokens rotate while DPoP binding remains valid |
 | `testECAJwtDPoPRtr_AfterRestart_ManyRequestNonceRecoverySucceeds` | ECA JWT DPoP RTR | — | Cold nonce cache plus concurrent refresh; at most one nonce challenge/retry; key binding survives restart |
 
+After a DPoP login (`testECAJwtDPoP_Hybrid`), the **Tokens** card shows **OAuth Token Type** `DPoP`, and the user agent carries the `DP` marker in `ftr_`:
+
+| DPoP session tokens | User agent with the `DP` marker |
+|---|---|
+| <img src="Screenshots/dpop-session-tokens.png" alt="Tokens card of a DPoP session" width="300"> | <img src="Screenshots/dpop-session-user-agent.png" alt="User agent of a DPoP session with the DP marker" width="300"> |
+
+(Token values and the device ID are redacted.)
+
 #### CommunityLoginTests
 Tests for login against a community (Experience Cloud) login host, using the `community_auth` login host and the existing ECAs (no dedicated community app config — the community in the AuthFlowTester test org is set up so the existing apps' consumer keys/redirect URIs work unchanged for the community user; see `CommunityLoginTests`' class doc for the app chosen per scenario). Follows up on the DPoP + community investigation (W-24342940): community sites route through an Experience Cloud front door rather than a plain My Domain host, so these tests confirm the existing login/DPoP/multi-user/restart/migration helpers behave the same way against that front door as they do against `regular_auth`. `community_auth` requires a dedicated Experience Cloud site and is not provisioned in every environment — every test skips cleanly (`Assume.assumeTrue`) when the host is absent from `ui_test_config.json`. The `community_auth` login host provisions only one user, so cross-host multi-user coverage pairs it with a `regular_auth` DPoP user instead of a second `community_auth` user. Each refresh-based test also asserts that the stored community URL equals the configured `community_auth` URL (host and path) and that every `/services/oauth2/token` request goes to that community host and path, including after a restart.
+
+
+After a community login (`testCommunityJwt_Hybrid`), the **Community** card shows the community ID and URL stored for the user (redacted here):
+
+<img src="Screenshots/community-session.png" alt="Community card after a community login" width="300">
 
 | Test | App Config | DPoP | Hybrid | Notes |
 |------|-----------|------|--------|-------|
