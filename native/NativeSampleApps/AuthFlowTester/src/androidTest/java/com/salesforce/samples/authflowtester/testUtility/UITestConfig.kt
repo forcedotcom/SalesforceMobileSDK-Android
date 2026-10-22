@@ -98,7 +98,8 @@ data class UITestConfig(
      * Resolves the Native Login fixtures by name: the `eca_jwt_headless` and `eca_jwt_dpop_headless`
      * apps and the first user of the `community_auth` login host.
      *
-     * @throws NativeLoginConfigException When either app, the host or its user is missing.
+     * @throws NativeLoginConfigException When either app, the host or its user is missing, an app
+     * has an empty consumerKey or an app's redirectUri is not HTTPS.
      */
     fun nativeLoginSetup(): NativeLoginSetup {
         val missingApps = NATIVE_LOGIN_APPS.filter { findApp(it) == null }.map { it.configName }
@@ -107,6 +108,15 @@ data class UITestConfig(
                 "Native Login tests need both ${NATIVE_LOGIN_APPS.joinToString(" and ") { it.configName }} " +
                     "in apps of ui_test_config.json; missing: ${missingApps.joinToString()}."
             )
+        }
+        NATIVE_LOGIN_APPS.forEach { knownApp ->
+            val app = getApp(knownApp)
+            if (app.consumerKey.isBlank()) {
+                throw NativeLoginConfigException("App '${knownApp.configName}' in ui_test_config.json has an empty consumerKey.")
+            }
+            if (!app.redirectUri.lowercase().startsWith("https://")) {
+                throw NativeLoginConfigException("App '${knownApp.configName}' in ui_test_config.json needs an https:// redirectUri.")
+            }
         }
         val hostName = KnownLoginHostConfig.COMMUNITY_AUTH.configName
         val host = loginHosts.find { it.name == hostName }

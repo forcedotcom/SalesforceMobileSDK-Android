@@ -373,6 +373,25 @@ class NativeLoginConfigRulesTest {
     }
 
     @Test
+    fun test_givenEmptyConsumerKey_whenResolved_thenFailsNamingTheApp() {
+        val config = config(apps = listOf(app("eca_jwt_headless").copy(consumerKey = " "), app("eca_jwt_dpop_headless")))
+        val error = assertThrows(NativeLoginConfigException::class.java) { config.nativeLoginSetup() }
+        assertTrue(error.message.orEmpty(), error.message.orEmpty().contains("'eca_jwt_headless'"))
+        assertTrue(error.message.orEmpty(), error.message.orEmpty().contains("empty consumerKey"))
+    }
+
+    @Test
+    fun test_givenNonHttpsRedirectUri_whenResolved_thenFailsNamingTheApp() {
+        val config = config(apps = listOf(
+            app("eca_jwt_headless"),
+            app("eca_jwt_dpop_headless").copy(redirectUri = "sfdc://oauth/done"),
+        ))
+        val error = assertThrows(NativeLoginConfigException::class.java) { config.nativeLoginSetup() }
+        assertTrue(error.message.orEmpty(), error.message.orEmpty().contains("'eca_jwt_dpop_headless'"))
+        assertTrue(error.message.orEmpty(), error.message.orEmpty().contains("https:// redirectUri"))
+    }
+
+    @Test
     fun test_givenCompleteFixtures_whenResolved_thenUsesAppsAndFirstHostUser() {
         val setup = config().nativeLoginSetup()
         assertEquals("eca_jwt_headless", setup.ecaJwtHeadless.name)
