@@ -84,36 +84,45 @@ data class UITestConfig(
     val loginPoolHost: String? = null,
     val loginHosts: List<LoginHost>,
     val apps: List<AppConfig>,
-    val nativeLogin: NativeLoginConfig? = null,
 ) {
 
     /**
-     * True when `nativeLogin` is present and every name it references resolves, so Native Login
-     * tests can skip via `assumeTrue` in environments that do not provision the headless ECAs.
+     * True when at least one headless ECA (`eca_jwt_headless` or `eca_jwt_dpop_headless`) is in
+     * `apps`. Native Login tests skip via `assumeTrue` when neither is, for environments that do not
+     * provision them. This only checks names, so a bad Native Login entry never affects other suites.
      */
-    val hasNativeLoginConfig: Boolean
-        get() = runCatching { nativeLoginSetup() }.isSuccess
+    val hasNativeLoginApps: Boolean
+        get() = NATIVE_LOGIN_APPS.any { findApp(it) != null }
 
     /**
-     * Resolves the `nativeLogin` section into the apps, host and user a Native Login test uses.
+     * Resolves the Native Login fixtures by name: the `eca_jwt_headless` and `eca_jwt_dpop_headless`
+     * apps and the first user of the `community_auth` login host.
      *
-     * @throws NativeLoginConfigException When the section, a named app, the host or its user is missing.
+     * @throws NativeLoginConfigException When either app, the host or its user is missing.
      */
     fun nativeLoginSetup(): NativeLoginSetup {
-        val config = nativeLogin ?: throw NativeLoginConfigException("nativeLogin not found in ui_test_config.json.")
-        fun app(name: String) = apps.find { it.name == name }
-            ?: throw NativeLoginConfigException("nativeLogin references unknown app '$name'.")
-        val host = loginHosts.find { it.name == config.loginHost }
-            ?: throw NativeLoginConfigException("nativeLogin references unknown loginHost '${config.loginHost}'.")
+        val missingApps = NATIVE_LOGIN_APPS.filter { findApp(it) == null }.map { it.configName }
+        if (missingApps.isNotEmpty()) {
+            throw NativeLoginConfigException(
+                "Native Login tests need both ${NATIVE_LOGIN_APPS.joinToString(" and ") { it.configName }} " +
+                    "in apps of ui_test_config.json; missing: ${missingApps.joinToString()}."
+            )
+        }
+        val hostName = KnownLoginHostConfig.COMMUNITY_AUTH.configName
+        val host = loginHosts.find { it.name == hostName }
+            ?: throw NativeLoginConfigException("Native Login tests need the '$hostName' login host in ui_test_config.json.")
         val hostUser = host.users.firstOrNull()
-            ?: throw NativeLoginConfigException("nativeLogin loginHost '${host.name}' has no users.")
+            ?: throw NativeLoginConfigException("The '$hostName' login host in ui_test_config.json has no users.")
         return NativeLoginSetup(
             host = host,
             user = hostUser,
-            optionalDPoPApp = app(config.optionalDPoPApp),
-            requiredDPoPApp = app(config.requiredDPoPApp),
+            ecaJwtHeadless = getApp(KnownAppConfig.ECA_JWT_HEADLESS),
+            ecaJwtDPoPHeadless = getApp(KnownAppConfig.ECA_JWT_DPOP_HEADLESS),
         )
     }
+
+    private fun findApp(knownAppConfig: KnownAppConfig): AppConfig? =
+        apps.find { it.name == knownAppConfig.configName }
 
     fun requireLoginPoolHost(): String = loginPoolHost
         ?: throw Exception("loginPoolHost not found in ui_test_config.json.")
@@ -145,21 +154,20 @@ data class UITestConfig(
 
 }
 
-/** The `nativeLogin` section of `ui_test_config.json`: names into `loginHosts` and `apps`. */
-@Serializable
-data class NativeLoginConfig(
-    val loginHost: String,
-    val optionalDPoPApp: String,
-    val requiredDPoPApp: String,
-)
-
-/** Resolved [NativeLoginConfig]. The user is reused from the host's `users`, never duplicated. */
+/** The Native Login fixtures. The user is reused from the host's `users`, never duplicated. */
 data class NativeLoginSetup(
     val host: LoginHost,
     val user: User,
-    val optionalDPoPApp: AppConfig,
-    val requiredDPoPApp: AppConfig,
+    /** Headless ECA that accepts, but does not require, DPoP. */
+    val ecaJwtHeadless: AppConfig,
+    /** Headless ECA that requires DPoP: authorize without `dpop_jkt` is rejected. */
+    val ecaJwtDPoPHeadless: AppConfig,
 )
+
+private val NATIVE_LOGIN_APPS = listOf(KnownAppConfig.ECA_JWT_HEADLESS, KnownAppConfig.ECA_JWT_DPOP_HEADLESS)
+
+private val KnownAppConfig.configName: String get() = name.lowercase()
+private val KnownLoginHostConfig.configName: String get() = name.lowercase()
 
 class NativeLoginConfigException(message: String) : Exception(message)
 

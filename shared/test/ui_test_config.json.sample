@@ -137,10 +137,5 @@
       "redirectUri": "https://<your-community>.my.site.com/<path>/services/oauth2/echo",
       "scopes": "api content id lightning refresh_token sfap_api web"
     }
-  ],
-  "nativeLogin": {
-    "loginHost": "community_auth",
-    "optionalDPoPApp": "eca_jwt_headless",
-    "requiredDPoPApp": "eca_jwt_dpop_headless"
-  }
+  ]
 }

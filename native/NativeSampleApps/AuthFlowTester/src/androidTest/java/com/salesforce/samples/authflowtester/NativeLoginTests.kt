@@ -40,17 +40,22 @@ import com.salesforce.androidsdk.ui.AuthenticationMode
 import com.salesforce.androidsdk.ui.DebugNativeLoginActivity
 import com.salesforce.androidsdk.ui.NativeLoginDebugSettings
 import com.salesforce.samples.authflowtester.pageObjects.ChromeCustomTabPageObject
+import com.salesforce.samples.authflowtester.testUtility.AppConfig
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.COMMUNITY_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
+import com.salesforce.samples.authflowtester.testUtility.LoginHost
 import com.salesforce.samples.authflowtester.testUtility.NativeLoginConfigException
 import com.salesforce.samples.authflowtester.testUtility.NativeLoginSetup
+import com.salesforce.samples.authflowtester.testUtility.UITestConfig
+import com.salesforce.samples.authflowtester.testUtility.User
 import com.salesforce.samples.authflowtester.testUtility.testConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.json.JSONObject
@@ -59,16 +64,17 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Native Login (username and password in the SDK's debug Native Login form) against the community host named by
- * the `nativeLogin` section of `ui_test_config.json`.
+ * Native Login (username and password in the SDK's debug Native Login form) against the
+ * `community_auth` login host of `ui_test_config.json`.
  *
- * Two headless External Client Apps are used: one where DPoP is optional and one where it is
- * required. The four-case matrix below crosses them with the app's DPoP setting; the remaining
- * tests cover cancellation, the browser fallback, same-user re-authentication, Activity recreation
- * and multi-user isolation.
+ * Two headless External Client Apps from `apps` are used: `eca_jwt_headless` accepts DPoP and
+ * `eca_jwt_dpop_headless` requires it. The four-case matrix below crosses them with the app's DPoP
+ * setting; the remaining tests cover cancellation, the browser fallback, same-user
+ * re-authentication, Activity recreation and multi-user isolation.
  *
- * Every test skips cleanly when `nativeLogin` is absent or incomplete. The app starts in Native
- * mode (see [beforeActivityLaunch]); [AuthFlowTest.cleanup] restores Browser mode.
+ * Every test skips when neither headless ECA is configured, and fails when only one of them is or
+ * `community_auth` is missing. The app starts in Native mode (see [beforeActivityLaunch]);
+ * [AuthFlowTest.cleanup] restores Browser mode.
  */
 @RunWith(AndroidJUnit4::class)
 @LargeTest
@@ -79,7 +85,7 @@ class NativeLoginTests : AuthFlowTest() {
     /** Selects Native mode before the app launches so the first login attempt shows the native form. */
     override fun beforeActivityLaunch() {
         val nativeSetup = runCatching { testConfig.nativeLoginSetup() }.getOrNull() ?: return
-        val app = nativeSetup.optionalDPoPApp
+        val app = nativeSetup.ecaJwtHeadless
         SalesforceSDKManager.getInstance().debugLoginSettings.apply(
             JSONObject()
                 .put(NativeLoginDebugSettings.JSON_CONSUMER_KEY, app.consumerKey)
@@ -91,20 +97,24 @@ class NativeLoginTests : AuthFlowTest() {
     }
 
     @Before
-    fun skipIfNativeLoginNotConfigured() {
+    fun resolveNativeLoginSetup() {
         assumeTrue(
-            "nativeLogin section missing or incomplete in ui_test_config.json; skipping Native Login tests",
-            testConfig.hasNativeLoginConfig,
+            "Neither eca_jwt_headless nor eca_jwt_dpop_headless is in ui_test_config.json; skipping Native Login tests",
+            testConfig.hasNativeLoginApps,
         )
-        setup = testConfig.nativeLoginSetup()
+        setup = try {
+            testConfig.nativeLoginSetup()
+        } catch (e: NativeLoginConfigException) {
+            throw AssertionError("Invalid Native Login configuration: ${e.message}", e)
+        }
     }
 
     // region Four-case matrix
 
-    // Optional-DPoP ECA with DPoP off: Bearer session.
+    // eca_jwt_headless with DPoP off: Bearer session.
     @Test
-    fun testNativeLogin_OptionalEca_DPoPOff_Bearer() {
-        loginNativeAndValidate(setup.optionalDPoPApp, useDPoP = false)
+    fun testECAJwtHeadless_DPoPOff_Bearer() {
+        loginNativeAndValidate(setup.ecaJwtHeadless, useDPoP = false)
         assertRevokeAndRefreshWorks(
             expectsRefreshTokenRotation = true, // The headless ECAs have refresh token rotation enabled.
             knownLoginHostConfig = COMMUNITY_AUTH,
@@ -115,10 +125,10 @@ class NativeLoginTests : AuthFlowTest() {
         )
     }
 
-    // Optional-DPoP ECA with DPoP on: DPoP-bound session.
+    // eca_jwt_headless with DPoP on: DPoP-bound session.
     @Test
-    fun testNativeLogin_OptionalEca_DPoPOn_DPoP() {
-        loginNativeAndValidate(setup.optionalDPoPApp, useDPoP = true)
+    fun testECAJwtHeadless_DPoPOn_DPoP() {
+        loginNativeAndValidate(setup.ecaJwtHeadless, useDPoP = true)
         assertRevokeAndRefreshWorks(
             expectsRefreshTokenRotation = true, // The headless ECAs have refresh token rotation enabled.
             isDpop = true,
@@ -130,16 +140,16 @@ class NativeLoginTests : AuthFlowTest() {
         )
     }
 
-    // Required-DPoP ECA with DPoP off: the server rejects the unbound request and no account is added.
+    // eca_jwt_dpop_headless with DPoP off: the server rejects the unbound request and no account is added.
     @Test
-    fun testNativeLogin_RequiredEca_DPoPOff_RejectedNoAccount() {
-        val rejection = loginNativeExpectingRejection(setup.requiredDPoPApp, useDPoP = false)
+    fun testECAJwtDPoPHeadless_DPoPOff_RejectedNoAccount() {
+        val rejection = loginNativeExpectingRejection(setup.ecaJwtDPoPHeadless, useDPoP = false)
         // The SDK reports an authorize failure as InvalidCredentials; UnknownError would mean a later stage failed.
         assertTrue(
             "Expected the InvalidCredentials result, got '${rejection.error}'",
             rejection.error.startsWith(NativeLoginResult.InvalidCredentials.name),
         )
-        // Enforced-DPoP ECA: 400 invalid_request for the missing dpop_jkt. invalid_grant would mean a
+        // DPoP-required ECA: 400 invalid_request for the missing dpop_jkt. invalid_grant would mean a
         // credential or user problem, and a 5xx an outage; neither proves the DPoP requirement.
         assertTrue(
             "Expected an authorize rejection for the missing dpop_jkt, without a DPoP proof: ${rejection.diagnostics}",
@@ -153,10 +163,10 @@ class NativeLoginTests : AuthFlowTest() {
         assertEquals(null, SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers)
     }
 
-    // Required-DPoP ECA with DPoP on: DPoP-bound session.
+    // eca_jwt_dpop_headless with DPoP on: DPoP-bound session.
     @Test
-    fun testNativeLogin_RequiredEca_DPoPOn_DPoP() {
-        loginNativeAndValidate(setup.requiredDPoPApp, useDPoP = true)
+    fun testECAJwtDPoPHeadless_DPoPOn_DPoP() {
+        loginNativeAndValidate(setup.ecaJwtDPoPHeadless, useDPoP = true)
         assertRevokeAndRefreshWorks(
             expectsRefreshTokenRotation = true, // The headless ECAs have refresh token rotation enabled.
             isDpop = true,
@@ -176,7 +186,7 @@ class NativeLoginTests : AuthFlowTest() {
     // attempt, idle or mid-login, leaves the existing session untouched.
     @Test
     fun testNativeLogin_CancelDuringLogin_NoNewAccount() {
-        loginNativeAndValidate(setup.optionalDPoPApp, useDPoP = false)
+        loginNativeAndValidate(setup.ecaJwtHeadless, useDPoP = false)
         val (accessTokenBefore, _) = app.getTokens()
 
         // Idle cancel: deterministic.
@@ -220,7 +230,7 @@ class NativeLoginTests : AuthFlowTest() {
         app.validateNativeOAuthValues(testConfig.getApp(CA_OPAQUE), isDpop = false)
         assertNotEquals(
             "Browser fallback must not use the Native Login ECA",
-            setup.optionalDPoPApp.consumerKey,
+            setup.ecaJwtHeadless.consumerKey,
             SalesforceSDKManager.getInstance().userAccountManager.currentUser?.clientId,
         )
     }
@@ -233,11 +243,11 @@ class NativeLoginTests : AuthFlowTest() {
     // session is Bearer, with no DPoP marker left over.
     @Test
     fun testNativeLogin_SameUserDPoPToBearerReauth() {
-        loginNativeAndValidate(setup.optionalDPoPApp, useDPoP = true)
+        loginNativeAndValidate(setup.ecaJwtHeadless, useDPoP = true)
         assertEquals("DPoP", app.getTokenType())
 
         app.addNewAccount()
-        loginNativeAndValidate(setup.optionalDPoPApp, useDPoP = false)
+        loginNativeAndValidate(setup.ecaJwtHeadless, useDPoP = false)
 
         assertEquals(1, SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers?.size)
         assertEquals("Bearer", app.getTokenType())
@@ -255,13 +265,13 @@ class NativeLoginTests : AuthFlowTest() {
         assertEquals(setup.user.username, nativeLogin.usernameFieldText())
 
         // The form still logs in after recreation.
-        loginNativeAndValidate(setup.optionalDPoPApp, useDPoP = false)
+        loginNativeAndValidate(setup.ecaJwtHeadless, useDPoP = false)
     }
 
     // A DPoP Native Login user and a Bearer browser user coexist with independent sessions.
     @Test
     fun testNativeLogin_MultiUser_Isolation() {
-        loginNativeAndValidate(setup.optionalDPoPApp, useDPoP = true)
+        loginNativeAndValidate(setup.ecaJwtHeadless, useDPoP = true)
         val (nativeAccessToken, nativeRefreshToken) = app.getTokens()
         val nativeUsername = setup.user.username
 
@@ -310,22 +320,77 @@ class NativeLoginTests : AuthFlowTest() {
     }
 }
 
-/** Validates the `nativeLogin` section shape on its own, so a bad config fails with a clear message. */
+/** Validates the Native Login fixtures on their own, so a bad config fails with a clear message. */
 @RunWith(AndroidJUnit4::class)
 class UITestConfigNativeLoginTest {
 
     @Test
     fun testNativeLoginConfigIsValid() {
-        assumeTrue("nativeLogin not configured", testConfig.nativeLogin != null)
+        assumeTrue("Native Login apps not configured", testConfig.hasNativeLoginApps)
         val setup = try {
             testConfig.nativeLoginSetup()
         } catch (e: NativeLoginConfigException) {
-            throw AssertionError("Invalid nativeLogin configuration: ${e.message}", e)
+            throw AssertionError("Invalid Native Login configuration: ${e.message}", e)
         }
         assertEquals(COMMUNITY_AUTH.name.lowercase(), setup.host.name)
-        assertTrue(setup.optionalDPoPApp.consumerKey.isNotBlank())
-        assertTrue(setup.requiredDPoPApp.consumerKey.isNotBlank())
-        assertNotEquals(setup.optionalDPoPApp.consumerKey, setup.requiredDPoPApp.consumerKey)
+        assertTrue(setup.ecaJwtHeadless.consumerKey.isNotBlank())
+        assertTrue(setup.ecaJwtDPoPHeadless.consumerKey.isNotBlank())
+        assertNotEquals(setup.ecaJwtHeadless.consumerKey, setup.ecaJwtDPoPHeadless.consumerKey)
         assertFalse(setup.user.username.isBlank())
+    }
+}
+
+/** The Native Login fixture rules, on in-memory configs with placeholder values. */
+@RunWith(AndroidJUnit4::class)
+class NativeLoginConfigRulesTest {
+
+    @Test
+    fun test_givenNoHeadlessApps_whenChecked_thenNativeLoginIsNotConfigured() {
+        val config = config(apps = emptyList())
+        assertFalse(config.hasNativeLoginApps)
+    }
+
+    @Test
+    fun test_givenOneHeadlessApp_whenResolved_thenFailsNamingTheMissingApp() {
+        val config = config(apps = listOf(app("eca_jwt_headless")))
+        assertTrue(config.hasNativeLoginApps)
+        val error = assertThrows(NativeLoginConfigException::class.java) { config.nativeLoginSetup() }
+        assertTrue(error.message.orEmpty(), error.message.orEmpty().contains("missing: eca_jwt_dpop_headless"))
+    }
+
+    @Test
+    fun test_givenNoCommunityHost_whenResolved_thenFailsNamingTheHost() {
+        val config = config(hosts = emptyList())
+        val error = assertThrows(NativeLoginConfigException::class.java) { config.nativeLoginSetup() }
+        assertTrue(error.message.orEmpty(), error.message.orEmpty().contains("community_auth"))
+    }
+
+    @Test
+    fun test_givenCommunityHostWithoutUsers_whenResolved_thenFails() {
+        val config = config(hosts = listOf(LoginHost("community_auth", HOST_URL, emptyList())))
+        val error = assertThrows(NativeLoginConfigException::class.java) { config.nativeLoginSetup() }
+        assertTrue(error.message.orEmpty(), error.message.orEmpty().contains("has no users"))
+    }
+
+    @Test
+    fun test_givenCompleteFixtures_whenResolved_thenUsesAppsAndFirstHostUser() {
+        val setup = config().nativeLoginSetup()
+        assertEquals("eca_jwt_headless", setup.ecaJwtHeadless.name)
+        assertEquals("eca_jwt_dpop_headless", setup.ecaJwtDPoPHeadless.name)
+        assertEquals(HOST_URL, setup.host.url)
+        assertEquals("first@example.com", setup.user.username)
+    }
+
+    private fun config(
+        apps: List<AppConfig> = listOf(app("eca_jwt_headless"), app("eca_jwt_dpop_headless")),
+        hosts: List<LoginHost> = listOf(
+            LoginHost("community_auth", HOST_URL, listOf(User("first@example.com", "placeholder"))),
+        ),
+    ) = UITestConfig(loginHosts = hosts, apps = apps)
+
+    private fun app(name: String) = AppConfig(name, "key_$name", "$HOST_URL/services/oauth2/echo", "api refresh_token")
+
+    private companion object {
+        const val HOST_URL = "https://example.my.site.com/path"
     }
 }
