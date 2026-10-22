@@ -117,7 +117,7 @@ Native Login sessions carry the `NL` and `A5` markers in `ftr_` (plus `DP` for D
 |------|-----------|------|-------|
 | `testNativeLogin_OptionalEca_DPoPOff_Bearer` | Headless ECA (optional DPoP) | Off | Form login; Bearer session; revoke+refresh works |
 | `testNativeLogin_OptionalEca_DPoPOn_DPoP` | Headless ECA (optional DPoP) | On | DPoP-bound session; thumbprint matches the stored key; revoke+refresh preserves binding |
-| `testNativeLogin_RequiredEca_DPoPOff_RejectedNoAccount` | Headless ECA (required DPoP) | Off | Authorize is rejected with 400 and no proof sent; error shown on the form; no account created |
+| `testNativeLogin_RequiredEca_DPoPOff_RejectedNoAccount` | Headless ECA (required DPoP) | Off | Authorize is rejected with 400 `invalid_request` (missing `dpop_jkt`), never `invalid_grant`, and no proof sent; error shown on the form; no account created |
 | `testNativeLogin_RequiredEca_DPoPOn_DPoP` | Headless ECA (required DPoP) | On | DPoP-bound session |
 | `testNativeLogin_CancelDuringLogin_NoNewAccount` | Headless ECA (optional DPoP) | Off | Cancel leaves no new account behind |
 | `testNativeLogin_BrowserFallback_UsesBrowserConfig` | Headless ECA, then browser ECA | - | The fallback button hands off to the browser login with the browser-mode boot config |
@@ -469,7 +469,7 @@ AuthFlowTester registers `LoginRouterActivity` as the SDK's Native Login activit
 To switch modes, use the SDK's **Login Options** screen. AuthFlowTester plugs into it through the `SalesforceSDKManager.loginOptionsExtension` hook (`LoginOptionsExtension`), which adds an **Authentication Mode** picker (Browser / Native) at the top of the screen. Login Options is reachable only in debug builds, through the Developer Support menu:
 
 1. Launch the debug app. The login screen appears (in Browser mode, the Chrome custom tab; press Back to close it if needed) and shows the **Login Server Picker** sheet.
-2. Tap the **Developer Support** icon (top right of the sheet) and choose **Login Options**.
+2. Tap the **Developer Support** icon (top right of the sheet), or close the sheet and use the **three-dot menu** → **Developer Support**, then choose **Login Options**.
 3. At the top, tap **Native** under **Authentication Mode**.
 4. Fill in **Client ID**, **Native Callback URL** and **Community Login URL**, or paste a JSON object (`consumerKey`, `redirectUri`, `communityUrl`, `useDPoP`, `useHybridFlow`) into **Import JSON** and tap **Import Native Config**. Use the **Use DPoP** and **Use Hybrid Auth Token** toggles as needed.
 5. Press Back. Login restarts and shows the Native Login form.
@@ -483,6 +483,14 @@ The Native Login screen has username and password fields, **Log In**, **Log In w
 | ![Login Options in Browser mode](Screenshots/login-options-browser-mode.png) | ![Login Options in Native mode](Screenshots/native-login-options.png) | ![Native Login screen](Screenshots/native-login-screen.png) |
 
 (Values shown are placeholders.)
+
+After a Native Login, the **User Credentials** card shows the session's **OAuth Token Type**: `DPoP` when **Use DPoP** is on, `Bearer` when it is off. With the required-DPoP ECA and **Use DPoP** off, the form shows the authorize rejection (`400 invalid_request`, missing `dpop_jkt`) and no account is created.
+
+| Native session (DPoP) | Native session (Bearer) | Required-DPoP ECA rejection |
+|---|---|---|
+| ![Native Login session with DPoP token type](Screenshots/native-session-dpop.png) | ![Native Login session with Bearer token type](Screenshots/native-session-bearer.png) | ![Native Login rejected by the required-DPoP ECA](Screenshots/native-login-rejected.png) |
+
+(Identifying values are redacted.)
 
 ### Change Server
 
@@ -500,6 +508,8 @@ The main screen shows expandable cards for the current user's data:
 - **User Credentials** — expand to inspect identity (username, user ID, org ID), OAuth client configuration (client ID, login domain), tokens (access token, refresh token, format, OAuth token type, scopes), URLs, community info, domains/SIDs, cookies/security, beacon fields, and a **DPoP** section (shown only for DPoP sessions) with the current server-issued DPoP nonce. Sensitive values are masked by default; tap a row to reveal the full value. Long-press any row to copy its value to the clipboard. Tap the share icon on a card header to export the full section as JSON.
 - **JWT Details** — appears only when the current user has a JWT access token. Shows decoded header (algorithm, key ID, token type, version) and payload (audience, expiration, issuer, subject, scopes, client ID).
 - **OAuth Configuration** — displays the currently configured boot config values: consumer key, callback URL, and scopes.
+
+<img src="Screenshots/session-details.png" alt="Main screen after login with collapsed cards" width="240">
 
 ### Bottom Bar Actions
 
