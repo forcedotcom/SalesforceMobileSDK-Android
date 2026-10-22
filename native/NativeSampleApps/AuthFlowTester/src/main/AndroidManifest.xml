@@ -44,11 +44,6 @@
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
 
-        <activity
-            android:name=".AuthFlowLoginOptionsActivity"
-            android:exported="true"
-            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
-
         <!-- Login activity -->
         <activity android:name="com.salesforce.androidsdk.ui.LoginActivity"
             android:theme="@style/SalesforceSDK"

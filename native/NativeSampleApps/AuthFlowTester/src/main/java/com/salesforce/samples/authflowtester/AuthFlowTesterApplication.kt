@@ -45,6 +45,8 @@ class AuthFlowTesterApplication : Application() {
             AuthFlowTesterActivity::class.java,
             nativeLoginActivity = LoginRouterActivity::class.java,
         )
+        // Browser/Native mode picker and Native Login settings in the debug Login Options screen.
+        SalesforceSDKManager.getInstance().loginOptionsExtension = AuthFlowLoginOptionsExtension
         // Installed before any login so Native Login requests are traced too.
         HttpAccess.DEFAULT = TokenRequestCapturingHttpAccess(applicationContext)
 

@@ -37,12 +37,13 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
+import androidx.test.espresso.Espresso
 import androidx.test.espresso.Espresso.closeSoftKeyboard
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
 import com.salesforce.samples.authflowtester.AUTH_MODE_BROWSER_TAG
 import com.salesforce.samples.authflowtester.AUTH_MODE_NATIVE_TAG
 import com.salesforce.samples.authflowtester.AuthMode
-import com.salesforce.samples.authflowtester.BROWSER_LOGIN_OPTIONS_BUTTON_TAG
-import com.salesforce.samples.authflowtester.LOGIN_OPTIONS_APPLY_TAG
 import com.salesforce.samples.authflowtester.NATIVE_BROWSER_FALLBACK_TAG
 import com.salesforce.samples.authflowtester.NATIVE_CALLBACK_URL_TAG
 import com.salesforce.samples.authflowtester.NATIVE_CANCEL_BUTTON_TAG
@@ -170,23 +171,25 @@ class NativeLoginPageObject(composeTestRule: ComposeTestRule) : BasePageObject(c
         composeTestRule.waitForIdle()
     }
 
-    fun openBrowserLoginOptions() = tap(BROWSER_LOGIN_OPTIONS_BUTTON_TAG)
-
-    fun apply() = tap(LOGIN_OPTIONS_APPLY_TAG)
+    /** Closes the SDK's Login Options screen; the chosen mode and settings apply as it closes. */
+    fun closeLoginOptions() {
+        closeSoftKeyboard()
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
+        composeTestRule.waitForIdle()
+    }
 
     private fun setField(tag: String, value: String) {
         composeTestRule.onNodeWithTag(tag).performScrollTo().performTextClearance()
         composeTestRule.onNodeWithTag(tag).performTextInput(value)
     }
 
-    /** Opens Login Options from the Native Login form, applies [app]/[host]/[dpop] and returns. */
+    /** Opens the SDK Login Options from the Native Login form, applies [app]/[host]/[dpop] and returns. */
     fun configureNative(app: AppConfig, host: LoginHost, dpop: Boolean) {
         openLoginOptions()
         selectMode(AuthMode.NATIVE)
         setNativeSettings(app, host)
         setDPoP(dpop)
-        closeSoftKeyboard()
-        apply()
+        closeLoginOptions()
         waitForNativeLogin()
     }
 

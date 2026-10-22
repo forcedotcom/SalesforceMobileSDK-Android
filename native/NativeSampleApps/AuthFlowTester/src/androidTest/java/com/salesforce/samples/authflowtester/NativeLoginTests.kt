@@ -249,8 +249,7 @@ class NativeLoginTests : AuthFlowTest() {
         nativeLogin.waitForNativeLogin()
         nativeLogin.openLoginOptions()
         nativeLogin.selectMode(AuthMode.BROWSER)
-        closeSoftKeyboard()
-        nativeLogin.apply()
+        nativeLogin.closeLoginOptions()
         loginAndValidate(
             knownAppConfig = CA_OPAQUE,
             knownLoginHostConfig = REGULAR_AUTH,

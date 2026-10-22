@@ -109,7 +109,7 @@ Tests for login against a community (Experience Cloud) login host, using the `co
 | `testCommunityDPoP_And_RegularAuthDPoP_MultiHost_UniqueTokensAndIsolatedNonces` | ECA JWT DPoP | Yes | Yes | Community user + `regular_auth` ECA JWT DPoP user; unique tokens/keys, independent revoke+refresh and nonce rotation per user/host |
 
 #### NativeLoginTests
-Tests for Native Login (the SDK's `useNativeLogin` / `NativeLoginManager` path) against the community login host, with a Compose `NativeLoginActivity` owned by the app. Native Login talks to the community's headless login endpoints directly, so these tests use dedicated headless ECAs (`eca_jwt_headless`, DPoP-optional; `eca_jwt_dpop_headless`, DPoP-required) and the `community_auth` login host and user. Configure them with the `nativeLogin` block of `ui_test_config.json` (`loginHost`, `optionalDPoPApp`, `requiredDPoPApp`; see `shared/test/ui_test_config.json.sample`). Every test skips cleanly (`Assume.assumeTrue`) when the `nativeLogin` block is absent, so CI without it stays green. Tests select Native mode through the app's own Login Options state (`AuthModeStore`) before the activity launches, and check the redacted OAuth trace in `NativeLoginDiagnostics` (stage, HTTP status, OAuth error, whether a DPoP proof was sent, whether a nonce was received; never tokens or passwords).
+Tests for Native Login (the SDK's `useNativeLogin` / `NativeLoginManager` path) against the community login host, with a Compose `NativeLoginActivity` owned by the app. Native Login talks to the community's headless login endpoints directly, so these tests use dedicated headless ECAs (`eca_jwt_headless`, DPoP-optional; `eca_jwt_dpop_headless`, DPoP-required) and the `community_auth` login host and user. Configure them with the `nativeLogin` block of `ui_test_config.json` (`loginHost`, `optionalDPoPApp`, `requiredDPoPApp`; see `shared/test/ui_test_config.json.sample`). Every test skips cleanly (`Assume.assumeTrue`) when the `nativeLogin` block is absent, so CI without it stays green. Tests select Native mode through the app's `AuthModeStore` (the state behind the Login Options mode picker) before the activity launches, and check the redacted OAuth trace in `NativeLoginDiagnostics` (stage, HTTP status, OAuth error, whether a DPoP proof was sent, whether a nonce was received; never tokens or passwords).
 
 Native Login sessions carry the `NL` and `A5` markers in `ftr_` (plus `DP` for DPoP) and no `B` marker. They carry no `L` marker: those are registered only by `LoginActivity`, which Native Login never starts.
 
@@ -466,18 +466,21 @@ The Login Options screen allows you to override the default boot config for the 
 
 AuthFlowTester registers `LoginRouterActivity` as the SDK's Native Login activity. For every login attempt it forwards either to the Compose `NativeLoginActivity` (Native mode) or to the SDK's `LoginActivity` (Browser mode, the default), so browser behavior is unchanged unless you opt in.
 
-To switch modes, open the app's **Login Options** screen: tap the **settings** icon in the main screen's top bar, or, before logging in, run `adb shell am start -n com.salesforce.samples.authflowtester/.AuthFlowLoginOptionsActivity` (the activity is exported for this reason). The screen offers:
+To switch modes, use the SDK's **Login Options** screen. AuthFlowTester plugs into it through the `SalesforceSDKManager.loginOptionsExtension` hook (`LoginOptionsExtension`), which adds an **Authentication Mode** picker (Browser / Native) at the top of the screen. Login Options is reachable only in debug builds, through the Developer Support menu:
 
-- **Mode** - Browser or Native. Switching back to Browser unregisters the Native Login feature markers.
-- **Use DPoP** and **Hybrid Auth Token** toggles for Native sessions.
-- **Client ID**, **Callback URL** and **Community URL** - the headless ECA and community used by Native Login. **Import JSON** accepts an object with `consumerKey`, `redirectUri`, `communityUrl`, `useDPoP` and `useHybridFlow`.
-- **Browser Login Options** - opens the SDK's Login Options screen described above, which still applies to the browser fallback.
+1. Launch the debug app. The login screen appears (in Browser mode, the Chrome custom tab; press Back to close it if needed) and shows the **Login Server Picker** sheet.
+2. Tap the **Developer Support** icon (top right of the sheet) and choose **Login Options**.
+3. At the top, tap **Native** under **Authentication Mode**.
+4. Fill in **Client ID**, **Native Callback URL** and **Community Login URL**, or paste a JSON object (`consumerKey`, `redirectUri`, `communityUrl`, `useDPoP`, `useHybridFlow`) into **Import JSON** and tap **Import Native Config**. Use the **Use DPoP** and **Use Hybrid Auth Token** toggles as needed.
+5. Press Back. Login restarts and shows the Native Login form.
+
+To return to Browser mode, open Login Options the same way (or tap **Login Options** on the Native Login screen, debug builds only) and tap **Browser**. In Native mode the browser-only options are hidden. Native and Browser settings (DPoP, hybrid) are stored separately, and switching back to Browser unregisters the Native Login feature markers. Tests select the mode through `AuthModeStore` before the activity launches, so they do not drive this UI.
 
 The Native Login screen has username and password fields, **Log In**, **Log In with Browser** (the SDK's fallback to the web login) and **Cancel** (shown only when an account already exists). Rejections, such as the required-DPoP ECA refusing an unbound authorize request, are shown on the form together with a redacted OAuth trace.
 
-| App Login Options (Native mode) | Native Login screen |
-|---|---|
-| ![App Login Options in Native mode](Screenshots/native-login-options.png) | ![Native Login screen](Screenshots/native-login-screen.png) |
+| Login Options (Browser mode) | Login Options (Native mode) | Native Login screen |
+|---|---|---|
+| ![Login Options in Browser mode](Screenshots/login-options-browser-mode.png) | ![Login Options in Native mode](Screenshots/native-login-options.png) | ![Native Login screen](Screenshots/native-login-screen.png) |
 
 (Values shown are placeholders.)
 

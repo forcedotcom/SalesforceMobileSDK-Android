@@ -26,26 +26,18 @@
  */
 package com.salesforce.samples.authflowtester
 
+import android.app.Activity
 import android.content.Intent
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -56,8 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.ui.LoginOptionsActivity
+import com.salesforce.androidsdk.ui.LoginOptionsExtension
 import org.json.JSONException
 
 const val AUTH_MODE_PICKER_TAG = "authModePicker"
@@ -70,76 +61,94 @@ const val IMPORT_NATIVE_CONFIG_FIELD_TAG = "importNativeConfigField"
 const val IMPORT_NATIVE_CONFIG_BUTTON_TAG = "importNativeConfigButton"
 const val NATIVE_DPOP_TOGGLE_TAG = "nativeDpopToggle"
 const val NATIVE_HYBRID_TOGGLE_TAG = "nativeHybridToggle"
-const val BROWSER_LOGIN_OPTIONS_BUTTON_TAG = "browserLoginOptionsButton"
-const val LOGIN_OPTIONS_APPLY_TAG = "loginOptionsApplyButton"
 
 /**
- * App-owned Login Options: picks Browser or Native login and edits the Native Login settings plus
- * the DPoP and hybrid-token toggles. The SDK's own Login Options (browser-flow settings) stays
- * reachable from here and is unchanged.
+ * Adds the Authentication Mode picker (Browser or Native) and the Native Login settings to the top
+ * of the SDK's debug Login Options screen. In Native mode the SDK's browser-only options are hidden
+ * and the screen shows the native client settings with their own DPoP and hybrid toggles; in
+ * Browser mode only the picker is added. Every change is stored right away through
+ * [AuthModeStore], so there is no Apply button: closing the screen applies the mode.
  */
-class AuthFlowLoginOptionsActivity : ComponentActivity() {
+object AuthFlowLoginOptionsExtension : LoginOptionsExtension {
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            MaterialTheme {
-                Surface(modifier = Modifier.fillMaxSize()) { OptionsScreen() }
-            }
-        }
-    }
+    private var mode by mutableStateOf(AuthMode.BROWSER)
+    private var modeWhenOpened = AuthMode.BROWSER
+
+    override val showsBrowserOptions: Boolean
+        get() = mode == AuthMode.BROWSER
 
     @Composable
-    private fun OptionsScreen() {
-        val sdkManager = SalesforceSDKManager.getInstance()
-        val stored = AuthModeStore.nativeSettings
-        var mode by remember { mutableStateOf(AuthModeStore.mode) }
-        var clientId by remember { mutableStateOf(stored.clientId) }
-        var callbackUrl by remember { mutableStateOf(stored.callbackUrl) }
-        var communityUrl by remember { mutableStateOf(stored.communityUrl) }
-        var useDPoP by remember { mutableStateOf(sdkManager.useDPoP) }
-        var useHybrid by remember { mutableStateOf(sdkManager.useHybridAuthentication) }
-        var importText by remember { mutableStateOf("") }
-        var importError by remember { mutableStateOf<String?>(null) }
+    override fun TopContent() {
+        // Read on each opening of the screen (the composition starts fresh), not on recomposition.
+        remember {
+            mode = AuthModeStore.mode
+            modeWhenOpened = mode
+        }
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .safeDrawingPadding()
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text("Login Options", style = MaterialTheme.typography.headlineMedium)
-
-            Text("Login mode")
+        Column {
+            Text(
+                "Authentication Mode",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(16.dp),
+            )
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.testTag(AUTH_MODE_PICKER_TAG),
+                modifier = Modifier.padding(horizontal = 16.dp).testTag(AUTH_MODE_PICKER_TAG),
             ) {
                 FilterChip(
                     selected = mode == AuthMode.BROWSER,
-                    onClick = { mode = AuthMode.BROWSER },
+                    onClick = { select(AuthMode.BROWSER) },
                     label = { Text("Browser") },
                     modifier = Modifier.testTag(AUTH_MODE_BROWSER_TAG),
                 )
                 FilterChip(
                     selected = mode == AuthMode.NATIVE,
-                    onClick = { mode = AuthMode.NATIVE },
+                    onClick = { select(AuthMode.NATIVE) },
                     label = { Text("Native") },
                     modifier = Modifier.testTag(AUTH_MODE_NATIVE_TAG),
                 )
             }
+            if (mode == AuthMode.NATIVE) NativeOptions()
+            HorizontalDivider(modifier = Modifier.padding(top = 16.dp))
+        }
+    }
 
-            ToggleRow("Use DPoP", useDPoP, NATIVE_DPOP_TOGGLE_TAG) { useDPoP = it }
-            ToggleRow("Use Hybrid Auth Token", useHybrid, NATIVE_HYBRID_TOGGLE_TAG) { useHybrid = it }
+    private fun select(newMode: AuthMode) {
+        AuthModeStore.applyMode(newMode)
+        mode = newMode
+    }
 
+    @Composable
+    private fun NativeOptions() {
+        val stored = AuthModeStore.nativeSettings
+        var clientId by remember { mutableStateOf(stored.clientId) }
+        var callbackUrl by remember { mutableStateOf(stored.callbackUrl) }
+        var communityUrl by remember { mutableStateOf(stored.communityUrl) }
+        var useDPoP by remember { mutableStateOf(AuthModeStore.nativeUseDPoP) }
+        var useHybrid by remember { mutableStateOf(AuthModeStore.nativeUseHybrid) }
+        var importText by remember { mutableStateOf("") }
+        var importError by remember { mutableStateOf<String?>(null) }
+
+        fun save() {
+            AuthModeStore.nativeSettings = NativeLoginSettings(clientId.trim(), callbackUrl.trim(), communityUrl.trim())
+        }
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(16.dp),
+        ) {
             Text("Native Login", style = MaterialTheme.typography.titleMedium)
-            SettingField("Consumer Key", clientId, NATIVE_CLIENT_ID_TAG) { clientId = it }
-            SettingField("Callback URL", callbackUrl, NATIVE_CALLBACK_URL_TAG) { callbackUrl = it }
-            SettingField("Community URL", communityUrl, NATIVE_COMMUNITY_URL_TAG) { communityUrl = it }
-
+            ToggleRow("Use DPoP", useDPoP, NATIVE_DPOP_TOGGLE_TAG) {
+                useDPoP = it
+                AuthModeStore.nativeUseDPoP = it
+            }
+            ToggleRow("Use Hybrid Auth Token", useHybrid, NATIVE_HYBRID_TOGGLE_TAG) {
+                useHybrid = it
+                AuthModeStore.nativeUseHybrid = it
+            }
+            SettingField("Client ID", clientId, NATIVE_CLIENT_ID_TAG) { clientId = it; save() }
+            SettingField("Native Callback URL", callbackUrl, NATIVE_CALLBACK_URL_TAG) { callbackUrl = it; save() }
+            SettingField("Community Login URL", communityUrl, NATIVE_COMMUNITY_URL_TAG) { communityUrl = it; save() }
             SettingField("Import JSON", importText, IMPORT_NATIVE_CONFIG_FIELD_TAG) { importText = it }
             OutlinedButton(
                 onClick = {
@@ -150,44 +159,22 @@ class AuthFlowLoginOptionsActivity : ComponentActivity() {
                             callbackUrl = it.callbackUrl
                             communityUrl = it.communityUrl
                         }
-                        useDPoP = sdkManager.useDPoP
-                        useHybrid = sdkManager.useHybridAuthentication
+                        useDPoP = AuthModeStore.nativeUseDPoP
+                        useHybrid = AuthModeStore.nativeUseHybrid
                         importError = null
-                    } catch (e: JSONException) {
+                    } catch (_: JSONException) {
                         importError = "Invalid JSON"
                     }
                 },
                 modifier = Modifier.fillMaxWidth().testTag(IMPORT_NATIVE_CONFIG_BUTTON_TAG),
             ) { Text("Import Native Config") }
             importError?.let { Text(it) }
-
-            OutlinedButton(
-                onClick = { startActivity(Intent(this@AuthFlowLoginOptionsActivity, LoginOptionsActivity::class.java)) },
-                modifier = Modifier.fillMaxWidth().testTag(BROWSER_LOGIN_OPTIONS_BUTTON_TAG),
-            ) { Text("Browser Login Options") }
-
-            Button(
-                onClick = {
-                    AuthModeStore.nativeSettings = NativeLoginSettings(
-                        clientId.trim(), callbackUrl.trim(), communityUrl.trim(),
-                    )
-                    AuthModeStore.applyMode(mode)
-                    sdkManager.useDPoP = useDPoP
-                    sdkManager.useHybridAuthentication = useHybrid
-                    setResult(RESULT_OK)
-                    finish()
-                },
-                modifier = Modifier.fillMaxWidth().testTag(LOGIN_OPTIONS_APPLY_TAG),
-            ) { Text("Apply") }
         }
     }
 
     @Composable
     private fun ToggleRow(title: String, checked: Boolean, tag: String, onChange: (Boolean) -> Unit) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(title)
             Switch(checked = checked, onCheckedChange = onChange, modifier = Modifier.testTag(tag))
         }
@@ -202,5 +189,21 @@ class AuthFlowLoginOptionsActivity : ComponentActivity() {
             singleLine = true,
             modifier = Modifier.fillMaxWidth().testTag(tag),
         )
+    }
+
+    /**
+     * Browser to Native: the SDK's login activity is on screen below this one, so replace the task
+     * with the router. (Native to Browser and Native to Native are handled by [NativeLoginActivity]
+     * when it resumes.)
+     */
+    override fun onLoginOptionsDismissed(activity: Activity) {
+        if (modeWhenOpened == AuthMode.BROWSER && AuthModeStore.mode == AuthMode.NATIVE) {
+            activity.startActivity(
+                Intent(activity, LoginRouterActivity::class.java)
+                    .putExtra(NativeLoginActivity.EXTRA_RELAUNCH_MAIN, true)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
+            )
+        }
+        modeWhenOpened = AuthModeStore.mode
     }
 }

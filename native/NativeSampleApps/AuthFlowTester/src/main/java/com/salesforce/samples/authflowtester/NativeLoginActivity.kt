@@ -28,6 +28,7 @@ package com.salesforce.samples.authflowtester
 
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -69,6 +70,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.ui.LoginOptionsActivity
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginManager
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -155,6 +157,27 @@ class NativeLoginActivity : FragmentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Back from Login Options: follow the mode and settings chosen there.
+        val settings = AuthModeStore.nativeSettings
+        when {
+            AuthModeStore.mode != AuthMode.NATIVE -> {
+                startActivity(Intent(this, LoginRouterActivity::class.java))
+                finish()
+            }
+            settings.isComplete && settings != registeredSettings -> recreate()
+        }
+    }
+
+    /** Ends the login screen; relaunches the main activity when the task was replaced for this login. */
+    private fun finishLogin() {
+        if (intent.getBooleanExtra(EXTRA_RELAUNCH_MAIN, false)) {
+            startActivity(Intent(this, SalesforceSDKManager.getInstance().mainActivityClass))
+        }
+        finish()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -167,23 +190,11 @@ class NativeLoginActivity : FragmentActivity() {
         val fallbackLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.StartActivityForResult(),
         ) { result ->
-            if (result.resultCode == Activity.RESULT_OK) finish()
-        }
-
-        val optionsLauncher = rememberLauncherForActivityResult(
-            ActivityResultContracts.StartActivityForResult(),
-        ) {
-            if (AuthModeStore.mode == AuthMode.NATIVE) {
-                // Settings may have changed: rebuild so the manager matches them.
-                recreate()
-            } else {
-                startActivity(Intent(this@NativeLoginActivity, LoginRouterActivity::class.java))
-                finish()
-            }
+            if (result.resultCode == Activity.RESULT_OK) finishLogin()
         }
 
         LaunchedEffect(uiState) {
-            if (uiState == NativeLoginUiState.Succeeded) finish()
+            if (uiState == NativeLoginUiState.Succeeded) finishLogin()
         }
 
         Column(
@@ -246,25 +257,31 @@ class NativeLoginActivity : FragmentActivity() {
             }
 
             Spacer(Modifier.height(8.dp))
-            TextButton(
-                onClick = { optionsLauncher.launch(Intent(this@NativeLoginActivity, AuthFlowLoginOptionsActivity::class.java)) },
-                modifier = Modifier.testTag(NATIVE_LOGIN_OPTIONS_TAG),
-            ) { Text("Login Options") }
+            // The SDK's Login Options screen is a debug-only developer tool, like its Dev Support menu.
+            if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) {
+                TextButton(
+                    onClick = { startActivity(Intent(this@NativeLoginActivity, LoginOptionsActivity::class.java)) },
+                    modifier = Modifier.testTag(NATIVE_LOGIN_OPTIONS_TAG),
+                ) { Text("Login Options") }
+            }
             if (manager?.shouldShowBackButton == true) {
                 TextButton(
-                    onClick = { setResult(RESULT_CANCELED); finish() },
+                    onClick = { setResult(RESULT_CANCELED); finishLogin() },
                     modifier = Modifier.testTag(NATIVE_CANCEL_BUTTON_TAG),
                 ) { Text("Cancel") }
             }
         }
     }
 
-    private companion object {
+    companion object {
+        /** Intent extra: the task was replaced for this login, so relaunch the main activity when it ends. */
+        const val EXTRA_RELAUNCH_MAIN = "RELAUNCH_MAIN"
+
         /** Settings last passed to `useNativeLogin`, so recreation does not rebuild the manager. */
-        var registeredSettings: NativeLoginSettings? = null
+        private var registeredSettings: NativeLoginSettings? = null
 
         /** Returns the SDK manager for the stored settings, or null when they are incomplete. */
-        fun ensureNativeLoginManager(): NativeLoginManager? {
+        private fun ensureNativeLoginManager(): NativeLoginManager? {
             val settings = AuthModeStore.nativeSettings
             if (!settings.isComplete) return null
             val sdkManager = SalesforceSDKManager.getInstance()
