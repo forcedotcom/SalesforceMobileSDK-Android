@@ -285,7 +285,9 @@ internal suspend fun onAuthFlowComplete(
                 FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
                 FEATURE_AUTH_TYPE_NATIVE,
             )
-            val activeAMarker = allAMarkers.firstOrNull { sdkManager.isGlobalFeatureRegistered(it) }
+            // The loop below clears the global A-markers, so a second native login in the same process
+            // (useNativeLogin is only called once) finds none registered and must still resolve to A5.
+            val activeAMarker = allAMarkers.firstOrNull { sdkManager.isGlobalFeatureRegistered(it) } ?: FEATURE_AUTH_TYPE_NATIVE
             for (marker in allAMarkers) {
                 sdkManager.unregisterUsedAppFeature(marker)
                 if (marker == activeAMarker) {
