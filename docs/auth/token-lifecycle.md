@@ -377,8 +377,11 @@ if response is HTTP 400 use_dpop_nonce and the request carried a DPoP proof:
     retry once
 ```
 
-The identity endpoint does not harvest or retry inline. Its 401/403 path refreshes through the
-token endpoint, and the subsequent identity request is rebuilt with the refreshed credentials.
+`OAuth2.callIdentityService()` handles nonce challenges inline for identity requests that carry a
+DPoP proof. It caches a nonempty `DPoP-Nonce` from the first response, and if
+`DPoPRequestDecorator.isNonceChallenge()` matches, it rebuilds the proof and retries once, then
+harvests the retry response too. Any remaining 401/403 takes the token-endpoint refresh path, and
+the subsequent identity request is rebuilt with the refreshed credentials.
 
 **Identity fetch at login** (`fetchUserIdentityWithRetry`), identical to iOS for every user:
 - The raw token-response `id` URL is used for the first request and every replay. No
@@ -504,7 +507,6 @@ intercept()
         harvest DPoP-Nonce  →  DPoPNonceCache.store(...)
         isNonceChallenge()  →  true  →  retry with fresh nonce
         POST /token  (DPoP proof + correct nonce)
-        harvest DPoP-Nonce from success response (server may rotate)
         200: new access_token
       lock: publish, notifyAll(); lock released
   buildAuthenticatedRequest()   (new token + nonce now in cache)
