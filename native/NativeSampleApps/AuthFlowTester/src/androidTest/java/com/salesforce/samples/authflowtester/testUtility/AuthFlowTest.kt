@@ -29,6 +29,7 @@ package com.salesforce.samples.authflowtester.testUtility
 import android.Manifest
 import android.content.Intent
 import android.os.Build
+import android.view.accessibility.AccessibilityEvent
 import androidx.annotation.VisibleForTesting
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -62,6 +63,7 @@ import org.junit.Before
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.TimeoutException
 
 /**
  * Total polling window after submitting credentials we expect to be
@@ -71,6 +73,8 @@ import java.util.concurrent.CopyOnWriteArrayList
  * succeeded.
  */
 private const val LOGIN_FAILURE_SETTLE_MS: Long = 5_000
+private const val DPOP_BINDING_ERROR = "missing required dpop_jkt for code binding"
+private const val DPOP_BINDING_ERROR_TIMEOUT_MS: Long = 60_000
 
 private const val POLL_INTERVAL_MS: Long = 500
 
@@ -856,9 +860,10 @@ abstract class AuthFlowTest {
      * was created and the login flow (Custom Tab) remains in front.
      *
      * Under forced advanced authentication credentials are entered in the
-     * Chrome Custom Tab. On failure the OAuth flow never redirects to the
-     * callback URL, so the tab stays in front (showing either the OAuth error
-     * page or the still-unsubmitted login form) and no user is created.
+     * Chrome Custom Tab. On failure no user is created and a Custom Tab stays
+     * in front: either the server's error page or login form, or, when the
+     * server redirects to the callback URL with an OAuth error, the login page
+     * that the SDK reloads after showing the error in a toast.
      *
      * Uses bounded polling to confirm the failure: at any point during the
      * wait, if a new user account appears or the AuthFlowTester app loads,
@@ -866,11 +871,12 @@ abstract class AuthFlowTest {
      * polling window terminates once the Custom Tab remains in front without a
      * user being created — the steady-state we expect for a rejected login.
      *
-     * When [expectDPoPBindingError] is true, additionally assert that the Custom Tab shows the
-     * enforced-ECA DPoP rejection error page (`missing required dpop_jkt for code binding`), pinning
-     * the failure to the specific server reason rather than mere absence of a user. Only the
-     * DPoP-enforcement case renders this page; the invalid-consumer-key / invalid-scope negative
-     * tests produce different errors and leave this off.
+     * When [expectDPoPBindingError] is true, additionally assert the specific server reason: the
+     * enforced ECA authenticates the user, then redirects to the callback with
+     * `error=invalid_request` and `missing required dpop_jkt for code binding`, which the SDK shows
+     * in a toast before reloading the login page. The toast is observed through its accessibility
+     * event. Only the DPoP-enforcement case produces this error; the invalid-consumer-key /
+     * invalid-scope negative tests produce different errors and leave this off.
      */
     fun loginAndExpectFailure(
         consumerKey: String,
@@ -906,17 +912,42 @@ abstract class AuthFlowTest {
         // log in.
         loginPage.skipGoogleSignIn()
         val (username, password) = testConfig.getUser(REGULAR_AUTH, knownUserConfig)
-        try {
-            loginPage.setUsername(username)
-            loginPage.advanceToPasswordStep()
-            loginPage.submitPassword(password)
-        } catch (e: AssertionError) {
-            // Verify the failure was due to a missing login form, not a different
-            // test-infrastructure issue. The Custom Tab must still be in front (otherwise we
-            // crashed somewhere unexpected).
-            assert(loginPage.isCustomTabDisplayed()) {
-                "Custom Tab page-object action threw without the Custom Tab in front: ${e.message}"
+        val submitCredentials = Runnable {
+            try {
+                loginPage.setUsername(username)
+                loginPage.advanceToPasswordStep()
+                loginPage.submitPassword(password)
+            } catch (e: AssertionError) {
+                // Verify the failure was due to a missing login form, not a different
+                // test-infrastructure issue. The Custom Tab must still be in front (otherwise we
+                // crashed somewhere unexpected).
+                assert(loginPage.isCustomTabDisplayed()) {
+                    "Custom Tab page-object action threw without the Custom Tab in front: ${e.message}"
+                }
             }
+        }
+        if (expectDPoPBindingError) {
+            // Toasts are not in the view hierarchy; their text arrives as a notification-state
+            // accessibility event. executeAndWaitForEvent sees events from the start of the
+            // submission without replacing UiAutomator's own accessibility listener.
+            try {
+                InstrumentationRegistry.getInstrumentation().uiAutomation.executeAndWaitForEvent(
+                    submitCredentials,
+                    { event ->
+                        event.eventType == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED &&
+                            event.text.any { it.contains(DPOP_BINDING_ERROR) }
+                    },
+                    DPOP_BINDING_ERROR_TIMEOUT_MS,
+                )
+            } catch (e: TimeoutException) {
+                throw AssertionError(
+                    "Expected the SDK to show the DPoP binding error ($DPOP_BINDING_ERROR) after a " +
+                        "rejected unbound login",
+                    e,
+                )
+            }
+        } else {
+            submitCredentials.run()
         }
 
         val deadline = System.currentTimeMillis() + LOGIN_FAILURE_SETTLE_MS
@@ -935,15 +966,6 @@ abstract class AuthFlowTest {
         // After the polling window, confirm we are still in the login flow (Custom Tab).
         assert(loginPage.isCustomTabDisplayed()) {
             "Expected to remain in the login flow (Custom Tab) after a failed login"
-        }
-
-        // For DPoP enforcement, pin the failure to the specific server reason: the enforced ECA
-        // rejects the unbound /authorize with an OAuth error page naming the missing dpop_jkt.
-        if (expectDPoPBindingError) {
-            assert(loginPage.isShowingDPoPBindingError()) {
-                "Expected the Custom Tab to show the DPoP binding error (missing required dpop_jkt " +
-                    "for code binding) after a rejected unbound login"
-            }
         }
     }
 
