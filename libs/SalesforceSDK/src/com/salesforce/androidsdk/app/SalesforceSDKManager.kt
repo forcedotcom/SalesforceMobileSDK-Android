@@ -155,6 +155,7 @@ import com.salesforce.androidsdk.security.ScreenLockManager
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity
 import com.salesforce.androidsdk.ui.DevInfoActivity
 import com.salesforce.androidsdk.ui.LoginActivity
+import com.salesforce.androidsdk.ui.LoginOptionsExtension
 import com.salesforce.androidsdk.ui.LoginOptionsActivity
 import com.salesforce.androidsdk.ui.LoginViewModel
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
@@ -591,6 +592,14 @@ open class SalesforceSDKManager protected constructor(
 
     // Used to ensure the webview is reloaded when Dev Menu Login Options are changed.
     internal var loginDevMenuReload = false
+
+    /**
+     * Optional app extension of the debug Login Options screen (reached from the Dev Support
+     * menu).  Null by default, in which case the screen is unchanged.
+     * @see LoginOptionsExtension
+     */
+    @Volatile
+    var loginOptionsExtension: LoginOptionsExtension? = null
 
     /**
      * When set, the next launch of [com.salesforce.androidsdk.ui.LoginActivity] against

@@ -185,6 +185,7 @@ class LoginOptionsActivity: ComponentActivity() {
                         )
                     }
                 ) { innerPadding ->
+                    val extension = SalesforceSDKManager.getInstance().loginOptionsExtension
                     LoginOptionsScreen(
                         innerPadding,
                         useWebServer,
@@ -201,6 +202,9 @@ class LoginOptionsActivity: ComponentActivity() {
                                 onSelect = { customTabBrowser.value = it },
                             )
                         },
+                        topContent = extension?.let { { it.TopContent() } },
+                        // Read during composition so state-backed extensions hide and show the sections.
+                        showBrowserOptions = extension?.showsBrowserOptions ?: true,
                     )
                 }
             }
@@ -210,6 +214,7 @@ class LoginOptionsActivity: ComponentActivity() {
     override fun finish() {
         super.finish()
         SalesforceSDKManager.getInstance().loginDevMenuReload = true
+        SalesforceSDKManager.getInstance().loginOptionsExtension?.onLoginOptionsDismissed(this)
     }
 }
 
@@ -384,6 +389,8 @@ fun LoginOptionsScreen(
     bootConfig: BootConfig = BootConfig.getBootConfig(LocalContext.current),
     sdkManager: SalesforceSDKManager? = SalesforceSDKManager.getInstance(),
     customTabBrowserContent: (@Composable () -> Unit)? = null,
+    topContent: (@Composable () -> Unit)? = null,
+    showBrowserOptions: Boolean = true,
 ) {
     var useDynamicConfig by remember { mutableStateOf(overrideConfig != null) }
 
@@ -393,123 +400,127 @@ fun LoginOptionsScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
-        OptionToggle(
-            "Use Web Server Flow",
-            stringResource(R.string.sf__login_options_webserver_toggle_content_description),
-            useWebServer,
-        )
-        OptionToggle(
-            "Use Hybrid Auth Token",
-            stringResource(R.string.sf__login_options_hybrid_toggle_content_description),
-            useHybridToken,
-        )
-        OptionToggle(
-            "Force Advanced Authentication",
-            stringResource(R.string.sf__login_options_force_advanced_auth_toggle_content_description),
-            forceAdvancedAuth,
-        )
-        OptionToggle(
-            "Use Ephemeral Session",
-            stringResource(R.string.sf__login_options_ephemeral_session_toggle_content_description),
-            useEphemeralSessionForAdvancedAuth,
-        )
-        OptionToggle(
-            "Use DPoP",
-            stringResource(R.string.sf__login_options_dpop_toggle_content_description),
-            useDPoP,
-        )
+        topContent?.invoke()
 
-        if (customTabBrowserContent != null) {
-            HorizontalDivider()
-            customTabBrowserContent()
-        }
-
-        HorizontalDivider()
-
-        Text(
-            text = "Boot Config File",
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(PADDING_SIZE.dp)
-        )
-
-        val scopes = bootConfig.oauthScopes ?: emptyArray<String>()
-        val bootConfigList = listOf(
-            "Consumer Key" to bootConfig.remoteAccessConsumerKey,
-            "Redirect URI" to bootConfig.oauthRedirectURI,
-            "Scopes" to scopes.joinToString(separator = ", "),
-        )
-        bootConfigList.forEach { (name, value) ->
-            BootConfigItem(name, value)
-        }
-
-        HorizontalDivider()
-
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(PADDING_SIZE.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = "Override Boot Config",
-                modifier = Modifier.height( 50.dp).wrapContentHeight(align = Alignment.CenterVertically),
+        if (showBrowserOptions) {
+            OptionToggle(
+                "Use Web Server Flow",
+                stringResource(R.string.sf__login_options_webserver_toggle_content_description),
+                useWebServer,
             )
-            val dynamicConfigToggleDesc = stringResource(R.string.sf__login_options_dynamic_config_toggle_content_description)
-            Switch(
-                checked = useDynamicConfig,
-                onCheckedChange = {
-                    useDynamicConfig = it
-                    // Reset the stored value on uncheck so it is not used.
-                    if (!useDynamicConfig) {
-                        SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
-                    }
-                },
-                modifier = Modifier.clearAndSetSemantics {
-                    contentDescription = dynamicConfigToggleDesc
-                    toggleableState = ToggleableState(useDynamicConfig)
-                    role = Role.Switch
-                }
+            OptionToggle(
+                "Use Hybrid Auth Token",
+                stringResource(R.string.sf__login_options_hybrid_toggle_content_description),
+                useHybridToken,
             )
-        }
+            OptionToggle(
+                "Force Advanced Authentication",
+                stringResource(R.string.sf__login_options_force_advanced_auth_toggle_content_description),
+                forceAdvancedAuth,
+            )
+            OptionToggle(
+                "Use Ephemeral Session",
+                stringResource(R.string.sf__login_options_ephemeral_session_toggle_content_description),
+                useEphemeralSessionForAdvancedAuth,
+            )
+            OptionToggle(
+                "Use DPoP",
+                stringResource(R.string.sf__login_options_dpop_toggle_content_description),
+                useDPoP,
+            )
 
-        if (useDynamicConfig) {
-            BootConfigView(overrideConfig)
-        }
-
-        // Welcome Discovery simulation editor: visible only when the launcher Activity flagged
-        // the process as UI-testing (and only in debug builds, enforced by the setter).
-        // Mirrors iOS' IS_UI_TESTING gate in LoginOptionsViewController.swift.
-        if (sdkManager?.isDebugBuild == true && sdkManager.isUiTesting) {
-            HorizontalDivider()
-
-            var simulateDiscovery by remember {
-                mutableStateOf(sdkManager.simulatedDiscoveryResult != null)
+            if (customTabBrowserContent != null) {
+                HorizontalDivider()
+                customTabBrowserContent()
             }
+
+            HorizontalDivider()
+
+            Text(
+                text = "Boot Config File",
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(PADDING_SIZE.dp)
+            )
+
+            val scopes = bootConfig.oauthScopes ?: emptyArray<String>()
+            val bootConfigList = listOf(
+                "Consumer Key" to bootConfig.remoteAccessConsumerKey,
+                "Redirect URI" to bootConfig.oauthRedirectURI,
+                "Scopes" to scopes.joinToString(separator = ", "),
+            )
+            bootConfigList.forEach { (name, value) ->
+                BootConfigItem(name, value)
+            }
+
+            HorizontalDivider()
+
             Row(
                 modifier = Modifier.fillMaxWidth().padding(PADDING_SIZE.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = stringResource(R.string.sf__login_options_discovery_simulate_title),
-                    modifier = Modifier.height(50.dp).wrapContentHeight(align = Alignment.CenterVertically),
+                    text = "Override Boot Config",
+                    modifier = Modifier.height( 50.dp).wrapContentHeight(align = Alignment.CenterVertically),
                 )
-                val toggleDesc = stringResource(R.string.sf__login_options_discovery_toggle_content_description)
+                val dynamicConfigToggleDesc = stringResource(R.string.sf__login_options_dynamic_config_toggle_content_description)
                 Switch(
-                    checked = simulateDiscovery,
+                    checked = useDynamicConfig,
                     onCheckedChange = {
-                        simulateDiscovery = it
-                        if (!simulateDiscovery) {
-                            sdkManager.simulatedDiscoveryResult = null
+                        useDynamicConfig = it
+                        // Reset the stored value on uncheck so it is not used.
+                        if (!useDynamicConfig) {
+                            SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
                         }
                     },
                     modifier = Modifier.clearAndSetSemantics {
-                        contentDescription = toggleDesc
-                        toggleableState = ToggleableState(simulateDiscovery)
+                        contentDescription = dynamicConfigToggleDesc
+                        toggleableState = ToggleableState(useDynamicConfig)
                         role = Role.Switch
                     }
                 )
             }
 
-            if (simulateDiscovery) {
-                DiscoveryResultEditor()
+            if (useDynamicConfig) {
+                BootConfigView(overrideConfig)
+            }
+
+            // Welcome Discovery simulation editor: visible only when the launcher Activity flagged
+            // the process as UI-testing (and only in debug builds, enforced by the setter).
+            // Mirrors iOS' IS_UI_TESTING gate in LoginOptionsViewController.swift.
+            if (sdkManager?.isDebugBuild == true && sdkManager.isUiTesting) {
+                HorizontalDivider()
+
+                var simulateDiscovery by remember {
+                    mutableStateOf(sdkManager.simulatedDiscoveryResult != null)
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(PADDING_SIZE.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = stringResource(R.string.sf__login_options_discovery_simulate_title),
+                        modifier = Modifier.height(50.dp).wrapContentHeight(align = Alignment.CenterVertically),
+                    )
+                    val toggleDesc = stringResource(R.string.sf__login_options_discovery_toggle_content_description)
+                    Switch(
+                        checked = simulateDiscovery,
+                        onCheckedChange = {
+                            simulateDiscovery = it
+                            if (!simulateDiscovery) {
+                                sdkManager.simulatedDiscoveryResult = null
+                            }
+                        },
+                        modifier = Modifier.clearAndSetSemantics {
+                            contentDescription = toggleDesc
+                            toggleableState = ToggleableState(simulateDiscovery)
+                            role = Role.Switch
+                        }
+                    )
+                }
+
+                if (simulateDiscovery) {
+                    DiscoveryResultEditor()
+                }
             }
         }
     }
