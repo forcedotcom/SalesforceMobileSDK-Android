@@ -515,6 +515,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         var enterFallbackUsed = false
 
         while (System.currentTimeMillis() < deadline) {
+            allowLocalNetworkAccess()
             if (condition()) return
 
             val now = System.currentTimeMillis()
@@ -620,6 +621,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         val deadline = System.currentTimeMillis() + FRE_DISMISS_TIMEOUT_MS
         while (System.currentTimeMillis() < deadline) {
             if (isCustomTabDisplayed()) {
+                allowLocalNetworkAccess()
                 return
             }
             if (!dismissOneFreControl()) {
@@ -627,6 +629,22 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
                 device.waitForIdle(QUICK_CHECK_TIMEOUT_MS)
             }
         }
+    }
+
+    /**
+     * Accepts Chrome's Local Network Access prompt ("... wants to access other devices on your local
+     * network"), which test hosts on a private network can trigger. The modal covers the login form,
+     * so leaving it up stalls every credential step; allowing it lets the page finish its requests.
+     */
+    private fun allowLocalNetworkAccess() {
+        val prompt = device.findObject(
+            UiSelector().packageName("com.android.chrome").textContains("local network")
+        )
+        if (!prompt.exists()) return
+        device.findObject(UiSelector().resourceId("com.android.chrome:id/positive_button"))
+            .takeIf { it.exists() }
+            ?.click()
+        device.waitForIdle(QUICK_CHECK_TIMEOUT_MS)
     }
 
     /**

@@ -124,10 +124,16 @@ class NativeLoginTests : AuthFlowTest() {
     fun testNativeLogin_RequiredEca_DPoPOff_RejectedNoAccount() {
         val rejection = loginNativeExpectingRejection(setup.requiredDPoPApp, useDPoP = false)
         assertTrue("Expected a rejection error, got '${rejection.error}'", rejection.error.isNotBlank())
+        // Enforced-DPoP ECA: 400 invalid_request for the missing dpop_jkt. invalid_grant would mean a
+        // credential or user problem, and a 5xx an outage; neither proves the DPoP requirement.
         assertTrue(
-            "Expected the OAuth trace to show an authorize rejection without a DPoP proof: ${rejection.diagnostics}",
-            // Enforced-DPoP ECA: 400 invalid_request (missing dpop_jkt). A 5xx would mean an outage, not a rejection.
-            rejection.diagnostics.contains("stage=authorize status=400") && rejection.diagnostics.contains("dpop=false"),
+            "Expected an authorize rejection for the missing dpop_jkt, without a DPoP proof: ${rejection.diagnostics}",
+            rejection.diagnostics.contains("stage=authorize status=400 error=invalid_request dpop=false") &&
+                rejection.diagnostics.contains("dpop_jkt"),
+        )
+        assertFalse(
+            "The rejection must not be invalid_grant: ${rejection.diagnostics}",
+            rejection.diagnostics.contains("invalid_grant"),
         )
         assertEquals(null, SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers)
     }
