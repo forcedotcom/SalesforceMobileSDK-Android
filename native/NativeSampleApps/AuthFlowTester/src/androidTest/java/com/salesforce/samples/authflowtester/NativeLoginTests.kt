@@ -66,6 +66,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.concurrent.atomic.AtomicInteger
@@ -218,6 +219,9 @@ class NativeLoginTests : AuthFlowTest() {
             "The Native Login token request was not sent",
             holdingHttpAccess.responseHeld.await(HOLD_TIMEOUT_S, SECONDS),
         )
+        // Only a successful token response proves the cancel is what keeps the session unchanged.
+        holdingHttpAccess.failure?.let { throw AssertionError("The Native Login token request failed", it) }
+        assertEquals("Held token response status", 200, holdingHttpAccess.heldStatus)
         nativeLogin.tapCancel()
         app.waitForAppLoad()
         holdingHttpAccess.release.countDown()
@@ -360,13 +364,17 @@ class NativeLoginTests : AuthFlowTest() {
 
     /**
      * Sends `/services/oauth2/token` requests to the server, then holds each response until
-     * [release], so a cancel can land while the login is in flight.
+     * [release], so a cancel can land while the login is in flight. A transport failure is recorded
+     * in [failure] and the response status in [heldStatus], so the test can require a successful
+     * response before cancelling.
      */
     private class TokenResponseHoldingHttpAccess(private val delegate: HttpAccess) : HttpAccess(null, delegate.userAgent) {
         val responseHeld = CountDownLatch(1)
         val release = CountDownLatch(1)
         val responseDelivered = CountDownLatch(1)
         val tokenRequestCount = AtomicInteger()
+        @Volatile var heldStatus: Int? = null
+        @Volatile var failure: IOException? = null
 
         override fun createNewClientBuilder(): OkHttpClient.Builder =
             delegate.createNewClientBuilder().addInterceptor { chain ->
@@ -374,7 +382,13 @@ class NativeLoginTests : AuthFlowTest() {
                 if (!request.url.encodedPath.endsWith(TOKEN_ENDPOINT_PATH)) return@addInterceptor chain.proceed(request)
                 tokenRequestCount.incrementAndGet()
                 try {
-                    val response = chain.proceed(request)
+                    val response = try {
+                        chain.proceed(request)
+                    } catch (e: IOException) {
+                        failure = e
+                        throw e
+                    }
+                    heldStatus = response.code
                     responseHeld.countDown()
                     release.await(HOLD_TIMEOUT_S, SECONDS)
                     response

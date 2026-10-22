@@ -134,7 +134,7 @@ Native Login sessions carry the `NL` and `A5` markers in `ftr_` (plus `DP` for D
 | `testECAJwtHeadless_DPoPOn_DPoP` | `eca_jwt_headless` | On | DPoP-bound session; thumbprint matches the stored key; revoke+refresh preserves binding |
 | `testECAJwtDPoPHeadless_DPoPOff_RejectedNoAccount` | `eca_jwt_dpop_headless` | Off | Login returns `InvalidCredentials`; authorize is rejected with 400 `invalid_request` (missing `dpop_jkt`), never `invalid_grant`, and no proof sent; error shown on the form; no account created |
 | `testECAJwtDPoPHeadless_DPoPOn_DPoP` | `eca_jwt_dpop_headless` | On | DPoP-bound session |
-| `testNativeLogin_CancelDuringLogin_NoNewAccount` | `eca_jwt_headless` | Off | Cancel, idle or with the token response held until after it, leaves the existing session, tokens and feature markers unchanged and adds no account |
+| `testNativeLogin_CancelDuringLogin_NoNewAccount` | `eca_jwt_headless` | Off | Cancel, idle or with a successful (HTTP 200) token response held until after it, leaves the existing session, tokens and feature markers unchanged and adds no account |
 | `testNativeLogin_BrowserFallback_UsesBrowserConfig` | `eca_jwt_headless`, then the browser ECA | - | The fallback button hands off to the browser login with the browser-mode boot config |
 | `testNativeLogin_SameUserDPoPToBearerReauth` | `eca_jwt_headless` | On, then Off | Same user logs in again with DPoP off; the session downgrades to Bearer |
 | `testNativeLogin_ActivityRecreation` | `eca_jwt_headless` | Off | The typed username survives Activity recreation and the form still logs in. The form keeps the password in memory only: it is retained across recreation and cleared on process death |
