@@ -111,6 +111,8 @@ For automation, `debugLoginSettings.apply(json)` takes the same JSON keys as the
 import and iOS (`consumerKey`, `redirectUri`, `communityUrl`, `useDPoP`, `useHybridFlow`,
 `authenticationMode` = `browser|native`); it saves nothing when the JSON is malformed or Native
 mode would have an incomplete config. `reset()` restores Browser mode with no native config.
+If the saved Native configuration is still incomplete, the debug form shows a "Native Login is
+not configured" error that points to Login Options (iOS falls back to the browser login instead).
 
 - **Routing.** `loginActivityClass` resolves at each read: the app's `nativeLoginActivity`, else
   `DebugNativeLoginActivity` in debug Native mode, else the web login activity. A

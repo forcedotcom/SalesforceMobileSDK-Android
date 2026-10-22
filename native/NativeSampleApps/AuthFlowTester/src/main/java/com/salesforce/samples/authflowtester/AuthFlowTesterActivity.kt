@@ -213,17 +213,34 @@ class AuthFlowTesterActivity : SalesforceActivity() {
 
         /** Intent extra: JSON applied to the SDK debug Native Login settings. */
         const val EXTRA_NATIVE_LOGIN_CONFIG = "NATIVE_LOGIN_CONFIG"
+
+        private const val TAG = "AuthFlowTesterActivity"
     }
 
     /**
      * UI-test hook: seeds the SDK's debug Login Options from launch extras, mirroring the iOS
      * launch arguments.  The configuration is applied before the mode, which it must make valid.
+     * Like iOS, an extra the settings reject is logged and ignored, and nothing is saved for it.
      */
     private fun applyNativeLoginLaunchExtras() {
         val settings = SalesforceSDKManager.getInstance().debugLoginSettings
-        intent.getStringExtra(EXTRA_NATIVE_LOGIN_CONFIG)?.let { settings.apply(it) }
+        intent.getStringExtra(EXTRA_NATIVE_LOGIN_CONFIG)?.let { json ->
+            applyDebugLoginSettings(EXTRA_NATIVE_LOGIN_CONFIG) { settings.apply(json) }
+        }
         intent.getStringExtra(EXTRA_AUTHENTICATION_MODE)?.let { mode ->
-            settings.apply(JSONObject().put(NativeLoginDebugSettings.JSON_AUTHENTICATION_MODE, mode).toString())
+            applyDebugLoginSettings(EXTRA_AUTHENTICATION_MODE) {
+                settings.apply(JSONObject().put(NativeLoginDebugSettings.JSON_AUTHENTICATION_MODE, mode).toString())
+            }
+        }
+    }
+
+    private fun applyDebugLoginSettings(extra: String, apply: () -> Unit) {
+        try {
+            apply()
+        } catch (e: IllegalArgumentException) {
+            Log.e(TAG, "Ignoring launch extra $extra: ${e.message}")
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Ignoring launch extra $extra: ${e.message}")
         }
     }
 

@@ -126,6 +126,15 @@ Covers Native Login (`NativeLoginManager`) against the community login host, wit
 
 Native Login is an SDK debug feature, not AuthFlowTester code: the **Authentication Mode** picker (Browser / Native) at the top of the SDK's Login Options screen (debug builds with developer support, when the app registers no Native Login activity of its own) selects it, with its own client settings (Client ID, Native Callback URL, Community Login URL, Use DPoP, Use Hybrid Authentication). In Native mode the browser-only options are hidden. The Native Login settings are stored apart from the browser settings. Tests select Native mode before the activity launches through `SalesforceSDKManager.debugLoginSettings` (see [Launch extras](#launch-extras)), or drive Login Options through `NativeLoginDebugTestTags`. They check the redacted OAuth trace shown by the form: stage, HTTP status, OAuth error, whether a DPoP proof was sent and whether a nonce was received; never tokens or passwords.
 
+The four-case matrix has explicit expectations, independent of the ECA name:
+
+| ECA | Client DPoP | Expected |
+|-----|-------------|----------|
+| `eca_jwt_headless` | off | Bearer |
+| `eca_jwt_headless` | on | DPoP-bound |
+| `eca_jwt_dpop_headless` | off | Rejected (`InvalidCredentials`), failure shown on the form, no account created |
+| `eca_jwt_dpop_headless` | on | DPoP-bound |
+
 Native Login sessions carry the `NL` and `A5` markers in `ftr_` (plus `DP` for DPoP) and no `B` marker. They carry no `L` marker: those are registered only by `LoginActivity`, which Native Login never starts.
 
 | Test | App Config | DPoP | Notes |
@@ -135,9 +144,9 @@ Native Login sessions carry the `NL` and `A5` markers in `ftr_` (plus `DP` for D
 | `testECAJwtDPoPHeadless_DPoPOff_RejectedNoAccount` | `eca_jwt_dpop_headless` | Off | Login returns `InvalidCredentials`; authorize is rejected with 400 `invalid_request` (missing `dpop_jkt`), never `invalid_grant`, and no proof sent; error shown on the form; no account created |
 | `testECAJwtDPoPHeadless_DPoPOn_DPoP` | `eca_jwt_dpop_headless` | On | DPoP-bound session |
 | `testNativeLogin_CancelDuringLogin_NoNewAccount` | `eca_jwt_headless` | Off | Cancel, idle or with a successful (HTTP 200) token response held until after it, leaves the existing session, tokens and feature markers unchanged and adds no account |
-| `testNativeLogin_BrowserFallback_UsesBrowserConfig` | `eca_jwt_headless`, then the browser ECA | - | The fallback button hands off to the browser login with the browser-mode boot config |
+| `testNativeLogin_BrowserFallback_UsesBrowserConfig` | `eca_jwt_headless`, then the boot config (CA Opaque) | - | The fallback button hands off to the browser login with the browser-mode boot config |
 | `testNativeLogin_SameUserDPoPToBearerReauth` | `eca_jwt_headless` | On, then Off | Same user logs in again with DPoP off; the session downgrades to Bearer |
-| `testNativeLogin_ActivityRecreation` | `eca_jwt_headless` | Off | The typed username survives Activity recreation and the form still logs in. The form keeps the password in memory only: it is retained across recreation and cleared on process death |
+| `testNativeLogin_ActivityRecreation` | `eca_jwt_headless` | Off | The typed username survives Activity recreation and the form still logs in. The form keeps the password in memory only (retained across recreation, cleared on process death); the test checks only the username |
 | `testNativeLogin_MultiUser_Isolation` | `eca_jwt_headless` | Mixed | Native user and a second user keep separate tokens and DPoP state |
 | `UITestConfigNativeLoginTest.testNativeLoginConfigIsValid` | Both | - | Both apps, the `community_auth` host and its user resolve, and the two consumer keys differ |
 | `NativeLoginConfigRulesTest` | Placeholders | - | The skip and failure rules below, on in-memory configs |
@@ -365,7 +374,7 @@ Tests that user sessions and per-user feature flags persist across a cold app re
 | Extra | Description |
 |-------|-------------|
 | `IS_UI_TESTING` | Boolean. Shows UI-test-only affordances and installs the test HTTP client. |
-| `NATIVE_LOGIN_CONFIG` | JSON applied to `SalesforceSDKManager.debugLoginSettings` with `apply(json)`, using the keys shared with iOS and the Login Options import: `authenticationMode` (`native` or `browser`), `consumerKey`, `redirectUri`, `communityUrl`, `useDPoP`, `useHybridFlow`. Absent keys keep their saved value; an invalid configuration is rejected and nothing is saved. |
+| `NATIVE_LOGIN_CONFIG` | JSON applied to `SalesforceSDKManager.debugLoginSettings` with `apply(json)`, using the keys shared with iOS and the Login Options import: `authenticationMode` (`native` or `browser`), `consumerKey`, `redirectUri`, `communityUrl`, `useDPoP`, `useHybridFlow`. Absent keys keep their saved value; an invalid configuration is rejected and nothing is saved: the activity logs the error and starts with the saved settings. |
 | `AUTHENTICATION_MODE` | `native` or `browser`, applied after `NATIVE_LOGIN_CONFIG`; `native` needs a complete saved configuration. |
 
 Without either Native Login extra the settings saved from Login Options are used. `NativeLoginTests` applies the configuration directly through `debugLoginSettings` before the activity launches, and `AuthFlowTest` calls `debugLoginSettings.reset()` after each test.
