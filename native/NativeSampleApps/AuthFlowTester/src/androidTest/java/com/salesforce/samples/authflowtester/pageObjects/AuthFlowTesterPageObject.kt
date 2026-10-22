@@ -111,6 +111,7 @@ import com.salesforce.samples.authflowtester.components.ManyRequestInterruption
 import com.salesforce.samples.authflowtester.components.manyRequestCountContentDescription
 import com.salesforce.samples.authflowtester.components.manyRequestInterruptionContentDescription
 import com.salesforce.samples.authflowtester.components.manyRequestSquareTestTag
+import com.salesforce.samples.authflowtester.testUtility.AppConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
@@ -677,6 +678,43 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         // Validate feature flags — UI is already settled, reuse the existing layout traversal
         expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
         validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, expectedRtMarker = expectedRtMarker, isDpop = isDpop, expectedBMarker = expectedBMarker, expectedLMarker = expectedLMarker, expectedAMarker = expectedAMarker, wasMigrated = wasMigrated, isJwt = isJwt, isBeacon = isBeacon)
+    }
+
+    /** Asserts the `ftr_` user-agent flags: every one of [present] is set and none of [absent] is. */
+    fun validateUserAgentFlags(present: Set<String>, absent: Set<String> = emptySet()) {
+        expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
+        val userAgent = getText(USER_AGENT_CONTENT_DESC)
+        val flags = userAgent.substringAfter("ftr_", missingDelimiterValue = "").substringBefore(" ").split(".").toSet()
+        present.forEach { assert(it in flags) { "Expected '$it' in ftr_ flags of: $userAgent" } }
+        absent.forEach { assert(it !in flags) { "Unexpected '$it' in ftr_ flags of: $userAgent" } }
+    }
+
+    /**
+     * Asserts the OAuth values of a Native Login session: consumer key, granted scopes, token
+     * format and token type (DPoP-bound or Bearer). Hybrid-SID checks are left to the web-flow
+     * validation because Native Login does not use the hybrid token flow.
+     */
+    fun validateNativeOAuthValues(app: AppConfig, isDpop: Boolean) {
+        val (accessToken, refreshToken) = getTokens()
+        assert(accessToken.isNotEmpty()) { "Expected non-empty access token" }
+        assert(refreshToken.isNotEmpty()) { "Expected non-empty refresh token" }
+
+        expandUserCredentialsSection(targetNode = CLIENT_ID)
+        assertEquals(app.consumerKey, getSensitiveValue(CLIENT_ID))
+        // Native Login's token response can grant more than was configured (e.g. visualforce).
+        val granted = getText(SCOPES).split(" ").filter { it.isNotEmpty() }.toSet()
+        assert(granted.containsAll(app.scopeList)) { "Granted scopes $granted should include ${app.scopeList}" }
+        assertEquals(app.expectedTokenFormat, getText(TOKEN_FORMAT))
+
+        if (isDpop) {
+            val dpopInfo = getDpopInfo()
+            assertEquals("DPoP", dpopInfo.tokenType)
+            assert(dpopInfo.keyThumbprint.matches(Regex("[A-Za-z0-9_-]{43}"))) {
+                "DPoP key thumbprint must be a 43-char base64url string; got: '${dpopInfo.keyThumbprint}'"
+            }
+        } else {
+            assertEquals("Bearer", getTokenType())
+        }
     }
 
     fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection, useHybridAuthToken: Boolean = true, isDpop: Boolean? = null, knownLoginHostConfig: KnownLoginHostConfig = KnownLoginHostConfig.REGULAR_AUTH) {

@@ -41,18 +41,25 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.ui.components.LoginViewTestTags
 import com.salesforce.samples.authflowtester.AuthFlowTesterActivity
+import com.salesforce.samples.authflowtester.AuthMode
+import com.salesforce.samples.authflowtester.AuthModeStore
+import com.salesforce.samples.authflowtester.NativeLoginDiagnostics
 import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
 import com.salesforce.samples.authflowtester.components.ConcurrentRequestTestHooks
 import com.salesforce.samples.authflowtester.pageObjects.AuthorizationPageObject
 import com.salesforce.samples.authflowtester.pageObjects.ChromeCustomTabPageObject
 import com.salesforce.samples.authflowtester.pageObjects.LoginOptionsPageObject
 import com.salesforce.samples.authflowtester.pageObjects.LoginPageObject
+import com.salesforce.samples.authflowtester.pageObjects.NativeLoginPageObject
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.COMMUNITY_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.EMPTY
 import org.junit.After
+import org.junit.rules.TestRule
+import org.junit.rules.TestWatcher
+import org.junit.runner.Description
 import org.junit.Before
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -69,6 +76,9 @@ private const val LOGIN_FAILURE_SETTLE_MS: Long = 5_000
 
 private const val POLL_INTERVAL_MS: Long = 500
 
+/** What the Native Login form showed for a rejected login. [diagnostics] is the redacted OAuth trace. */
+data class NativeLoginRejection(val error: String, val diagnostics: String)
+
 abstract class AuthFlowTest {
 
     @get:Rule(order = 0)
@@ -78,16 +88,28 @@ abstract class AuthFlowTest {
         GrantPermissionRule.grant()
     }
 
+    /**
+     * Runs before the activity launches, so a subclass can choose the login surface (for example
+     * Native mode) before the first login attempt is routed.
+     */
     @get:Rule(order = 1)
-    val composeTestRule = createEmptyComposeRule()
+    val preLaunchRule: TestRule = object : TestWatcher() {
+        override fun starting(description: Description) = beforeActivityLaunch()
+    }
 
     @get:Rule(order = 2)
+    val composeTestRule = createEmptyComposeRule()
+
+    @get:Rule(order = 3)
     val activityRule = ActivityScenarioRule<AuthFlowTesterActivity>(
         Intent(
             InstrumentationRegistry.getInstrumentation().targetContext,
             AuthFlowTesterActivity::class.java,
         ).putExtra(AuthFlowTesterActivity.EXTRA_IS_UI_TESTING, true)
     )
+
+    /** Hook invoked before [activityRule] launches the app. */
+    protected open fun beforeActivityLaunch() {}
 
     val loginOptions = LoginOptionsPageObject(composeTestRule)
     val app = AuthFlowTesterPageObject(composeTestRule)
@@ -213,6 +235,9 @@ abstract class AuthFlowTest {
         ConcurrentRequestTestHooks.failedRequestIndex = null
         ConcurrentRequestTestHooks.submittedCount = 0
         ConcurrentRequestTestHooks.lastInterruptionStatus = null
+        // Restore Browser mode so Native Login settings never leak into a browser test.
+        AuthModeStore.reset()
+        NativeLoginDiagnostics.reset()
         with(SalesforceSDKManager.getInstance()) {
             userAccountManager.authenticatedUsers?.forEach { userAccount ->
                 logout(
@@ -632,6 +657,116 @@ abstract class AuthFlowTest {
         )
     }
 
+    // region Native Login
+
+    /** Native Login form and Login Options, driven by test tag. */
+    val nativeLogin = NativeLoginPageObject(composeTestRule)
+
+    /**
+     * Makes the Native Login form (already in front) use [app] on [setup]'s host with DPoP on or
+     * off. Settings that already match are left alone so the Login Options screen is only opened
+     * when something has to change.
+     */
+    fun configureNativeLogin(setup: NativeLoginSetup, app: AppConfig, useDPoP: Boolean) {
+        nativeLogin.waitForNativeLogin()
+        val stored = AuthModeStore.nativeSettings
+        val matches = AuthModeStore.mode == AuthMode.NATIVE &&
+            stored.clientId == app.consumerKey &&
+            stored.callbackUrl == app.redirectUri &&
+            stored.communityUrl == setup.host.url &&
+            SalesforceSDKManager.getInstance().useDPoP == useDPoP
+        if (!matches) nativeLogin.configureNative(app, setup.host, useDPoP)
+    }
+
+    /**
+     * Submits the setup user's credentials in the Native Login form. The SDK manager registers the
+     * login result on the main thread, so callers wait for the outcome with [waitForNativeSession]
+     * or [NativeLoginPageObject.waitForRejection].
+     */
+    private fun submitNativeCredentials(setup: NativeLoginSetup) {
+        nativeLogin.enterCredentials(setup.user)
+        nativeLogin.tapLogin()
+    }
+
+    /**
+     * Logs in through the Native Login form with [app] and validates the resulting session:
+     * Native Login markers, DPoP binding (or Bearer), OAuth values and an API request.
+     */
+    fun loginNativeAndValidate(
+        app: AppConfig,
+        useDPoP: Boolean,
+        setup: NativeLoginSetup = testConfig.nativeLoginSetup(),
+        isMultiUser: Boolean = false,
+        validateApi: Boolean = true,
+    ) {
+        configureNativeLogin(setup, app, useDPoP)
+        submitNativeCredentials(setup)
+        waitForNativeSession(setup, app, useDPoP, isMultiUser, validateApi)
+    }
+
+    /** Waits for the session detail screen after a Native Login and asserts it matches expectations. */
+    fun waitForNativeSession(
+        setup: NativeLoginSetup,
+        app: AppConfig,
+        useDPoP: Boolean,
+        isMultiUser: Boolean = false,
+        validateApi: Boolean = true,
+    ) {
+        try {
+            this.app.waitForAppLoad()
+        } catch (e: Throwable) {
+            throw AssertionError("Native login did not complete. OAuth trace: ${NativeLoginDiagnostics.summary}", e)
+        }
+        val username = setup.user.username
+        expectedRtMarkerByUsername[username] = SalesforceSDKManager.getInstance()
+            .userAccountManager.currentUser?.lastTokenRotationTime?.isNotBlank() == true
+        this.app.validateUser(
+            COMMUNITY_AUTH,
+            KnownUserConfig.FIRST,
+            isMultiUser = isMultiUser,
+            expectAdvancedAuth = false,
+            isDpop = useDPoP,
+            expectedBMarker = null,
+            // Native Login never selects a login server, so the SDK registers no L marker for it.
+            expectedLMarker = null,
+            expectedAMarker = Features.FEATURE_AUTH_TYPE_NATIVE,
+            isJwt = app.issuesJwt,
+            expectedRtMarker = expectedRtMarker(username),
+        )
+        this.app.validateUserAgentFlags(present = setOf(Features.FEATURE_NATIVE_LOGIN))
+        this.app.validateNativeOAuthValues(app, useDPoP)
+        if (validateApi) this.app.validateApiRequest()
+    }
+
+    /**
+     * Submits the setup user's credentials with [app] and expects the server to reject the request.
+     * Asserts the form reports the rejection, no account was created and the session detail screen
+     * never loaded. Returns the error shown, plus the redacted OAuth trace, for the caller to assert.
+     */
+    fun loginNativeExpectingRejection(
+        app: AppConfig,
+        useDPoP: Boolean,
+        setup: NativeLoginSetup = testConfig.nativeLoginSetup(),
+    ): NativeLoginRejection {
+        configureNativeLogin(setup, app, useDPoP)
+        val userCountBefore = SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers?.size ?: 0
+        submitNativeCredentials(setup)
+        val error = nativeLogin.waitForRejection()
+        val diagnostics = nativeLogin.diagnostics()
+
+        val deadline = System.currentTimeMillis() + LOGIN_FAILURE_SETTLE_MS
+        while (System.currentTimeMillis() < deadline) {
+            val userCount = SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers?.size ?: 0
+            assertTrue("A rejected Native Login created an account. OAuth trace: $diagnostics", userCount == userCountBefore)
+            assertTrue("Session detail loaded after a rejected Native Login", !this.app.isAppLoaded())
+            Thread.sleep(POLL_INTERVAL_MS)
+        }
+        assertTrue("Native Login form should remain after rejection", nativeLogin.isNativeLoginShowing())
+        return NativeLoginRejection(error, diagnostics)
+    }
+
+    // endregion
+
     companion object {
         @VisibleForTesting
         const val WELCOME_DISCOVERY_URL = "https://welcome.salesforce.com/discovery"
@@ -976,6 +1111,7 @@ abstract class AuthFlowTest {
         isJwt: Boolean = false,
         useLoginPoolHost: Boolean = false,
         assertRefreshUserAgent: Boolean = true,
+        expectLoginServerMarker: Boolean = true,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
         app.revokeAccessToken()
@@ -1009,6 +1145,8 @@ abstract class AuthFlowTest {
             null
         }
         val expectedLMarker = when {
+            // Native Login never selects a login server, so no L marker is registered.
+            !expectLoginServerMarker -> null
             useLoginPoolHost -> Features.FEATURE_LOGIN_SERVER_PRODUCTION
             // community_auth is a *.my.site.com Experience Cloud site, not a *.my.salesforce.com
             // My Domain host, so the SDK classifies it L5 (Other) rather than L4 (My Domain).

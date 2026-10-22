@@ -54,6 +54,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.BottomAppBarDefaults
@@ -169,6 +171,7 @@ const val MIGRATE_TOKEN_BUTTON_CONTENT_DESC = "migrate_refresh_token_button"
 const val UPGRADE_TO_DPOP_BUTTON_CONTENT_DESC = "upgrade_to_dpop_button"
 const val DOWNGRADE_FROM_DPOP_BUTTON_CONTENT_DESC = "downgrade_from_dpop_button"
 const val MIGRATE_USER_RADIO_CONTENT_DESC = "migrate_user_radio"
+const val LOGIN_OPTIONS_BUTTON_CONTENT_DESC = "login_options_button"
 const val ALERT_TITLE_CONTENT_DESC = "alert_title"
 const val ALERT_POSITIVE_BUTTON_CONTENT_DESC = "alert_positive"
 const val SCROLL_CONTAINER_CONTENT_DESC = "scroll_container"
@@ -193,6 +196,8 @@ class AuthFlowTesterActivity : SalesforceActivity() {
             HttpAccess.DEFAULT = TokenRequestCapturingHttpAccess(applicationContext)
         }
 
+        if (sdkManager.isUiTesting) applyNativeLoginLaunchExtras()
+
         setContent {
             MaterialTheme(colorScheme = getColorScheme()) {
                 TesterUI()
@@ -203,6 +208,21 @@ class AuthFlowTesterActivity : SalesforceActivity() {
     companion object {
         /** Intent extra: when true (in a debug build) shows UI-test-only affordances. */
         const val EXTRA_IS_UI_TESTING = "IS_UI_TESTING"
+
+        /** Intent extra: when true, resets Login Options to Browser mode with no Native Login settings. */
+        const val EXTRA_NATIVE_LOGIN_RESET = "NATIVE_LOGIN_RESET"
+
+        /** Intent extra: JSON of Native Login settings to import; also selects Native mode. */
+        const val EXTRA_NATIVE_LOGIN_CONFIG = "NATIVE_LOGIN_CONFIG"
+    }
+
+    /** UI-test hook: configures Login Options from launch extras, mirroring the iOS launch arguments. */
+    private fun applyNativeLoginLaunchExtras() {
+        if (intent.getBooleanExtra(EXTRA_NATIVE_LOGIN_RESET, false)) AuthModeStore.reset()
+        intent.getStringExtra(EXTRA_NATIVE_LOGIN_CONFIG)?.let {
+            AuthModeStore.importNativeConfig(it)
+            AuthModeStore.applyMode(AuthMode.NATIVE)
+        }
     }
 
     override fun onResume(client: RestClient?) {
@@ -1024,6 +1044,17 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                     text = stringResource(R.string.app_name),
                     modifier = Modifier.semantics{ contentDescription = TITLE_CONTENT_DESC }
                 )
+            },
+            actions = {
+                val context = LocalContext.current
+                IconButton(
+                    onClick = { context.startActivity(Intent(context, AuthFlowLoginOptionsActivity::class.java)) },
+                ) {
+                    Icon(
+                        Icons.Default.Settings,
+                        contentDescription = LOGIN_OPTIONS_BUTTON_CONTENT_DESC,
+                    )
+                }
             },
             colors = TopAppBarColors(
                 containerColor = colorScheme.background,

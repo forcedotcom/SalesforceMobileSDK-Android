@@ -64,6 +64,8 @@ enum class KnownAppConfig {
     CA_JWT,
     ECA_JWT_DPOP,
     ECA_JWT_DPOP_RTR,
+    ECA_JWT_HEADLESS,
+    ECA_JWT_DPOP_HEADLESS,
 }
 
 private val json = Json { ignoreUnknownKeys = true }
@@ -82,7 +84,36 @@ data class UITestConfig(
     val loginPoolHost: String? = null,
     val loginHosts: List<LoginHost>,
     val apps: List<AppConfig>,
+    val nativeLogin: NativeLoginConfig? = null,
 ) {
+
+    /**
+     * True when `nativeLogin` is present and every name it references resolves, so Native Login
+     * tests can skip via `assumeTrue` in environments that do not provision the headless ECAs.
+     */
+    val hasNativeLoginConfig: Boolean
+        get() = runCatching { nativeLoginSetup() }.isSuccess
+
+    /**
+     * Resolves the `nativeLogin` section into the apps, host and user a Native Login test uses.
+     *
+     * @throws NativeLoginConfigException When the section, a named app, the host or its user is missing.
+     */
+    fun nativeLoginSetup(): NativeLoginSetup {
+        val config = nativeLogin ?: throw NativeLoginConfigException("nativeLogin not found in ui_test_config.json.")
+        fun app(name: String) = apps.find { it.name == name }
+            ?: throw NativeLoginConfigException("nativeLogin references unknown app '$name'.")
+        val host = loginHosts.find { it.name == config.loginHost }
+            ?: throw NativeLoginConfigException("nativeLogin references unknown loginHost '${config.loginHost}'.")
+        val hostUser = host.users.firstOrNull()
+            ?: throw NativeLoginConfigException("nativeLogin loginHost '${host.name}' has no users.")
+        return NativeLoginSetup(
+            host = host,
+            user = hostUser,
+            optionalDPoPApp = app(config.optionalDPoPApp),
+            requiredDPoPApp = app(config.requiredDPoPApp),
+        )
+    }
 
     fun requireLoginPoolHost(): String = loginPoolHost
         ?: throw Exception("loginPoolHost not found in ui_test_config.json.")
@@ -113,6 +144,24 @@ data class UITestConfig(
         }
 
 }
+
+/** The `nativeLogin` section of `ui_test_config.json`: names into `loginHosts` and `apps`. */
+@Serializable
+data class NativeLoginConfig(
+    val loginHost: String,
+    val optionalDPoPApp: String,
+    val requiredDPoPApp: String,
+)
+
+/** Resolved [NativeLoginConfig]. The user is reused from the host's `users`, never duplicated. */
+data class NativeLoginSetup(
+    val host: LoginHost,
+    val user: User,
+    val optionalDPoPApp: AppConfig,
+    val requiredDPoPApp: AppConfig,
+)
+
+class NativeLoginConfigException(message: String) : Exception(message)
 
 @Serializable
 data class LoginHost(

@@ -30,6 +30,25 @@
             </intent-filter>
         </activity>
 
+        <!-- Chooses between the SDK (browser) login and NativeLoginActivity for each login attempt -->
+        <activity
+            android:name=".LoginRouterActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <activity
+            android:name=".NativeLoginActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
+
+        <activity
+            android:name=".AuthFlowLoginOptionsActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
+
         <!-- Login activity -->
         <activity android:name="com.salesforce.androidsdk.ui.LoginActivity"
             android:theme="@style/SalesforceSDK"

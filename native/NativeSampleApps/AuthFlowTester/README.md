@@ -7,7 +7,7 @@ A native Android sample app for the Salesforce Mobile SDK that serves as the pri
 Tests are executed by GitHub Actions via `.github/workflows/reusable-ui-workflow.yaml` and run in [Firebase Test Lab](https://firebase.google.com/docs/test-lab) across all supported API levels using the AndroidX Test Orchestrator.
 
 - **PR runs** — a representative smoke subset on one API level; AuthFlowTester-changing PRs run the complete inventory in five sequential groups.
-- **Nightly runs** — all 128 logical test executions run on every supported API level in five sequential groups: login/catch-all, welcome discovery, community login, token lifecycle, and multi-user. Keeping the groups sequential prevents concurrent runs from competing for shared test credentials.
+- **Nightly runs** — all 138 logical test executions run on every supported API level in five sequential groups: login/catch-all, welcome discovery, community and native login, token lifecycle, and multi-user. Keeping the groups sequential prevents concurrent runs from competing for shared test credentials.
 
 ### Test Suites
 
@@ -107,6 +107,32 @@ Tests for login against a community (Experience Cloud) login host, using the `co
 | `testCommunityDowngradeFromDPoP_InPlace` | ECA JWT | — | Yes | DPoP → Bearer in-place downgrade, same consumer key |
 | `testCommunity_BearerLogoutThenReloginWithDPoP` | ECA JWT | — | Yes | Bearer login, full logout (not just revoke), then DPoP login; token type is DPoP and tokens and DPoP key pair are new |
 | `testCommunityDPoP_And_RegularAuthDPoP_MultiHost_UniqueTokensAndIsolatedNonces` | ECA JWT DPoP | Yes | Yes | Community user + `regular_auth` ECA JWT DPoP user; unique tokens/keys, independent revoke+refresh and nonce rotation per user/host |
+
+#### NativeLoginTests
+Tests for Native Login (the SDK's `useNativeLogin` / `NativeLoginManager` path) against the community login host, with a Compose `NativeLoginActivity` owned by the app. Native Login talks to the community's headless login endpoints directly, so these tests use dedicated headless ECAs (`eca_jwt_headless`, DPoP-optional; `eca_jwt_dpop_headless`, DPoP-required) and the `community_auth` login host and user. Configure them with the `nativeLogin` block of `ui_test_config.json` (`loginHost`, `optionalDPoPApp`, `requiredDPoPApp`; see `shared/test/ui_test_config.json.sample`). Every test skips cleanly (`Assume.assumeTrue`) when the `nativeLogin` block is absent, so CI without it stays green. Tests select Native mode through the app's own Login Options state (`AuthModeStore`) before the activity launches, and check the redacted OAuth trace in `NativeLoginDiagnostics` (stage, HTTP status, OAuth error, whether a DPoP proof was sent, whether a nonce was received; never tokens or passwords).
+
+Native Login sessions carry the `NL` and `A5` markers in `ftr_` (plus `DP` for DPoP) and no `B` marker. They carry no `L` marker: those are registered only by `LoginActivity`, which Native Login never starts.
+
+| Test | App Config | DPoP | Notes |
+|------|-----------|------|-------|
+| `testNativeLogin_OptionalEca_DPoPOff_Bearer` | Headless ECA (optional DPoP) | Off | Form login; Bearer session; revoke+refresh works |
+| `testNativeLogin_OptionalEca_DPoPOn_DPoP` | Headless ECA (optional DPoP) | On | DPoP-bound session; thumbprint matches the stored key; revoke+refresh preserves binding |
+| `testNativeLogin_RequiredEca_DPoPOff_RejectedNoAccount` | Headless ECA (required DPoP) | Off | Authorize is rejected with 400 and no proof sent; error shown on the form; no account created |
+| `testNativeLogin_RequiredEca_DPoPOn_DPoP` | Headless ECA (required DPoP) | On | DPoP-bound session |
+| `testNativeLogin_CancelDuringLogin_NoNewAccount` | Headless ECA (optional DPoP) | Off | Cancel leaves no new account behind |
+| `testNativeLogin_BrowserFallback_UsesBrowserConfig` | Headless ECA, then browser ECA | - | The fallback button hands off to the browser login with the browser-mode boot config |
+| `testNativeLogin_SameUserDPoPToBearerReauth` | Headless ECA (optional DPoP) | On, then Off | Same user logs in again with DPoP off; the session downgrades to Bearer |
+| `testNativeLogin_ActivityRecreation` | Headless ECA (optional DPoP) | Off | Username survives Activity recreation, the password does not |
+| `testNativeLogin_MultiUser_Isolation` | Headless ECA (optional DPoP) | Mixed | Native user and a second user keep separate tokens and DPoP state |
+
+`UITestConfigNativeLoginTest.testNativeLoginConfigIsValid` validates the `nativeLogin` block itself.
+
+Run them with `ANDROID_SERIAL` set if several devices are attached:
+
+```
+./gradlew :native:NativeSampleApps:AuthFlowTester:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.salesforce.samples.authflowtester.NativeLoginTests
+```
 
 #### RTRLoginTests
 Tests for ECA configurations with Refresh Token Rotation (RTR) enabled. Verifies that the refresh token rotates on each token refresh cycle. The `assertRevokeAndRefreshWorks` check asserts the refresh token **changes** after a revoke/refresh cycle for RTR apps. The restart regression also observes the final outbound token-request User-Agent and verifies its request-scoped RT, auth-flow, and token-format markers. DPoP+RTR tests live in `DPoPLoginTests`. The expected `RT` user-agent marker is tracked per user (`AuthFlowTest.expectedRtMarker`), seeded at login from `lastTokenRotationTime`, because the login-time identity fetch can refresh and rotate on an RTR app, so `RT` may already be present on the first screen.
@@ -435,6 +461,25 @@ The Login Options screen allows you to override the default boot config for the 
 - **Override Boot Config toggle** — when enabled, exposes fields to enter a custom **Consumer Key**, **Redirect URI**, and **Scopes** (space-separated). Tap **Save** to apply. This lets you test different app configurations (CA, ECA, Beacon) without rebuilding the app.
 - **Use DPoP toggle** — enable or disable DPoP (Demonstrating Proof of Possession) for the current login attempt. As of Mobile SDK 14 this defaults **on** (the toggle initializes from `SalesforceSDKManager.useDPoP`, which now defaults to `true`); turn it off for the Bearer compatibility path. When on, the SDK generates an EC P-256 key pair in AndroidKeyStore and attaches DPoP proof JWTs at token exchange and on every API call. Only meaningful when logging in with a DPoP-enabled ECA.
 - **Discovery Result Editor toggle** — when enabled, exposes fields to simulate a Welcome Discovery result by entering a **Login Host** and **Username**. Tap **Save** to arm the simulated discovery result for the next login attempt. This simulates receiving a discovery callback without requiring email verification.
+
+### Native Login
+
+AuthFlowTester registers `LoginRouterActivity` as the SDK's Native Login activity. For every login attempt it forwards either to the Compose `NativeLoginActivity` (Native mode) or to the SDK's `LoginActivity` (Browser mode, the default), so browser behavior is unchanged unless you opt in.
+
+To switch modes, open the app's **Login Options** screen: tap the **settings** icon in the main screen's top bar, or, before logging in, run `adb shell am start -n com.salesforce.samples.authflowtester/.AuthFlowLoginOptionsActivity` (the activity is exported for this reason). The screen offers:
+
+- **Mode** - Browser or Native. Switching back to Browser unregisters the Native Login feature markers.
+- **Use DPoP** and **Hybrid Auth Token** toggles for Native sessions.
+- **Client ID**, **Callback URL** and **Community URL** - the headless ECA and community used by Native Login. **Import JSON** accepts an object with `consumerKey`, `redirectUri`, `communityUrl`, `useDPoP` and `useHybridFlow`.
+- **Browser Login Options** - opens the SDK's Login Options screen described above, which still applies to the browser fallback.
+
+The Native Login screen has username and password fields, **Log In**, **Log In with Browser** (the SDK's fallback to the web login) and **Cancel** (shown only when an account already exists). Rejections, such as the required-DPoP ECA refusing an unbound authorize request, are shown on the form together with a redacted OAuth trace.
+
+| App Login Options (Native mode) | Native Login screen |
+|---|---|
+| ![App Login Options in Native mode](Screenshots/native-login-options.png) | ![Native Login screen](Screenshots/native-login-screen.png) |
+
+(Values shown are placeholders.)
 
 ### Change Server
 
