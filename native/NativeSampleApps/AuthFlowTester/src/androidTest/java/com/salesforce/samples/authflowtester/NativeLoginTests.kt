@@ -77,7 +77,8 @@ import java.util.concurrent.atomic.AtomicInteger
  *
  * Two headless External Client Apps from `apps` are used: `eca_jwt_headless` accepts DPoP and
  * `eca_jwt_dpop_headless` requires it. The four-case matrix below crosses them with the app's DPoP
- * setting; the remaining tests cover cancellation, the browser fallback, same-user
+ * setting; the remaining tests cover a relaunch of the session (an Activity relaunch in the
+ * same process, not a cold restart), cancellation, the browser fallback, same-user
  * re-authentication, Activity recreation and multi-user isolation.
  *
  * Every test skips when neither headless ECA is configured, and fails when only one of them is or
@@ -123,29 +124,14 @@ class NativeLoginTests : AuthFlowTest() {
     @Test
     fun testECAJwtHeadless_DPoPOff_Bearer() {
         loginNativeAndValidate(setup.ecaJwtHeadless, useDPoP = false)
-        assertRevokeAndRefreshWorks(
-            expectsRefreshTokenRotation = true, // The headless ECAs have refresh token rotation enabled.
-            knownLoginHostConfig = COMMUNITY_AUTH,
-            expectAdvancedAuth = false,
-            expectedAMarker = Features.FEATURE_AUTH_TYPE_NATIVE,
-            isJwt = true,
-            expectLoginServerMarker = false,
-        )
+        assertNativeRevokeAndRefreshWorks(isDpop = false)
     }
 
     // eca_jwt_headless with DPoP on: DPoP-bound session.
     @Test
     fun testECAJwtHeadless_DPoPOn_DPoP() {
         loginNativeAndValidate(setup.ecaJwtHeadless, useDPoP = true)
-        assertRevokeAndRefreshWorks(
-            expectsRefreshTokenRotation = true, // The headless ECAs have refresh token rotation enabled.
-            isDpop = true,
-            knownLoginHostConfig = COMMUNITY_AUTH,
-            expectAdvancedAuth = false,
-            expectedAMarker = Features.FEATURE_AUTH_TYPE_NATIVE,
-            isJwt = true,
-            expectLoginServerMarker = false,
-        )
+        assertNativeRevokeAndRefreshWorks(isDpop = true)
     }
 
     // eca_jwt_dpop_headless with DPoP off: the server rejects the unbound request and no account is added.
@@ -175,15 +161,29 @@ class NativeLoginTests : AuthFlowTest() {
     @Test
     fun testECAJwtDPoPHeadless_DPoPOn_DPoP() {
         loginNativeAndValidate(setup.ecaJwtDPoPHeadless, useDPoP = true)
-        assertRevokeAndRefreshWorks(
-            expectsRefreshTokenRotation = true, // The headless ECAs have refresh token rotation enabled.
-            isDpop = true,
-            knownLoginHostConfig = COMMUNITY_AUTH,
-            expectAdvancedAuth = false,
-            expectedAMarker = Features.FEATURE_AUTH_TYPE_NATIVE,
-            isJwt = true,
-            expectLoginServerMarker = false,
-        )
+        assertNativeRevokeAndRefreshWorks(isDpop = true)
+    }
+
+    // endregion
+
+    // region Relaunch
+
+    // The restored Bearer session after an Activity relaunch in the same process (not a cold
+    // restart: the test runner shares the app's process).
+    @Test
+    fun testECAJwtHeadless_DPoPOff_Relaunch_Bearer() {
+        loginNativeAndValidate(setup.ecaJwtHeadless, useDPoP = false)
+        relaunchNativeAndValidate(setup, setup.ecaJwtHeadless, useDPoP = false)
+        assertNativeRevokeAndRefreshWorks(isDpop = false)
+    }
+
+    // The restored DPoP-bound session after an Activity relaunch in the same process; the binding
+    // survives a refresh after the relaunch.
+    @Test
+    fun testECAJwtDPoPHeadless_DPoPOn_Relaunch_DPoP() {
+        loginNativeAndValidate(setup.ecaJwtDPoPHeadless, useDPoP = true)
+        relaunchNativeAndValidate(setup, setup.ecaJwtDPoPHeadless, useDPoP = true)
+        assertNativeRevokeAndRefreshWorks(isDpop = true)
     }
 
     // endregion
@@ -336,6 +336,22 @@ class NativeLoginTests : AuthFlowTest() {
     }
 
     // endregion
+
+    /**
+     * Revokes the access token, refreshes and validates the Native Login session markers (A5, L5,
+     * NL, and DP only for DPoP) after the refresh.
+     */
+    private fun assertNativeRevokeAndRefreshWorks(isDpop: Boolean) {
+        assertRevokeAndRefreshWorks(
+            expectsRefreshTokenRotation = true, // The headless ECAs have refresh token rotation enabled.
+            isDpop = isDpop,
+            knownLoginHostConfig = COMMUNITY_AUTH,
+            expectAdvancedAuth = false,
+            expectedAMarker = Features.FEATURE_AUTH_TYPE_NATIVE,
+            isJwt = true,
+        )
+        app.validateUserAgentFlags(present = setOf(Features.FEATURE_NATIVE_LOGIN))
+    }
 
     private var originalHttpAccess: HttpAccess? = null
 

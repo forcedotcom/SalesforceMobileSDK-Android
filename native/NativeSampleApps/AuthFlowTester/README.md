@@ -79,13 +79,13 @@ All DPoP tests live here — basic login, RTR, multi-user, migration, server enf
 | `testLogin_DPoP_ECA_Without_DPoP_Fails` | ECA JWT DPoP | — | Server enforcement: DPoP-enforced ECA rejects login without DPoP (`useDPoP=false`); no account created |
 | `testUpgrade_NonDPoP_InPlace_ToDPoP` | ECA JWT → ECA JWT DPoP | — | Bearer → DPoP in-place upgrade; global `useDPoP` flag remains off; per-call `dpopOverride` triggers upgrade |
 | `testDowngrade_DPoP_InPlace_ToBearer` | ECA JWT | — | DPoP → Bearer in-place downgrade; session is established on the DPoP-optional ECA via per-call `useDPoP=true` (global flag stays on the whole time); downgrade deletes the obsolete DPoP key pair and nonce cache entry on success |
-| `testECAJwtDPoP_WithRestart` | ECA JWT DPoP | — | DPoP EC key pair survives process restart (AndroidKeyStore) |
+| `testECAJwtDPoP_WithRestart` | ECA JWT DPoP | — | DPoP EC key pair (AndroidKeyStore) still binds the session after an Activity relaunch |
 | `testECAJwtDPoP_ViaLoginPoolServer` | ECA JWT DPoP | — | Pool server login with DPoP; `dpop_jkt` accepted; L1 (production) marker in UA |
 | `testECAJwtDPoP_ViaLoginPoolServer_Rtr` | ECA JWT DPoP RTR | — | Pool server + DPoP + RTR; safety net: refresh token must survive the post-login identity fetch |
 | `testLoginForAdmin_DPoP` | ECA JWT DPoP | — | Login for Admins hand-off to Custom Tab works with DPoP |
 | `testECAJwtDPoP_RevokeWhenInFlight_PreservesBindingAndRecovers` | ECA JWT DPoP | — | Concurrent mixed batch; automatic in-flight revoke; follow-up refresh preserves DPoP binding |
 | `testECAJwtDPoPRtr_RevokedBeforeManyRequests_RotatesAndPreservesBinding` | ECA JWT DPoP RTR | — | Twenty concurrent 401s share one refresh; access and refresh tokens rotate while DPoP binding remains valid |
-| `testECAJwtDPoPRtr_AfterRestart_ManyRequestNonceRecoverySucceeds` | ECA JWT DPoP RTR | — | Cold nonce cache plus concurrent refresh; at most one nonce challenge/retry; key binding survives restart |
+| `testECAJwtDPoPRtr_AfterRestart_ManyRequestNonceRecoverySucceeds` | ECA JWT DPoP RTR | — | Concurrent refresh after an Activity relaunch; at most one nonce challenge/retry; key binding survives the relaunch |
 
 After a DPoP login (`testECAJwtDPoP_Hybrid`), the **Tokens** card shows **OAuth Token Type** `DPoP`, and the user agent carries the `DP` marker in `ftr_`:
 
@@ -96,7 +96,7 @@ After a DPoP login (`testECAJwtDPoP_Hybrid`), the **Tokens** card shows **OAuth 
 (Token values and the device ID are redacted.)
 
 #### CommunityLoginTests
-Tests for login against a community (Experience Cloud) login host, using the `community_auth` login host and the existing ECAs (no dedicated community app config — the community in the AuthFlowTester test org is set up so the existing apps' consumer keys/redirect URIs work unchanged for the community user; see `CommunityLoginTests`' class doc for the app chosen per scenario). Follows up on the DPoP + community investigation (W-24342940): community sites route through an Experience Cloud front door rather than a plain My Domain host, so these tests confirm the existing login/DPoP/multi-user/restart/migration helpers behave the same way against that front door as they do against `regular_auth`. `community_auth` requires a dedicated Experience Cloud site and is not provisioned in every environment — every test skips cleanly (`Assume.assumeTrue`) when the host is absent from `ui_test_config.json`. The `community_auth` login host provisions only one user, so cross-host multi-user coverage pairs it with a `regular_auth` DPoP user instead of a second `community_auth` user. Each refresh-based test also asserts that the stored community URL equals the configured `community_auth` URL (host and path) and that every `/services/oauth2/token` request goes to that community host and path, including after a restart.
+Tests for login against a community (Experience Cloud) login host, using the `community_auth` login host and the existing ECAs (no dedicated community app config — the community in the AuthFlowTester test org is set up so the existing apps' consumer keys/redirect URIs work unchanged for the community user; see `CommunityLoginTests`' class doc for the app chosen per scenario). Follows up on the DPoP + community investigation (W-24342940): community sites route through an Experience Cloud front door rather than a plain My Domain host, so these tests confirm the existing login/DPoP/multi-user/restart/migration helpers behave the same way against that front door as they do against `regular_auth`. `community_auth` requires a dedicated Experience Cloud site and is not provisioned in every environment — every test skips cleanly (`Assume.assumeTrue`) when the host is absent from `ui_test_config.json`. The `community_auth` login host provisions only one user, so cross-host multi-user coverage pairs it with a `regular_auth` DPoP user instead of a second `community_auth` user. Each refresh-based test also asserts that the stored community URL equals the configured `community_auth` URL (host and path) and that every `/services/oauth2/token` request goes to that community host and path, including after an Activity relaunch.
 
 
 After a community login (`testCommunityJwt_Hybrid`), the **Community** card shows the community ID and URL stored for the user (redacted here):
@@ -107,7 +107,7 @@ After a community login (`testCommunityJwt_Hybrid`), the **Community** card show
 |------|-----------|------|--------|-------|
 | `testCommunity_Hybrid` | ECA Opaque | No | Yes | Basic login; revoke+refresh works |
 | `testCommunity_NoHybrid` | ECA Opaque | No | No | |
-| `testCommunity_WithRestart` | ECA Opaque | No | Yes | Session survives a cold restart; revoke+refresh still targets the community |
+| `testCommunity_WithRestart` | ECA Opaque | No | Yes | Session survives an Activity relaunch; revoke+refresh still targets the community |
 | `testCommunityJwt_Hybrid` | ECA JWT | No | Yes | JWT access token, Bearer; revoke+refresh works |
 | `testCommunityJwt_NoHybrid` | ECA JWT | No | No | |
 | `testCommunity_ViaAlternateAuthSurface_WebView` | ECA Opaque | No | Yes | Login via the in-app WebView instead of the default Chrome Custom Tab |
@@ -115,7 +115,7 @@ After a community login (`testCommunityJwt_Hybrid`), the **Community** card show
 | `testCommunityDPoP_NoHybrid` | ECA JWT DPoP | Yes | No | |
 | `testCommunityDPoP_ViaAlternateAuthSurface_WebView` | ECA JWT DPoP | Yes | Yes | DPoP login via the in-app WebView |
 | `testCommunityDPoP_RefreshRotatesTokenAndPreservesBinding` | ECA JWT DPoP RTR | Yes | Yes | Two consecutive revoke+refresh cycles must each rotate the refresh token while the DPoP key thumbprint and binding hold across both |
-| `testCommunityDPoP_WithRestart` | ECA JWT DPoP | Yes | Yes | DPoP EC key pair survives process restart (AndroidKeyStore) |
+| `testCommunityDPoP_WithRestart` | ECA JWT DPoP | Yes | Yes | DPoP EC key pair (AndroidKeyStore) still binds the session after an Activity relaunch |
 | `testCommunityUpgradeToDPoP_InPlace` | ECA JWT | — | Yes | Bearer → DPoP in-place upgrade, same consumer key |
 | `testCommunityDowngradeFromDPoP_InPlace` | ECA JWT | — | Yes | DPoP → Bearer in-place downgrade, same consumer key |
 | `testCommunity_BearerLogoutThenReloginWithDPoP` | ECA JWT | — | Yes | Bearer login, full logout (not just revoke), then DPoP login; token type is DPoP and tokens and DPoP key pair are new |
@@ -135,7 +135,7 @@ The four-case matrix has explicit expectations, independent of the ECA name:
 | `eca_jwt_dpop_headless` | off | Rejected (`InvalidCredentials`), failure shown on the form, no account created |
 | `eca_jwt_dpop_headless` | on | DPoP-bound |
 
-Native Login sessions carry the `NL` and `A5` markers in `ftr_` (plus `DP` for DPoP) and no `B` marker. They carry no `L` marker: those are registered only by `LoginActivity`, which Native Login never starts.
+Native Login sessions carry the `NL` and `A5` markers in `ftr_` (plus `DP` for DPoP) and no `B` marker. Like iOS, they carry exactly one `L` marker, chosen from the Native Login URL: a community URL gives `L5`. `AuthenticationUtilities.onAuthFlowComplete` registers it, because Native Login never starts `LoginActivity`.
 
 | Test | App Config | DPoP | Notes |
 |------|-----------|------|-------|
@@ -143,6 +143,8 @@ Native Login sessions carry the `NL` and `A5` markers in `ftr_` (plus `DP` for D
 | `testECAJwtHeadless_DPoPOn_DPoP` | `eca_jwt_headless` | On | DPoP-bound session; thumbprint matches the stored key; revoke+refresh preserves binding |
 | `testECAJwtDPoPHeadless_DPoPOff_RejectedNoAccount` | `eca_jwt_dpop_headless` | Off | Login returns `InvalidCredentials`; authorize is rejected with 400 `invalid_request` (missing `dpop_jkt`), never `invalid_grant`, and no proof sent; error shown on the form; no account created |
 | `testECAJwtDPoPHeadless_DPoPOn_DPoP` | `eca_jwt_dpop_headless` | On | DPoP-bound session |
+| `testECAJwtHeadless_DPoPOff_Relaunch_Bearer` | `eca_jwt_headless` | Off | After an Activity relaunch in the same process (not a cold restart), the session is restored without the form, tokens are unchanged, and revoke+refresh works |
+| `testECAJwtDPoPHeadless_DPoPOn_Relaunch_DPoP` | `eca_jwt_dpop_headless` | On | Same relaunch; the DPoP binding survives and revoke+refresh preserves it |
 | `testNativeLogin_CancelDuringLogin_NoNewAccount` | `eca_jwt_headless` | Off | Cancel, idle or with a successful (HTTP 200) token response held until after it, leaves the existing session, tokens and feature markers unchanged and adds no account |
 | `testNativeLogin_BrowserFallback_UsesBrowserConfig` | `eca_jwt_headless`, then the boot config (CA Opaque) | - | The fallback button hands off to the browser login with the browser-mode boot config |
 | `testNativeLogin_SameUserDPoPToBearerReauth` | `eca_jwt_headless` | On, then Off | Same user logs in again with DPoP off; the session downgrades to Bearer |
@@ -186,7 +188,7 @@ logout and exposes stable Compose semantics for each request and aggregate count
 |------|------------|-------|
 | `testECAJwtRtr_ManyMixedRequests_DefaultsAndSuccess` | ECA JWT RTR | Validates collapsed defaults, 20 successful terminal results, request mix, and app liveness |
 | `testFailedRequest_TappingSquareShowsErrorDetails` | ECA JWT RTR | DEBUG/UI-test-only invalid endpoint; verifies one isolated failure, diagnostic dialog, and copy action |
-| `testECAJwtRtr_LogoutWhenInFlight_RemainsLoggedOutAfterRestart` | ECA JWT RTR | Logs out after requests enter flight; verifies login navigation and no session resurrection after cold relaunch |
+| `testECAJwtRtr_LogoutWhenInFlight_RemainsLoggedOutAfterRestart` | ECA JWT RTR | Logs out after requests enter flight; verifies login navigation and no session resurrection after an Activity relaunch |
 
 #### BeaconLoginTests
 Beacon app login tests for lightweight authentication use cases, covering both opaque and JWT token formats.
@@ -352,7 +354,7 @@ Tests for the Welcome Discovery login flow. Uses the SDK's Login Options "Discov
 | `testWelcomeDiscovery_AdvancedAuthLoginHost` | Advanced Auth | Beacon Opaque |
 
 #### LoginWithRestartTests
-Tests that user sessions and per-user feature flags persist across a cold app restart. Each test logs in, kills the app process (leaving the instrumentation runner alive), relaunches the app, and verifies that both session credentials and user-agent feature flags are reloaded correctly from disk. Feature flags tested here include BW (browser-based / advanced auth) and WD (welcome discovery). The RTR restart test lives in `RTRLoginTests`; it verifies the actual token-request User-Agent. The DPoP restart test lives in `DPoPLoginTests`.
+Tests that user sessions and per-user feature flags survive an app restart. The Android restart tests relaunch the Activity in the same process; they are not a cold restart. The instrumentation runs in the app's process, so `restartApp()` cannot kill it: it relaunches the Activity with a cleared task and the process, its memory and its caches survive. Each test logs in, relaunches the app, and verifies that the session credentials and user-agent feature flags are still correct. Feature flags tested here include BW (browser-based / advanced auth) and WD (welcome discovery). The RTR restart test lives in `RTRLoginTests`; it verifies the actual token-request User-Agent. The DPoP restart test lives in `DPoPLoginTests`.
 
 | Test | App Config | Scopes | Config Type | Feature Flag |
 |------|-----------|--------|-------------|--------------|
@@ -404,10 +406,10 @@ Multi-user tests additionally verify:
 - **Token refresh** targets the correct user's app after switching
 
 Restart tests additionally verify:
-- Session credentials are **reloaded from disk** after a cold process restart
-- Per-user feature flags (BW, WD, B-markers, L-markers) encoded in the user agent string **persist** across restarts via `hydratePerUserFeatures()`
+- Session credentials are still present after the Activity relaunch (same process; not a cold restart)
+- Per-user feature flags (BW, WD, B-markers, L-markers) encoded in the user agent string are still present after the relaunch
 - The RTR restart regression captures the final `/services/oauth2/token` request after the SDK User-Agent interceptor and verifies that its `ftr_` segment contains **RT + A2 + OT** for the owning account
-- DPoP EC key pairs stored in **AndroidKeyStore** survive a process kill and restart
+- DPoP EC key pairs stored in **AndroidKeyStore** still bind the session after the relaunch
 
 ### B- and L-markers in `ftr_`
 
@@ -429,7 +431,7 @@ Priority order when multiple reasons apply: **B3 > B4 > B1**.
 
 #### L-markers — which login server type was used
 
-Registered on every non-refresh login. Exactly one is set per login.
+Registered on every non-refresh login, browser or Native Login. Exactly one is set per login. Native Login picks it from the Native Login URL, so a community URL gives L5.
 
 | Code | Constant | Meaning |
 |------|----------|---------|
@@ -447,9 +449,9 @@ L3 takes priority over the resolved domain: even if Welcome Discovery resolves t
 
 | Component | Description |
 |-----------|-------------|
-| `AuthFlowTest` | Abstract base class providing `loginAndValidate`, `migrateAndValidate`, and `restartAndValidateUser` orchestration. Also exposes `restartApp()` (kills only the app process via `pidof` filtered by `myPid`, then relaunches), `addOtherUserAndValidate()`, and `switchToUserAndValidateUser()` helpers for restart and multi-user flows. Uses `ActivityScenarioRule` + `ComposeTestRule`. Assigns users based on API level to spread credential usage across Firebase Test Lab devices. |
+| `AuthFlowTest` | Abstract base class providing `loginAndValidate`, `migrateAndValidate`, and `restartAndValidateUser` orchestration. Also exposes `restartApp()` (an Activity relaunch in the same process, not a cold restart: the kill skips the runner's own PID, which is the app's, so in practice it kills nothing and only relaunches the Activity with a cleared task), `addOtherUserAndValidate()`, and `switchToUserAndValidateUser()` helpers for restart and multi-user flows. Uses `ActivityScenarioRule` + `ComposeTestRule`. Assigns users based on API level to spread credential usage across Firebase Test Lab devices. |
 | `UITestConfig` | Deserializes `ui_test_config.json` (from `shared/test/`) into typed enums: `KnownAppConfig`, `KnownLoginHostConfig`, `KnownUserConfig`, `ScopeSelection`. |
-| `RecordingHttpAccess` | Test-only `HttpAccess` wrapper private to `CommunityLoginTests`. Installed as `HttpAccess.DEFAULT` and records the URL of every request made through the SDK's OkHttp client (its network interceptors are preserved), so the tests can assert that each `/services/oauth2/token` refresh goes to the configured community host and path rather than the instance URL, including after a restart. The original `HttpAccess` is restored after each test. |
+| `RecordingHttpAccess` | Test-only `HttpAccess` wrapper private to `CommunityLoginTests`. Installed as `HttpAccess.DEFAULT` and records the URL of every request made through the SDK's OkHttp client (its network interceptors are preserved), so the tests can assert that each `/services/oauth2/token` refresh goes to the configured community host and path rather than the instance URL, including after an Activity relaunch. The original `HttpAccess` is restored after each test. |
 
 ### Page Objects
 

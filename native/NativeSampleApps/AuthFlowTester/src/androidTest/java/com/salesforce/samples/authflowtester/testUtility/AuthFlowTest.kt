@@ -60,6 +60,8 @@ import org.junit.rules.TestRule
 import org.junit.rules.TestWatcher
 import org.junit.runner.Description
 import org.junit.Before
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import java.util.concurrent.CopyOnWriteArrayList
@@ -546,15 +548,13 @@ abstract class AuthFlowTest {
     }
 
     /**
-     * Kills the app process and relaunches it, so the SDK reloads all state from disk.
+     * Relaunches [AuthFlowTesterActivity] in a new task. This is an Activity relaunch in the same
+     * process, not a cold restart: the test runner shares the app's process, so in-memory SDK
+     * state (singletons, caches) survives.
      *
-     * `am force-stop <package>` kills the instrumentation process too because the test
-     * runner shares the app's process. Instead, we get all PIDs for the package via
-     * `pidof`, exclude our own instrumentation PID, and kill only the app PID(s).
-     * This leaves the instrumentation alive while forcing the app to restart cold.
-     *
-     * After the kill, we relaunch via an explicit intent so the SDK re-runs
-     * `hydratePerUserFeatures()` from disk, exercising the same code path as a real restart.
+     * `am force-stop <package>` would kill the test runner too. The kill below targets the
+     * package's other PIDs, excluding the runner's own; AuthFlowTester runs in a single process,
+     * so in practice it finds none and only the relaunch happens.
      */
     fun restartApp(waitForAuthenticatedApp: Boolean = true) {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -729,8 +729,8 @@ abstract class AuthFlowTest {
             expectAdvancedAuth = false,
             isDpop = useDPoP,
             expectedBMarker = null,
-            // Native Login never selects a login server, so the SDK registers no L marker for it.
-            expectedLMarker = null,
+            // The SDK classifies the Native Login URL; the community_auth *.my.site.com site is L5.
+            expectedLMarker = Features.FEATURE_LOGIN_SERVER_OTHER,
             expectedAMarker = Features.FEATURE_AUTH_TYPE_NATIVE,
             isJwt = app.issuesJwt,
             expectedRtMarker = expectedRtMarker(username),
@@ -738,6 +738,25 @@ abstract class AuthFlowTest {
         this.app.validateUserAgentFlags(present = setOf(Features.FEATURE_NATIVE_LOGIN))
         this.app.validateNativeOAuthValues(app, useDPoP)
         if (validateApi) this.app.validateApiRequest()
+    }
+
+    /**
+     * Relaunches the app after a successful Native Login, without logging in again, and validates
+     * the restored session the same way as after the login. The relaunch keeps the process (see
+     * [restartApp]). Mirrors iOS `restartNativeAndValidate`.
+     */
+    fun relaunchNativeAndValidate(
+        setup: NativeLoginSetup,
+        app: AppConfig,
+        useDPoP: Boolean,
+    ) {
+        val (accessTokenBefore, refreshTokenBefore) = this.app.getTokens()
+        restartApp()
+        assertFalse("The relaunch showed the Native Login form", nativeLogin.isNativeLoginShowing())
+        waitForNativeSession(setup, app, useDPoP)
+        val (accessTokenAfter, refreshTokenAfter) = this.app.getTokens()
+        assertEquals("The relaunch did not restore the access token", accessTokenBefore, accessTokenAfter)
+        assertEquals("The relaunch did not restore the refresh token", refreshTokenBefore, refreshTokenAfter)
     }
 
     /**
@@ -1131,7 +1150,6 @@ abstract class AuthFlowTest {
         isJwt: Boolean = false,
         useLoginPoolHost: Boolean = false,
         assertRefreshUserAgent: Boolean = true,
-        expectLoginServerMarker: Boolean = true,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
         app.revokeAccessToken()
@@ -1165,8 +1183,6 @@ abstract class AuthFlowTest {
             null
         }
         val expectedLMarker = when {
-            // Native Login never selects a login server, so no L marker is registered.
-            !expectLoginServerMarker -> null
             useLoginPoolHost -> Features.FEATURE_LOGIN_SERVER_PRODUCTION
             // community_auth is a *.my.site.com Experience Cloud site, not a *.my.salesforce.com
             // My Domain host, so the SDK classifies it L5 (Other) rather than L4 (My Domain).
