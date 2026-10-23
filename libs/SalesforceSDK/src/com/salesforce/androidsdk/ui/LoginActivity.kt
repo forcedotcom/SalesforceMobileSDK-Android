@@ -1869,10 +1869,10 @@ open class LoginActivity : FragmentActivity() {
          * Exactly one of L1–L5 is selected.
          *
          * @param usedWelcomeDiscovery Whether the Welcome Discovery flow was used (captured before WD global is cleared)
-         * @param loginServerUrl The selected login server URL at auth completion time
+         * @param loginServerUrl The selected login server URL at auth completion time, or the
+         * Native Login URL for a Native Login
          * @return The L-marker feature code to register
          */
-        @VisibleForTesting
         internal fun selectLMarker(usedWelcomeDiscovery: Boolean, loginServerUrl: String): String = when {
             usedWelcomeDiscovery -> FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY                         // L3
             LoginServerManager.isProductionLoginServer(loginServerUrl) -> FEATURE_LOGIN_SERVER_PRODUCTION  // L1

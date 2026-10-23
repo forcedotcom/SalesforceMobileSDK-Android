@@ -122,6 +122,10 @@ not configured" error that points to Login Options (iOS falls back to the browse
   `NativeLoginManager` from the debug config, passing its DPoP and hybrid choices explicitly so
   the browser values are untouched. The token refresh of the resulting account follows the
   global hybrid flag, like other refreshes.
+- **L marker.** On success, `AuthenticationUtilities.onAuthFlowComplete` registers exactly one
+  per-user login-server marker from the Native Login URL with `LoginActivity.selectLMarker`, as
+  iOS does: a community URL gives `L5`, a My Domain URL `L4`. Native Login never starts
+  `LoginActivity`, which registers it for browser logins.
 - **Fallback.** **Log In with Browser** uses `getFallbackWebAuthenticationIntent()` marked so
   that `LoginActivity` does not redirect back; the browser login uses the boot config and
   browser options.

@@ -52,6 +52,11 @@ import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_H
 import com.salesforce.androidsdk.app.Features.FEATURE_BEACON
 import com.salesforce.androidsdk.app.Features.FEATURE_BIOMETRIC_AUTH
 import com.salesforce.androidsdk.app.Features.FEATURE_DPOP
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_OTHER
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_PRODUCTION
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_SANDBOX
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
 import com.salesforce.androidsdk.app.Features.FEATURE_RTR
 import com.salesforce.androidsdk.app.Features.FEATURE_SCREEN_LOCK
 import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_JWT
@@ -75,6 +80,7 @@ import com.salesforce.androidsdk.rest.RestClient.clearCaches
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.isBiometricAuthenticationEnabled
 import com.salesforce.androidsdk.security.ScreenLockManager
+import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.i
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
@@ -276,7 +282,7 @@ internal suspend fun onAuthFlowComplete(
     } else {
         if (nativeLogin) {
             // Native login bypasses LoginActivity.onAuthFlowSuccess, so A-marker per-user
-            // promotion and JT/OT/BN/TM writes must happen here.
+            // promotion and L/JT/OT/BN/TM writes must happen here.
             val sdkManager = SalesforceSDKManager.getInstance()
             val allAMarkers = listOf(
                 FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
@@ -291,6 +297,23 @@ internal suspend fun onAuthFlowComplete(
             for (marker in allAMarkers) {
                 sdkManager.unregisterUsedAppFeature(marker)
                 if (marker == activeAMarker) {
+                    sdkManager.registerUsedAppFeature(marker, account)
+                } else {
+                    sdkManager.unregisterUsedAppFeature(marker, account)
+                }
+            }
+            // L-markers: exactly one "which login server" marker per-user, from the Native Login
+            // URL (a community site resolves to L5). Native Login never uses Welcome Discovery.
+            val allLMarkers = listOf(
+                FEATURE_LOGIN_SERVER_PRODUCTION,
+                FEATURE_LOGIN_SERVER_SANDBOX,
+                FEATURE_LOGIN_SERVER_MY_DOMAIN,
+                FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY,
+                FEATURE_LOGIN_SERVER_OTHER,
+            )
+            val lMarker = LoginActivity.selectLMarker(usedWelcomeDiscovery = false, loginServerUrl = loginServer.trim())
+            for (marker in allLMarkers) {
+                if (marker == lMarker) {
                     sdkManager.registerUsedAppFeature(marker, account)
                 } else {
                     sdkManager.unregisterUsedAppFeature(marker, account)
