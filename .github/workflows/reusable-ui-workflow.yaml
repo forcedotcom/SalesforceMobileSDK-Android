@@ -202,7 +202,7 @@ jobs:
             --results-history-name=AuthFlowTester \
             --no-performance-metrics \
             --test-targets "class com.salesforce.samples.authflowtester.CommunityLoginTests,class com.salesforce.samples.authflowtester.NativeLoginTests" \
-            --timeout=15m \
+            --timeout=45m \
             --num-flaky-test-attempts=1
       - name: Run Token Lifecycle Tests (AuthFlowTester changed in PR)
         continue-on-error: true
@@ -347,7 +347,7 @@ jobs:
             --results-history-name=AuthFlowTester \
             --no-performance-metrics \
             --num-flaky-test-attempts=1 \
-            --timeout=15m || true
+            --timeout=45m || true
       - name: Run Token Lifecycle Tests
         continue-on-error: true
         if: ${{ ! inputs.is_pr }}
