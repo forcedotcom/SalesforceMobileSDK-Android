@@ -89,6 +89,13 @@
             android:theme="@style/SalesforceSDK"
             android:exported="false" />
 
+        <!-- Login activity when the debug Login Options select Native Login. -->
+        <activity android:name="com.salesforce.androidsdk.ui.DebugNativeLoginActivity"
+            android:theme="@style/SalesforceSDK"
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+
         <!-- Receiver in SP app for IDP-SP login flows -->
         <receiver android:name="com.salesforce.androidsdk.auth.idp.SPReceiver"
             android:exported="true"

@@ -36,6 +36,11 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.app.Features.FEATURE_BIOMETRIC_AUTH
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_OTHER
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_PRODUCTION
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_SANDBOX
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
 import com.salesforce.androidsdk.app.Features.FEATURE_RTR
 import com.salesforce.androidsdk.app.Features.FEATURE_SCREEN_LOCK
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -940,6 +945,54 @@ class AuthenticationUtilitiesTest {
         coVerify(exactly = 1) { fetchUserIdentity.invoke(tokenResponse) }
     }
 
+    @Test
+    fun test_givenNativeLoginOnCommunity_whenAuthFlowCompletes_thenRegistersOnlyL5ForUser() = runTest {
+        val mockSdkManager = setupMockSdkManager().also {
+            every { it.accountType } returns "test_account_type"
+            every { it.appContext } returns testContext
+        }
+        coEvery { fetchUserIdentity.invoke(any()) } returns createIdServiceResponse()
+
+        callOnAuthFlowComplete(nativeLogin = true, loginServer = "https://community.example.my.site.com/shop")
+
+        verify(exactly = 1) { mockSdkManager.registerUsedAppFeature(FEATURE_LOGIN_SERVER_OTHER, any()) }
+        listOf(
+            FEATURE_LOGIN_SERVER_PRODUCTION,
+            FEATURE_LOGIN_SERVER_SANDBOX,
+            FEATURE_LOGIN_SERVER_MY_DOMAIN,
+            FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY,
+        ).forEach { marker ->
+            verify(exactly = 0) { mockSdkManager.registerUsedAppFeature(marker, any()) }
+            verify(exactly = 1) { mockSdkManager.unregisterUsedAppFeature(marker, any()) }
+        }
+    }
+
+    @Test
+    fun test_givenNativeLoginOnMyDomain_whenAuthFlowCompletes_thenRegistersL4FromLoginUrl() = runTest {
+        val mockSdkManager = setupMockSdkManager().also {
+            every { it.accountType } returns "test_account_type"
+            every { it.appContext } returns testContext
+        }
+        coEvery { fetchUserIdentity.invoke(any()) } returns createIdServiceResponse()
+
+        callOnAuthFlowComplete(nativeLogin = true, loginServer = "https://example.my.salesforce.com")
+
+        verify(exactly = 1) { mockSdkManager.registerUsedAppFeature(FEATURE_LOGIN_SERVER_MY_DOMAIN, any()) }
+        verify(exactly = 0) { mockSdkManager.registerUsedAppFeature(FEATURE_LOGIN_SERVER_OTHER, any()) }
+    }
+
+    @Test
+    fun test_givenWebLogin_whenAuthFlowCompletes_thenLeavesLMarkersToLoginActivity() = runTest {
+        val mockSdkManager = setupMockSdkManager().also {
+            every { it.accountType } returns "test_account_type"
+            every { it.appContext } returns testContext
+        }
+        coEvery { fetchUserIdentity.invoke(any()) } returns createIdServiceResponse()
+
+        callOnAuthFlowComplete(loginServer = "https://community.example.my.site.com/shop")
+
+        verify(exactly = 0) { mockSdkManager.registerUsedAppFeature(FEATURE_LOGIN_SERVER_OTHER, any()) }
+    }
 
     // region Token Migration Tests
 
@@ -1599,10 +1652,11 @@ class AuthenticationUtilitiesTest {
         tokenMigration: Boolean = false,
         blockIntegrationUser: Boolean = false,
         identityFetchResult: IdentityFetchResult? = null,
+        loginServer: String = "https://login.salesforce.com",
     ) {
         onAuthFlowComplete(
             tokenResponse = customTokenResponse ?: createTokenEndpointResponse(),
-            loginServer = "https://login.salesforce.com",
+            loginServer = loginServer,
             consumerKey = "test_consumer_key",
             onAuthFlowError = onAuthFlowError,
             onAuthFlowSuccess = onAuthFlowSuccess,
