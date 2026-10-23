@@ -124,7 +124,7 @@ After a community login (`testCommunityJwt_Hybrid`), the **Community** card show
 #### NativeLoginTests
 Covers Native Login (`NativeLoginManager`) against the community login host, with the SDK's debug Native Login form (`DebugNativeLoginActivity`: username, password, Cancel, Login Options and **Log In with Browser** fallback). Native Login talks to the community's headless login endpoints directly, so these tests use two headless ECAs: `eca_jwt_headless` accepts DPoP, and `eca_jwt_dpop_headless` requires it.
 
-Native Login is an SDK debug feature, not AuthFlowTester code: the **Authentication Mode** picker (Browser / Native) at the top of the SDK's Login Options screen (debug builds with developer support, when the app registers no Native Login activity of its own) selects it, with its own client settings (Client ID, Native Callback URL, Community Login URL, Use DPoP, Use Hybrid Authentication). In Native mode the browser-only options are hidden. The Native Login settings are stored apart from the browser settings. Tests select Native mode before the activity launches through `SalesforceSDKManager.debugLoginSettings` (see [Launch extras](#launch-extras)), or drive Login Options through `NativeLoginDebugTestTags`. They check the redacted OAuth trace shown by the form: stage, HTTP status, OAuth error, whether a DPoP proof was sent and whether a nonce was received; never tokens or passwords.
+Native Login is an SDK debug feature, not AuthFlowTester code: the **Authentication Mode** picker (Browser / Native) at the top of the SDK's Login Options screen (when developer support is enabled, which is the default in debug builds, and the app registers no Native Login activity of its own) selects it, with its own client settings (Client ID, Native Callback URL, Community Login URL, Use DPoP, Use Hybrid Authentication). In Native mode the browser-only options are hidden. The Native Login settings are stored apart from the browser settings. Tests select Native mode before the activity launches through `SalesforceSDKManager.debugLoginSettings` (see [Launch extras](#launch-extras)), or drive Login Options through `NativeLoginDebugTestTags`. They check the redacted OAuth trace shown by the form: stage, HTTP status, OAuth error, whether a DPoP proof was sent and whether a nonce was received; never tokens or passwords.
 
 The four-case matrix has explicit expectations, independent of the ECA name:
 
@@ -510,9 +510,9 @@ The Login Options screen allows you to override the default boot config for the 
 
 ### Native Login
 
-AuthFlowTester has no Native Login code of its own: it uses the SDK's debug Native Login mode, available in any debug build of an app that does not register its own Native Login activity. Browser login stays the default.
+AuthFlowTester has no Native Login code of its own: it uses the SDK's debug Native Login mode, available in any app with developer support enabled (the default in debug builds) that does not register its own Native Login activity. Browser login stays the default.
 
-To switch modes, use the SDK's **Login Options** screen, reachable only in debug builds through the Developer Support menu:
+To switch modes, use the SDK's **Login Options** screen, reachable only when developer support is enabled (the default in debug builds), through the Developer Support menu:
 
 1. Launch the debug app. The login screen appears (in Browser mode, the Chrome custom tab; press Back to close it if needed) and shows the **Login Server Picker** sheet.
 2. Tap the **Developer Support** icon (top right of the sheet), or close the sheet and use the **three-dot menu** → **Developer Support**, then choose **Login Options**.

@@ -93,15 +93,15 @@ from the snapshot. This preserves other cached markers and repeated DPoP → DPo
 Bearer correctness without changing public registration no-op behavior.
 
 For diagnostics, do not consume a successful native `RestResponse` before nonce harvesting
-or token completion: `getRawResponse()` returns null once consumed. In debug builds
-`nativeRestCall()` passes each response to the internal `NativeLoginDiagnostics`, which keeps
+or token completion: `getRawResponse()` returns null once consumed. With developer support
+enabled `nativeRestCall()` passes each response to the internal `NativeLoginDiagnostics`, which keeps
 only the stage, HTTP status, OAuth error and description, and whether a DPoP proof was sent and
 a nonce received. It reads failure bodies only, through OkHttp `peekBody()`, so the original
 response stays open.
 
 #### Debug Native Login mode
 
-Debug builds can switch any app without its own Native Login activity to Native Login from the
+Apps with developer support enabled (the default in debug builds) can switch to Native Login, unless they register their own Native Login activity, from the
 developer support **Login Options** screen (**Authentication Mode**: Browser / Native). The
 choice and its External Client App (consumer key, HTTPS callback URL, community URL with path,
 DPoP, hybrid) persist in `SalesforceSDKManager.debugLoginSettings` (`NativeLoginDebugSettings`),
