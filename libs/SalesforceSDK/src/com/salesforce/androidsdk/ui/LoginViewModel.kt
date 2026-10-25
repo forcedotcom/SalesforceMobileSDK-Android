@@ -294,7 +294,7 @@ open class LoginViewModel(
              * login activity, so show the back affordance to match — even with
              * no authenticated users yet.
              */
-            nativeLoginActivity != null -> true
+            nativeLoginActivity != null || isDebugNativeLoginActive -> true
             // Otherwise show back only when an authenticated user exists.
             else -> !userAccountManager.authenticatedUsers.isNullOrEmpty()
         }

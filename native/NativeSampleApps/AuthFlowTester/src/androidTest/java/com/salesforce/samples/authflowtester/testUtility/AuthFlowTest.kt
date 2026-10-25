@@ -29,6 +29,7 @@ package com.salesforce.samples.authflowtester.testUtility
 import android.Manifest
 import android.content.Intent
 import android.os.Build
+import android.view.accessibility.AccessibilityEvent
 import androidx.annotation.VisibleForTesting
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -39,6 +40,7 @@ import androidx.test.uiautomator.UiDevice
 import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess
+import com.salesforce.androidsdk.ui.AuthenticationMode
 import com.salesforce.androidsdk.ui.components.LoginViewTestTags
 import com.salesforce.samples.authflowtester.AuthFlowTesterActivity
 import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
@@ -47,16 +49,23 @@ import com.salesforce.samples.authflowtester.pageObjects.AuthorizationPageObject
 import com.salesforce.samples.authflowtester.pageObjects.ChromeCustomTabPageObject
 import com.salesforce.samples.authflowtester.pageObjects.LoginOptionsPageObject
 import com.salesforce.samples.authflowtester.pageObjects.LoginPageObject
+import com.salesforce.samples.authflowtester.pageObjects.NativeLoginPageObject
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.COMMUNITY_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.EMPTY
 import org.junit.After
+import org.junit.rules.TestRule
+import org.junit.rules.TestWatcher
+import org.junit.runner.Description
 import org.junit.Before
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.TimeoutException
 
 /**
  * Total polling window after submitting credentials we expect to be
@@ -66,8 +75,13 @@ import java.util.concurrent.CopyOnWriteArrayList
  * succeeded.
  */
 private const val LOGIN_FAILURE_SETTLE_MS: Long = 5_000
+private const val DPOP_BINDING_ERROR = "missing required dpop_jkt for code binding"
+private const val DPOP_BINDING_ERROR_TIMEOUT_MS: Long = 60_000
 
 private const val POLL_INTERVAL_MS: Long = 500
+
+/** What the Native Login form showed for a rejected login. [diagnostics] is the redacted OAuth trace. */
+data class NativeLoginRejection(val error: String, val diagnostics: String)
 
 abstract class AuthFlowTest {
 
@@ -78,16 +92,28 @@ abstract class AuthFlowTest {
         GrantPermissionRule.grant()
     }
 
+    /**
+     * Runs before the activity launches, so a subclass can choose the login surface (for example
+     * Native mode) before the first login attempt is routed.
+     */
     @get:Rule(order = 1)
-    val composeTestRule = createEmptyComposeRule()
+    val preLaunchRule: TestRule = object : TestWatcher() {
+        override fun starting(description: Description) = beforeActivityLaunch()
+    }
 
     @get:Rule(order = 2)
+    val composeTestRule = createEmptyComposeRule()
+
+    @get:Rule(order = 3)
     val activityRule = ActivityScenarioRule<AuthFlowTesterActivity>(
         Intent(
             InstrumentationRegistry.getInstrumentation().targetContext,
             AuthFlowTesterActivity::class.java,
         ).putExtra(AuthFlowTesterActivity.EXTRA_IS_UI_TESTING, true)
     )
+
+    /** Hook invoked before [activityRule] launches the app. */
+    protected open fun beforeActivityLaunch() {}
 
     val loginOptions = LoginOptionsPageObject(composeTestRule)
     val app = AuthFlowTesterPageObject(composeTestRule)
@@ -213,6 +239,8 @@ abstract class AuthFlowTest {
         ConcurrentRequestTestHooks.failedRequestIndex = null
         ConcurrentRequestTestHooks.submittedCount = 0
         ConcurrentRequestTestHooks.lastInterruptionStatus = null
+        // Restore Browser mode so Native Login settings never leak into a browser test.
+        SalesforceSDKManager.getInstance().debugLoginSettings.reset()
         with(SalesforceSDKManager.getInstance()) {
             userAccountManager.authenticatedUsers?.forEach { userAccount ->
                 logout(
@@ -520,15 +548,13 @@ abstract class AuthFlowTest {
     }
 
     /**
-     * Kills the app process and relaunches it, so the SDK reloads all state from disk.
+     * Relaunches [AuthFlowTesterActivity] in a new task. This is an Activity relaunch in the same
+     * process, not a cold restart: the test runner shares the app's process, so in-memory SDK
+     * state (singletons, caches) survives.
      *
-     * `am force-stop <package>` kills the instrumentation process too because the test
-     * runner shares the app's process. Instead, we get all PIDs for the package via
-     * `pidof`, exclude our own instrumentation PID, and kill only the app PID(s).
-     * This leaves the instrumentation alive while forcing the app to restart cold.
-     *
-     * After the kill, we relaunch via an explicit intent so the SDK re-runs
-     * `hydratePerUserFeatures()` from disk, exercising the same code path as a real restart.
+     * `am force-stop <package>` would kill the test runner too. The kill below targets the
+     * package's other PIDs, excluding the runner's own; AuthFlowTester runs in a single process,
+     * so in practice it finds none and only the relaunch happens.
      */
     fun restartApp(waitForAuthenticatedApp: Boolean = true) {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -632,6 +658,136 @@ abstract class AuthFlowTest {
         )
     }
 
+    // region Native Login
+
+    /** Native Login form and Login Options, driven by test tag. */
+    val nativeLogin = NativeLoginPageObject(composeTestRule)
+
+    /**
+     * Makes the Native Login form (already in front) use [app] on [setup]'s host with DPoP on or
+     * off. Settings that already match are left alone so the Login Options screen is only opened
+     * when something has to change.
+     */
+    fun configureNativeLogin(setup: NativeLoginSetup, app: AppConfig, useDPoP: Boolean) {
+        nativeLogin.waitForNativeLogin()
+        val settings = SalesforceSDKManager.getInstance().debugLoginSettings
+        val stored = settings.config
+        val matches = settings.mode == AuthenticationMode.NATIVE &&
+            stored.consumerKey == app.consumerKey &&
+            stored.redirectUri == app.redirectUri &&
+            stored.communityUrl == setup.host.url &&
+            stored.useDPoP == useDPoP
+        if (!matches) nativeLogin.configureNative(app, setup.host, useDPoP)
+    }
+
+    /**
+     * Submits the setup user's credentials in the Native Login form. The SDK manager registers the
+     * login result on the main thread, so callers wait for the outcome with [waitForNativeSession]
+     * or [NativeLoginPageObject.waitForRejection].
+     */
+    private fun submitNativeCredentials(setup: NativeLoginSetup) {
+        nativeLogin.enterCredentials(setup.user)
+        nativeLogin.tapLogin()
+    }
+
+    /**
+     * Logs in through the Native Login form with [app] and validates the resulting session:
+     * Native Login markers, DPoP binding (or Bearer), OAuth values and an API request.
+     */
+    fun loginNativeAndValidate(
+        app: AppConfig,
+        useDPoP: Boolean,
+        setup: NativeLoginSetup = testConfig.nativeLoginSetup(),
+        isMultiUser: Boolean = false,
+        validateApi: Boolean = true,
+    ) {
+        configureNativeLogin(setup, app, useDPoP)
+        submitNativeCredentials(setup)
+        waitForNativeSession(setup, app, useDPoP, isMultiUser, validateApi)
+    }
+
+    /** Waits for the session detail screen after a Native Login and asserts it matches expectations. */
+    fun waitForNativeSession(
+        setup: NativeLoginSetup,
+        app: AppConfig,
+        useDPoP: Boolean,
+        isMultiUser: Boolean = false,
+        validateApi: Boolean = true,
+    ) {
+        try {
+            this.app.waitForAppLoad()
+        } catch (e: Throwable) {
+            throw AssertionError("Native login did not complete. OAuth trace: ${nativeLogin.diagnostics()}", e)
+        }
+        val username = setup.user.username
+        expectedRtMarkerByUsername[username] = SalesforceSDKManager.getInstance()
+            .userAccountManager.currentUser?.lastTokenRotationTime?.isNotBlank() == true
+        this.app.validateUser(
+            COMMUNITY_AUTH,
+            KnownUserConfig.FIRST,
+            isMultiUser = isMultiUser,
+            expectAdvancedAuth = false,
+            isDpop = useDPoP,
+            expectedBMarker = null,
+            // The SDK classifies the Native Login URL; the community_auth *.my.site.com site is L5.
+            expectedLMarker = Features.FEATURE_LOGIN_SERVER_OTHER,
+            expectedAMarker = Features.FEATURE_AUTH_TYPE_NATIVE,
+            isJwt = app.issuesJwt,
+            expectedRtMarker = expectedRtMarker(username),
+        )
+        this.app.validateUserAgentFlags(present = setOf(Features.FEATURE_NATIVE_LOGIN))
+        this.app.validateNativeOAuthValues(app, useDPoP)
+        if (validateApi) this.app.validateApiRequest()
+    }
+
+    /**
+     * Relaunches the app after a successful Native Login, without logging in again, and validates
+     * the restored session the same way as after the login. The relaunch keeps the process (see
+     * [restartApp]). Mirrors iOS `restartNativeAndValidate`.
+     */
+    fun relaunchNativeAndValidate(
+        setup: NativeLoginSetup,
+        app: AppConfig,
+        useDPoP: Boolean,
+    ) {
+        val (accessTokenBefore, refreshTokenBefore) = this.app.getTokens()
+        restartApp()
+        assertFalse("The relaunch showed the Native Login form", nativeLogin.isNativeLoginShowing())
+        waitForNativeSession(setup, app, useDPoP)
+        val (accessTokenAfter, refreshTokenAfter) = this.app.getTokens()
+        assertEquals("The relaunch did not restore the access token", accessTokenBefore, accessTokenAfter)
+        assertEquals("The relaunch did not restore the refresh token", refreshTokenBefore, refreshTokenAfter)
+    }
+
+    /**
+     * Submits the setup user's credentials with [app] and expects the server to reject the request.
+     * Asserts the form reports the rejection, no account was created and the session detail screen
+     * never loaded. Returns the error shown, plus the redacted OAuth trace, for the caller to assert.
+     */
+    fun loginNativeExpectingRejection(
+        app: AppConfig,
+        useDPoP: Boolean,
+        setup: NativeLoginSetup = testConfig.nativeLoginSetup(),
+    ): NativeLoginRejection {
+        configureNativeLogin(setup, app, useDPoP)
+        val userCountBefore = SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers?.size ?: 0
+        submitNativeCredentials(setup)
+        val error = nativeLogin.waitForRejection()
+        val diagnostics = nativeLogin.diagnostics()
+
+        val deadline = System.currentTimeMillis() + LOGIN_FAILURE_SETTLE_MS
+        while (System.currentTimeMillis() < deadline) {
+            val userCount = SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers?.size ?: 0
+            assertTrue("A rejected Native Login created an account. OAuth trace: $diagnostics", userCount == userCountBefore)
+            assertTrue("Session detail loaded after a rejected Native Login", !this.app.isAppLoaded())
+            Thread.sleep(POLL_INTERVAL_MS)
+        }
+        assertTrue("Native Login form should remain after rejection", nativeLogin.isNativeLoginShowing())
+        return NativeLoginRejection(error, diagnostics)
+    }
+
+    // endregion
+
     companion object {
         @VisibleForTesting
         const val WELCOME_DISCOVERY_URL = "https://welcome.salesforce.com/discovery"
@@ -723,9 +879,10 @@ abstract class AuthFlowTest {
      * was created and the login flow (Custom Tab) remains in front.
      *
      * Under forced advanced authentication credentials are entered in the
-     * Chrome Custom Tab. On failure the OAuth flow never redirects to the
-     * callback URL, so the tab stays in front (showing either the OAuth error
-     * page or the still-unsubmitted login form) and no user is created.
+     * Chrome Custom Tab. On failure no user is created and a Custom Tab stays
+     * in front: either the server's error page or login form, or, when the
+     * server redirects to the callback URL with an OAuth error, the login page
+     * that the SDK reloads after showing the error in a toast.
      *
      * Uses bounded polling to confirm the failure: at any point during the
      * wait, if a new user account appears or the AuthFlowTester app loads,
@@ -733,11 +890,12 @@ abstract class AuthFlowTest {
      * polling window terminates once the Custom Tab remains in front without a
      * user being created — the steady-state we expect for a rejected login.
      *
-     * When [expectDPoPBindingError] is true, additionally assert that the Custom Tab shows the
-     * enforced-ECA DPoP rejection error page (`missing required dpop_jkt for code binding`), pinning
-     * the failure to the specific server reason rather than mere absence of a user. Only the
-     * DPoP-enforcement case renders this page; the invalid-consumer-key / invalid-scope negative
-     * tests produce different errors and leave this off.
+     * When [expectDPoPBindingError] is true, additionally assert the specific server reason: the
+     * enforced ECA authenticates the user, then redirects to the callback with
+     * `error=invalid_request` and `missing required dpop_jkt for code binding`, which the SDK shows
+     * in a toast before reloading the login page. The toast is observed through its accessibility
+     * event. Only the DPoP-enforcement case produces this error; the invalid-consumer-key /
+     * invalid-scope negative tests produce different errors and leave this off.
      */
     fun loginAndExpectFailure(
         consumerKey: String,
@@ -773,17 +931,42 @@ abstract class AuthFlowTest {
         // log in.
         loginPage.skipGoogleSignIn()
         val (username, password) = testConfig.getUser(REGULAR_AUTH, knownUserConfig)
-        try {
-            loginPage.setUsername(username)
-            loginPage.advanceToPasswordStep()
-            loginPage.submitPassword(password)
-        } catch (e: AssertionError) {
-            // Verify the failure was due to a missing login form, not a different
-            // test-infrastructure issue. The Custom Tab must still be in front (otherwise we
-            // crashed somewhere unexpected).
-            assert(loginPage.isCustomTabDisplayed()) {
-                "Custom Tab page-object action threw without the Custom Tab in front: ${e.message}"
+        val submitCredentials = Runnable {
+            try {
+                loginPage.setUsername(username)
+                loginPage.advanceToPasswordStep()
+                loginPage.submitPassword(password)
+            } catch (e: AssertionError) {
+                // Verify the failure was due to a missing login form, not a different
+                // test-infrastructure issue. The Custom Tab must still be in front (otherwise we
+                // crashed somewhere unexpected).
+                assert(loginPage.isCustomTabDisplayed()) {
+                    "Custom Tab page-object action threw without the Custom Tab in front: ${e.message}"
+                }
             }
+        }
+        if (expectDPoPBindingError) {
+            // Toasts are not in the view hierarchy; their text arrives as a notification-state
+            // accessibility event. executeAndWaitForEvent sees events from the start of the
+            // submission without replacing UiAutomator's own accessibility listener.
+            try {
+                InstrumentationRegistry.getInstrumentation().uiAutomation.executeAndWaitForEvent(
+                    submitCredentials,
+                    { event ->
+                        event.eventType == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED &&
+                            event.text.any { it.contains(DPOP_BINDING_ERROR) }
+                    },
+                    DPOP_BINDING_ERROR_TIMEOUT_MS,
+                )
+            } catch (e: TimeoutException) {
+                throw AssertionError(
+                    "Expected the SDK to show the DPoP binding error ($DPOP_BINDING_ERROR) after a " +
+                        "rejected unbound login",
+                    e,
+                )
+            }
+        } else {
+            submitCredentials.run()
         }
 
         val deadline = System.currentTimeMillis() + LOGIN_FAILURE_SETTLE_MS
@@ -802,15 +985,6 @@ abstract class AuthFlowTest {
         // After the polling window, confirm we are still in the login flow (Custom Tab).
         assert(loginPage.isCustomTabDisplayed()) {
             "Expected to remain in the login flow (Custom Tab) after a failed login"
-        }
-
-        // For DPoP enforcement, pin the failure to the specific server reason: the enforced ECA
-        // rejects the unbound /authorize with an OAuth error page naming the missing dpop_jkt.
-        if (expectDPoPBindingError) {
-            assert(loginPage.isShowingDPoPBindingError()) {
-                "Expected the Custom Tab to show the DPoP binding error (missing required dpop_jkt " +
-                    "for code binding) after a rejected unbound login"
-            }
         }
     }
 

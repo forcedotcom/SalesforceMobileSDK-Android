@@ -34,6 +34,7 @@ import android.accounts.AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.content.Intent.FLAG_ACTIVITY_FORWARD_RESULT
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.app.AlertDialog
 import android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE
@@ -401,6 +402,18 @@ open class LoginActivity : FragmentActivity() {
         // we can safely ignore that scenario.
         with(SalesforceSDKManager.getInstance()) {
             if (isDebugBuild && loginDevMenuReload) {
+                // Login Options selected Native Login: hand this login attempt to the debug form,
+                // unless this activity is that form's browser fallback.
+                if (isDebugNativeLoginActive && !intent.getBooleanExtra(DebugNativeLoginActivity.EXTRA_BROWSER_FALLBACK, false)) {
+                    loginDevMenuReload = false
+                    startActivity(
+                        Intent(intent)
+                            .setClass(this@LoginActivity, DebugNativeLoginActivity::class.java)
+                            .addFlags(FLAG_ACTIVITY_FORWARD_RESULT)
+                    )
+                    finish()
+                    return
+                }
                 // Login Options may have changed the auth surface (e.g. disabled Web Server Flow).
                 // Reset completedViaBrowserTab so a subsequent in-app WebView login does not
                 // inherit the browser-tab path.  If reloadWebView() re-launches a Custom Tab,
@@ -936,7 +949,7 @@ open class LoginActivity : FragmentActivity() {
     internal fun handleBackBehavior() {
         with(SalesforceSDKManager.getInstance()) {
             // If app is using Native Login this activity is a fallback and can be dismissed.
-            if (nativeLoginActivity != null) {
+            if (nativeLoginActivity != null || isDebugNativeLoginActive) {
                 setResult(RESULT_CANCELED)
                 notifyAuthFlowCancelled()
                 finish()
@@ -1856,10 +1869,10 @@ open class LoginActivity : FragmentActivity() {
          * Exactly one of L1–L5 is selected.
          *
          * @param usedWelcomeDiscovery Whether the Welcome Discovery flow was used (captured before WD global is cleared)
-         * @param loginServerUrl The selected login server URL at auth completion time
+         * @param loginServerUrl The selected login server URL at auth completion time, or the
+         * Native Login URL for a Native Login
          * @return The L-marker feature code to register
          */
-        @VisibleForTesting
         internal fun selectLMarker(usedWelcomeDiscovery: Boolean, loginServerUrl: String): String = when {
             usedWelcomeDiscovery -> FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY                         // L3
             LoginServerManager.isProductionLoginServer(loginServerUrl) -> FEATURE_LOGIN_SERVER_PRODUCTION  // L1

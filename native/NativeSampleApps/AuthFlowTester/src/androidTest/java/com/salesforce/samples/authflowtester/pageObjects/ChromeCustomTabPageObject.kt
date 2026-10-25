@@ -210,6 +210,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     }
 
     override fun setUsername(name: String) {
+        allowLocalNetworkAccess()
         // UiSelector.resourceId("username") matches Android View resource IDs, not HTML element
         // IDs inside Chrome — the quick check is a low-cost probe before the full wait.
         val usernameField = device.findObject(UiSelector().resourceId(USERNAME_ID))
@@ -233,6 +234,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     }
 
     override fun setPassword(password: String) {
+        allowLocalNetworkAccess()
         // Current Chrome exposes the HTML password element's ID as its accessibility resource ID.
         // Prefer that stable signal, then support combined forms by position. The final instance(0)
         // fallback is safe after advanceToPasswordStep has confirmed that the password screen is
@@ -515,6 +517,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         var enterFallbackUsed = false
 
         while (System.currentTimeMillis() < deadline) {
+            allowLocalNetworkAccess()
             if (condition()) return
 
             val now = System.currentTimeMillis()
@@ -620,6 +623,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         val deadline = System.currentTimeMillis() + FRE_DISMISS_TIMEOUT_MS
         while (System.currentTimeMillis() < deadline) {
             if (isCustomTabDisplayed()) {
+                allowLocalNetworkAccess()
                 return
             }
             if (!dismissOneFreControl()) {
@@ -627,6 +631,22 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
                 device.waitForIdle(QUICK_CHECK_TIMEOUT_MS)
             }
         }
+    }
+
+    /**
+     * Accepts Chrome's Local Network Access prompt ("... wants to access other devices on your local
+     * network"), which test hosts on a private network can trigger. The modal covers the login form,
+     * so leaving it up stalls every credential step; allowing it lets the page finish its requests.
+     */
+    private fun allowLocalNetworkAccess() {
+        val prompt = device.findObject(
+            UiSelector().packageName("com.android.chrome").textContains("local network")
+        )
+        if (!prompt.exists()) return
+        device.findObject(UiSelector().resourceId("com.android.chrome:id/positive_button"))
+            .takeIf { it.exists() }
+            ?.click()
+        device.waitForIdle(QUICK_CHECK_TIMEOUT_MS)
     }
 
     /**
@@ -689,22 +709,6 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
             UiSelector().resourceId("com.android.chrome:id/close_button")
         )
         return closeButton.waitForExists(QUICK_CHECK_TIMEOUT_MS)
-    }
-
-    /**
-     * True when the Custom Tab is showing the OAuth error page produced by a DPoP-enforced ECA that
-     * rejected an unbound `/authorize` request. The enforced server responds with
-     * `error=invalid_request&error_description=missing required dpop_jkt for code binding`, which
-     * Chrome renders as page text. We match on the URL-encoded `dpop_jkt` token — the distinctive,
-     * server-stable part of the description — rather than the full phrase, which is URL-encoded in the
-     * rendered text and could be reworded server-side. Uses [WEBVIEW_ACTION_TIMEOUT_MS] because the
-     * error page is server-rendered and subject to the same latency as the login form.
-     */
-    fun isShowingDPoPBindingError(): Boolean {
-        val errorText = device.findObject(
-            UiSelector().packageName("com.android.chrome").textContains("dpop_jkt")
-        )
-        return errorText.waitForExists(WEBVIEW_ACTION_TIMEOUT_MS)
     }
 
     /**

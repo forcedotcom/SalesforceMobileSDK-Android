@@ -134,6 +134,11 @@ import kotlin.coroutines.resumeWithException
  * @param restClient The REST client to use for making network requests. This
  * parameter is intended for testing purposes only. Defaults to the
  * unauthenticated REST client
+ * @param useDPoP Overrides [SalesforceSDKManager.useDPoP] for this manager's
+ * logins, or null to follow it.  Used by the debug Native Login settings
+ * @param useHybridAuthentication Overrides
+ * [SalesforceSDKManager.useHybridAuthentication] for this manager's token
+ * exchange, or null to follow it.  Used by the debug Native Login settings
  */
 internal class NativeLoginManager(
     private val clientId: String,
@@ -142,7 +147,9 @@ internal class NativeLoginManager(
     private val reCaptchaSiteKeyId: String? = null,
     private val googleCloudProjectId: String? = null,
     private val isReCaptchaEnterprise: Boolean = false,
-    private val restClient: RestClient = SalesforceSDKManager.getInstance().getUnauthenticatedRestClient()
+    private val restClient: RestClient = SalesforceSDKManager.getInstance().getUnauthenticatedRestClient(),
+    private val useDPoP: Boolean? = null,
+    private val useHybridAuthentication: Boolean? = null,
 ) : NativeLoginManager {
 
     private val accountManager = SalesforceSDKManager.getInstance().userAccountManager
@@ -843,7 +850,7 @@ internal class NativeLoginManager(
     private suspend fun withNativeTransaction(operation: suspend (NativeTransaction) -> NativeLoginResult): NativeLoginResult {
         val transaction = nativeCompletionMutex.withLock {
             NativeTransaction(
-                if (SalesforceSDKManager.getInstance().useDPoP) UUID.randomUUID().toString() else null
+                if (useDPoP ?: SalesforceSDKManager.getInstance().useDPoP) UUID.randomUUID().toString() else null
             ).also { activeNativeTransaction = it }
         }
         try {
@@ -868,6 +875,7 @@ internal class NativeLoginManager(
         suspend fun sendCurrent(request: RestRequest): RestResponse? {
             transaction.ensureActiveAndCurrent()
             val response = suspendedRestCall(request)
+            response?.let(NativeLoginDiagnostics::record)
             try {
                 transaction.ensureCurrent()
             } catch (e: Exception) {
@@ -1095,7 +1103,8 @@ internal class NativeLoginManager(
     ): NativeLoginResult {
         if (authorizationResponse.isSuccess) {
             val code = authorizationResponse.asJSONObject().get(CODE).toString()
-            val useHybridAuthentication = SalesforceSDKManager.getInstance().useHybridAuthentication
+            val useHybridAuthentication = useHybridAuthentication
+                ?: SalesforceSDKManager.getInstance().useHybridAuthentication
             val authEndpoint = authorizationResponse.asJSONObject().get(SFDC_COMMUNITY_URL).toString()
             val tokenRequestBody = createRequestBody(
                 CODE to code,

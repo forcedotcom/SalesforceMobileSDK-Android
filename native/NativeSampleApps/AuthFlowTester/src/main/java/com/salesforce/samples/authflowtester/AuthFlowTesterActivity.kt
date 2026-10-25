@@ -124,6 +124,7 @@ import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.rest.ApiVersionStrings
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient
+import com.salesforce.androidsdk.ui.NativeLoginDebugSettings
 import com.salesforce.androidsdk.ui.SalesforceActivity
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
@@ -141,6 +142,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.json.JSONObject
 
 const val PADDING = 10
 const val INNER_CARD_PADDING = 16
@@ -193,6 +195,8 @@ class AuthFlowTesterActivity : SalesforceActivity() {
             HttpAccess.DEFAULT = TokenRequestCapturingHttpAccess(applicationContext)
         }
 
+        if (sdkManager.isUiTesting) applyNativeLoginLaunchExtras()
+
         setContent {
             MaterialTheme(colorScheme = getColorScheme()) {
                 TesterUI()
@@ -203,6 +207,41 @@ class AuthFlowTesterActivity : SalesforceActivity() {
     companion object {
         /** Intent extra: when true (in a debug build) shows UI-test-only affordances. */
         const val EXTRA_IS_UI_TESTING = "IS_UI_TESTING"
+
+        /** Intent extra: `browser` or `native`, the SDK debug Login Options authentication mode. */
+        const val EXTRA_AUTHENTICATION_MODE = "AUTHENTICATION_MODE"
+
+        /** Intent extra: JSON applied to the SDK debug Native Login settings. */
+        const val EXTRA_NATIVE_LOGIN_CONFIG = "NATIVE_LOGIN_CONFIG"
+
+        private const val TAG = "AuthFlowTesterActivity"
+    }
+
+    /**
+     * UI-test hook: seeds the SDK's debug Login Options from launch extras, mirroring the iOS
+     * launch arguments.  The configuration is applied before the mode, which it must make valid.
+     * Like iOS, an extra the settings reject is logged and ignored, and nothing is saved for it.
+     */
+    private fun applyNativeLoginLaunchExtras() {
+        val settings = SalesforceSDKManager.getInstance().debugLoginSettings
+        intent.getStringExtra(EXTRA_NATIVE_LOGIN_CONFIG)?.let { json ->
+            applyDebugLoginSettings(EXTRA_NATIVE_LOGIN_CONFIG) { settings.apply(json) }
+        }
+        intent.getStringExtra(EXTRA_AUTHENTICATION_MODE)?.let { mode ->
+            applyDebugLoginSettings(EXTRA_AUTHENTICATION_MODE) {
+                settings.apply(JSONObject().put(NativeLoginDebugSettings.JSON_AUTHENTICATION_MODE, mode).toString())
+            }
+        }
+    }
+
+    private fun applyDebugLoginSettings(extra: String, apply: () -> Unit) {
+        try {
+            apply()
+        } catch (e: IllegalArgumentException) {
+            Log.e(TAG, "Ignoring launch extra $extra: ${e.message}")
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Ignoring launch extra $extra: ${e.message}")
+        }
     }
 
     override fun onResume(client: RestClient?) {

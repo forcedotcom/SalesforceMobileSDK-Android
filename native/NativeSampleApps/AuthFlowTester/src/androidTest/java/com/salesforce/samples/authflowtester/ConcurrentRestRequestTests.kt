@@ -94,7 +94,7 @@ class ConcurrentRestRequestTests : AuthFlowTest() {
         waitForAuthenticatedUserCount(expectedCount = 0)
         val loginPage = LoginPageObject(composeTestRule)
         loginPage.waitForLoginScreen()
-        assertTrue("Cold relaunch should remain at login", loginPage.isLoginScreenVisible())
+        assertTrue("Relaunch should remain at login", loginPage.isLoginScreenVisible())
     }
 
     private fun waitForAuthenticatedUserCount(expectedCount: Int) {
