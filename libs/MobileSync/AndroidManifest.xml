@@ -2,7 +2,7 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     android:versionCode="99"
-    android:versionName="14.0.1.dev">
+    android:versionName="14.0.1-rc.0">
 
     <application />
 
