@@ -41,7 +41,7 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">14.0.0
+        <div class="library-version" id="library-version">14.0.1-rc.0
         </div>
         <div class="navigation-controls">
         <div class="filter-section filter-section_loading" id="filter-section">
@@ -95,7 +95,7 @@
   <div class="cover ">
     <h1 class="cover"><span>get</span><wbr><span>Login</span><wbr><span><span>Servers</span></span></h1>
   </div>
-  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-login-servers.html"><span class="token function">getLoginServers</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/util/List.html">List</a><span class="token operator">&lt;</span><a href="-login-server/index.html">LoginServerManager.LoginServer</a><span class="token operator">&gt;</span></div><p class="paragraph">Returns the list of login servers. Defaults to mobile device management (MDM) login servers from the runtime configuration, if available, or resources login servers from the servers.xml. MDM and resources login servers are not custom and cannot be removed by the user. A separate list of custom login servers is stored in a shared preferences for each of MDM and resources.</p><span class="kdoc-tag"><h4 class="">Return</h4><p class="paragraph">The list of login servers</p></span></div></div>
+  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-login-servers.html"><span class="token function">getLoginServers</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/util/List.html">List</a><span class="token operator">&lt;</span><a href="-login-server/index.html">LoginServerManager.LoginServer</a><span class="token operator">&gt;</span></div><p class="paragraph">Returns current MDM servers first. OnlyShowAuthorizedHosts restricts the list only when AppServiceHosts contains a nonblank host. Otherwise, resource defaults and custom servers from settings followed by runtime preferences are included, deduplicated by trimmed URL. Custom entries retain independent ownership: removing an MDM host does not delete a saved custom entry for the same URL.</p><span class="kdoc-tag"><h4 class="">Return</h4><p class="paragraph">The list of login servers</p></span></div></div>
 </div>
     <div class="footer">
         <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
