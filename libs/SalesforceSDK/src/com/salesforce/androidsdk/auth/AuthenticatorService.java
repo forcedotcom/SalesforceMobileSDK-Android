@@ -152,7 +152,7 @@ public class AuthenticatorService extends Service {
                         .build();
 
                 Bundle resBundle = UserAccountManager.getInstance().updateAccount(account, updatedUserAccount);
-                updatedUserAccount.downloadProfilePhoto();
+                updatedUserAccount.downloadProfilePhotoIfMissing();
                 UserAccountManager.getInstance().clearCachedCurrentUser();
 
                 return resBundle;

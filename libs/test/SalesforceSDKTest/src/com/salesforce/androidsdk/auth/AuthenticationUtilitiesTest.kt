@@ -36,6 +36,11 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.app.Features.FEATURE_BIOMETRIC_AUTH
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_OTHER
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_PRODUCTION
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_SANDBOX
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
 import com.salesforce.androidsdk.app.Features.FEATURE_RTR
 import com.salesforce.androidsdk.app.Features.FEATURE_SCREEN_LOCK
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -82,7 +87,8 @@ class AuthenticationUtilitiesTest {
     private val startMainActivity: () -> Unit = mockk()
     private val setAdministratorPreferences: (OAuth2.IdServiceResponse?, UserAccount) -> Unit = mockk()
     private val addAccount: (UserAccount) -> Unit = mockk()
-    private val handleScreenLockPolicy: (OAuth2.IdServiceResponse?, UserAccount) -> Unit = mockk()
+    private val persistScreenLockFeature: (OAuth2.IdServiceResponse?, UserAccount) -> Unit = mockk()
+    private val handleScreenLockPolicy: (OAuth2.IdServiceResponse?, UserAccount) -> Boolean = mockk()
     private val handleBiometricAuthPolicy: (OAuth2.IdServiceResponse?, UserAccount) -> Unit = mockk()
     private val handleDuplicateUserAccount: (UserAccountManager, UserAccount, OAuth2.IdServiceResponse?) -> Unit = mockk()
 
@@ -104,14 +110,17 @@ class AuthenticationUtilitiesTest {
         every { startMainActivity.invoke() } returns Unit
         every { setAdministratorPreferences.invoke(any(), any()) } returns Unit
         every { addAccount.invoke(any()) } returns Unit
-        every { handleScreenLockPolicy.invoke(any(), any()) } returns Unit
+        every { persistScreenLockFeature.invoke(any(), any()) } returns Unit
+        every { handleScreenLockPolicy.invoke(any(), any()) } returns false
         every { handleBiometricAuthPolicy.invoke(any(), any()) } returns Unit
         every { handleDuplicateUserAccount.invoke(any(), any(), any()) } returns Unit
 
         // Setup mock for UserAccountManager methods
         every { mockUserAccountManager.createAccount(any()) } returns mockk<android.os.Bundle>()
         every { mockUserAccountManager.switchToUser(any()) } returns Unit
+        every { mockUserAccountManager.storeCurrentUserInfo(any(), any()) } returns Unit
         every { mockUserAccountManager.sendUserSwitchIntent(any(), any()) } returns Unit
+        setupPersistAccountMocks()
     }
 
     @After
@@ -129,7 +138,6 @@ class AuthenticationUtilitiesTest {
         verify { onAuthFlowError.invoke("Error", "Authentication error. Please try again.", null) }
         verify(exactly = 0) { onAuthFlowSuccess.invoke(any()) }
         verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
-        verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
     }
 
     @Test
@@ -151,7 +159,7 @@ class AuthenticationUtilitiesTest {
         verify { onAuthFlowError.invoke("Error", "Authentication only allowed from managed device.", null) }
         verify(exactly = 0) { onAuthFlowSuccess.invoke(any()) }
         verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
-        verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
+        verify(exactly = 0) { mockUserAccountManager.updateAccount(any(), any()) }
     }
 
     @Test
@@ -177,8 +185,8 @@ class AuthenticationUtilitiesTest {
         // Then
         verify(exactly = 0) { onAuthFlowError.invoke(any(), any(), any()) }
         verify { onAuthFlowSuccess.invoke(expectedAccount) }
-        verify { mockUserAccountManager.createAccount(expectedAccount) }
-        verify { mockUserAccountManager.switchToUser(expectedAccount) }
+        verify { mockUserAccountManager.updateAccount(any(), expectedAccount) }
+        verify { mockUserAccountManager.storeCurrentUserInfo(expectedAccount.userId, expectedAccount.orgId) }
         verify { setAdministratorPreferences.invoke(userIdentity, expectedAccount) }
         verify { handleDuplicateUserAccount.invoke(mockUserAccountManager, expectedAccount, userIdentity) }
         verify { addAccount.invoke(expectedAccount) }
@@ -236,21 +244,93 @@ class AuthenticationUtilitiesTest {
             startMainActivity = startMainActivity,
             setAdministratorPreferences = setAdministratorPreferences,
             addAccount = addAccount,
+            persistScreenLockFeature = persistScreenLockFeature,
             handleScreenLockPolicy = handleScreenLockPolicy,
             handleBiometricAuthPolicy = handleBiometricAuthPolicy,
             handleDuplicateUserAccount = handleDuplicateUserAccount,
             onAuthFlowFinished = onAuthFlowFinished,
         )
 
-        // Then - called after handleBiometricAuthPolicy, and before proceed
-        // (startMainActivity/handleScreenLockPolicy) since onAuthFlowFinished is relaxed and
-        // does not invoke the proceed callback it's given
+        // Then - mobile policies are persisted before the completion hook. The relaxed hook does
+        // not invoke the Main-thread callback that starts the activity or shows screen lock.
         verifyOrder {
             handleBiometricAuthPolicy.invoke(userIdentity, expectedAccount)
+            handleScreenLockPolicy.invoke(userIdentity, expectedAccount)
             onAuthFlowFinished.invoke(any())
         }
         verify(exactly = 0) { startMainActivity.invoke() }
-        verify(exactly = 0) { handleScreenLockPolicy.invoke(any(), any()) }
+    }
+
+    @Test
+    fun testOnAuthFlowComplete_persistsScreenLockFeatureBeforeUserSwitchAndSuccess() = runTest {
+        val userIdentity = createIdServiceResponse()
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+
+        callOnAuthFlowComplete()
+
+        verifyOrder {
+            mockUserAccountManager.updateAccount(any(), any())
+            persistScreenLockFeature.invoke(userIdentity, any())
+            mockUserAccountManager.storeCurrentUserInfo(any(), any())
+            onAuthFlowSuccess.invoke(any())
+        }
+    }
+
+    @Test
+    fun testOnAuthFlowComplete_screenLockFeatureFailure_doesNotPublishCurrentUser() = runTest {
+        val userIdentity = createIdServiceResponse()
+        val featureWriteFailure = IllegalStateException("Screen-lock feature write failed")
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+        every { persistScreenLockFeature.invoke(any(), any()) } throws featureWriteFailure
+
+        try {
+            callOnAuthFlowComplete()
+        } catch (actual: IllegalStateException) {
+            assertSame(featureWriteFailure, actual)
+        }
+
+        verify(exactly = 0) { mockUserAccountManager.storeCurrentUserInfo(any(), any()) }
+        verify(exactly = 0) { mockUserAccountManager.sendUserSwitchIntent(any(), any()) }
+        verify(exactly = 0) { onAuthFlowSuccess.invoke(any()) }
+    }
+
+    @Test
+    fun testOnAuthFlowComplete_proceedStartsMainActivityBeforeScreenLock() = runTest {
+        val tokenResponse = createTokenEndpointResponse()
+        val userIdentity = createIdServiceResponse()
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+        every { handleScreenLockPolicy.invoke(any(), any()) } returns true
+        val screenLockManager = mockk<ScreenLockManager>(relaxed = true)
+        val mockSdkManager = setupMockSdkManager(screenLockManager = screenLockManager)
+        every { mockSdkManager.accountType } returns "test_account_type"
+        every { mockSdkManager.appContext } returns testContext
+
+        onAuthFlowComplete(
+            tokenResponse = tokenResponse,
+            loginServer = "https://login.salesforce.com",
+            consumerKey = "test_consumer_key",
+            onAuthFlowError = onAuthFlowError,
+            onAuthFlowSuccess = onAuthFlowSuccess,
+            buildAccountName = buildAccountName,
+            context = testContext,
+            userAccountManager = mockUserAccountManager,
+            runtimeConfig = mockRuntimeConfig,
+            updateLoggingPrefs = updateLoggingPrefs,
+            fetchUserIdentity = fetchUserIdentity,
+            startMainActivity = startMainActivity,
+            setAdministratorPreferences = setAdministratorPreferences,
+            addAccount = addAccount,
+            persistScreenLockFeature = persistScreenLockFeature,
+            handleScreenLockPolicy = handleScreenLockPolicy,
+            handleBiometricAuthPolicy = handleBiometricAuthPolicy,
+            handleDuplicateUserAccount = handleDuplicateUserAccount,
+            onAuthFlowFinished = { proceed -> proceed() },
+        )
+
+        verifyOrder {
+            startMainActivity.invoke()
+            screenLockManager.lock()
+        }
     }
 
     @Test
@@ -278,6 +358,7 @@ class AuthenticationUtilitiesTest {
             startMainActivity = startMainActivity,
             setAdministratorPreferences = setAdministratorPreferences,
             addAccount = addAccount,
+            persistScreenLockFeature = persistScreenLockFeature,
             handleScreenLockPolicy = handleScreenLockPolicy,
             handleBiometricAuthPolicy = handleBiometricAuthPolicy,
             handleDuplicateUserAccount = handleDuplicateUserAccount,
@@ -313,7 +394,7 @@ class AuthenticationUtilitiesTest {
         verify(exactly = 0) { onAuthFlowSuccess.invoke(any()) }
         verify(exactly = 0) { addAccount.invoke(any()) }
         verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
-        verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
+        verify(exactly = 0) { mockUserAccountManager.updateAccount(any(), any()) }
         coVerify(exactly = 1) { fetchUserIdentity.invoke(tokenResponseWithoutIdScope) }
     }
 
@@ -327,7 +408,7 @@ class AuthenticationUtilitiesTest {
 
         verify(exactly = 0) { onAuthFlowError.invoke(any(), any(), any()) }
         verify { onAuthFlowSuccess.invoke(match { it.username == userIdentity.username }) }
-        verify { mockUserAccountManager.createAccount(match { it.username == userIdentity.username }) }
+        verify { mockUserAccountManager.updateAccount(any(), match { it.username == userIdentity.username }) }
         coVerify(exactly = 1) { fetchUserIdentity.invoke(tokenResponseWithoutIdScope) }
     }
 
@@ -347,8 +428,8 @@ class AuthenticationUtilitiesTest {
         }
         verify(exactly = 0) { onAuthFlowSuccess.invoke(any()) }
         verify(exactly = 0) { addAccount.invoke(any()) }
+        verify(exactly = 0) { mockUserAccountManager.updateAccount(any(), any()) }
         verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
-        verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
     }
 
     @Test
@@ -367,11 +448,11 @@ class AuthenticationUtilitiesTest {
         verify(exactly = 0) { onAuthFlowSuccess.invoke(any()) }
         verify(exactly = 0) { addAccount.invoke(any()) }
         verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
-        verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
+        verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
     }
 
     @Test
-    fun testFetchUserIdentityWithRetry_identityForbidden_refreshesOnceAndPreservesRtr() = runTest {
+    fun testFetchUserIdentityWithRetry_identityForbidden_refreshesAndPreservesRtr() = runTest {
         val tokenResponse = createTokenEndpointResponse(
             accessToken = "initial-access-token",
             refreshToken = "initial-refresh-token",
@@ -389,6 +470,7 @@ class AuthenticationUtilitiesTest {
             credentialsIdentifier = "test-credentials-id"
         }
         val expectedIdentity = createIdServiceResponse()
+        val initialIdUrl = tokenResponse.idUrl
         var identityCalls = 0
         var refreshCalls = 0
         val identityUrls = mutableListOf<String>()
@@ -419,13 +501,8 @@ class AuthenticationUtilitiesTest {
         assertEquals(true, result.refreshTokenRotationTime?.isNotBlank())
         assertEquals(2, identityCalls)
         assertEquals(1, refreshCalls)
-        assertEquals(
-            listOf(
-                "https://test.salesforce.com/id/00D000000000000EAA/005000000000000AAA",
-                "https://refreshed.my.salesforce.com/id/00D000000000000EAA/005000000000000AAA",
-            ),
-            identityUrls,
-        )
+        // Raw id URL from the token response for the initial request and the replay (as iOS does).
+        assertEquals(listOf(initialIdUrl, refreshedResponse.idUrl), identityUrls)
         assertEquals("refreshed-access-token", tokenResponse.authToken)
         assertEquals("rotated-refresh-token", tokenResponse.refreshToken)
         assertEquals("https://refreshed.my.salesforce.com", tokenResponse.instanceUrl)
@@ -435,22 +512,184 @@ class AuthenticationUtilitiesTest {
     }
 
     @Test
-    fun testFetchUserIdentityWithRetry_replayForbidden_doesNotRefreshAgain() = runTest {
-        val tokenResponse = createTokenEndpointResponse().apply {
-            tokenType = "DPoP"
-            credentialsIdentifier = "test-credentials-id"
-        }
-        val refreshedResponse = createTokenEndpointResponse(
-            accessToken = "refreshed-access-token",
-            refreshToken = "rotated-refresh-token",
-            instanceUrl = "https://refreshed.my.salesforce.com",
-        ).apply {
-            tokenType = "DPoP"
-            credentialsIdentifier = "test-credentials-id"
-        }
+    fun testFetchUserIdentityWithRetry_communityUser_usesTokenResponseIdUrlForInitialAndReplay() = runTest {
+        val communityIdUrl = "https://login.salesforce.com/id/00D000000000000EAA/005000000000000AAA"
+        val tokenResponse = OAuth2.TokenEndpointResponse(
+            mutableMapOf(
+                "access_token" to "initial-access-token",
+                "refresh_token" to "initial-refresh-token",
+                "instance_url" to "https://acme.my.salesforce.com",
+                "id" to communityIdUrl,
+                "scope" to "refresh_token id",
+                "sfdc_community_id" to "0DB000000000000AAA",
+                "sfdc_community_url" to "https://acme.my.site.com/customerportal",
+            )
+        )
+        val expectedIdentity = createIdServiceResponse()
+        val identityUrls = mutableListOf<String>()
+
+        val result = fetchUserIdentityWithRetry(
+            tokenResponse = tokenResponse,
+            loginServer = "https://acme.my.site.com/customerportal",
+            consumerKey = "test_consumer_key",
+            identityFetcher = { url, _ ->
+                identityUrls += url
+                if (identityUrls.size == 1) throw OAuth2.IdentityServiceException(403, "Wrong_Org")
+                expectedIdentity
+            },
+            tokenRefresher = { _, _, _ ->
+                OAuth2.TokenEndpointResponse(
+                    mutableMapOf(
+                        "access_token" to "refreshed-access-token",
+                        "instance_url" to "https://acme.my.salesforce.com",
+                        "id" to communityIdUrl,
+                        "scope" to "refresh_token id",
+                    )
+                )
+            },
+        )
+
+        assertSame(expectedIdentity, result.identity)
+        // The id host from the token response is used as-is both times. Swapping in the
+        // instance_url host is rejected (403 Wrong_Org) for community users.
+        assertEquals(listOf(communityIdUrl, communityIdUrl), identityUrls)
+    }
+
+    private fun communityTokenResponse(idUrl: String) = OAuth2.TokenEndpointResponse(
+        mutableMapOf(
+            "access_token" to "initial-access-token",
+            "refresh_token" to "initial-refresh-token",
+            "instance_url" to "https://acme.my.salesforce.com",
+            "id" to idUrl,
+            "scope" to "refresh_token id",
+            "sfdc_community_id" to "0DB000000000000AAA",
+            "sfdc_community_url" to "https://acme.my.site.com/customerportal",
+        )
+    )
+
+    private fun refreshedResponse(idUrl: String) = OAuth2.TokenEndpointResponse(
+        mutableMapOf(
+            "access_token" to "refreshed-access-token",
+            "instance_url" to "https://acme.my.salesforce.com",
+            "id" to idUrl,
+            "scope" to "refresh_token id",
+        )
+    )
+
+    @Test
+    fun testFetchUserIdentityWithRetry_communityUser_keepsRefreshingUntilReplaySucceeds() = runTest {
+        val idUrl = "https://login.salesforce.com/id/00D000000000000EAA/005000000000000AAA"
+        val expectedIdentity = createIdServiceResponse()
+        val identityUrls = mutableListOf<String>()
+        var refreshes = 0
+
+        val result = fetchUserIdentityWithRetry(
+            tokenResponse = communityTokenResponse(idUrl),
+            loginServer = "https://acme.my.site.com/customerportal",
+            consumerKey = "test_consumer_key",
+            identityFetcher = { url, _ ->
+                identityUrls += url
+                // Initial call plus the first 4 replays fail; the 5th replay succeeds.
+                if (identityUrls.size <= 5) throw OAuth2.IdentityServiceException(403, "Wrong_Org")
+                expectedIdentity
+            },
+            tokenRefresher = { _, _, _ ->
+                refreshes++
+                refreshedResponse(idUrl)
+            },
+        )
+
+        assertSame(expectedIdentity, result.identity)
+        assertEquals(5, refreshes)
+        assertEquals(List(6) { idUrl }, identityUrls)
+    }
+
+    @Test
+    fun testFetchUserIdentityWithRetry_keepsRefreshingWithoutCapUntilReplaySucceeds() = runTest {
+        val idUrl = "https://login.salesforce.com/id/00D000000000000EAA/005000000000000AAA"
+        val failures = 100
+        val expectedIdentity = createIdServiceResponse()
+        var identityCalls = 0
+        var refreshes = 0
+
+        val result = fetchUserIdentityWithRetry(
+            tokenResponse = communityTokenResponse(idUrl),
+            loginServer = "https://acme.my.site.com/customerportal",
+            consumerKey = "test_consumer_key",
+            identityFetcher = { _, _ ->
+                identityCalls++
+                if (identityCalls <= failures) throw OAuth2.IdentityServiceException(403, "Wrong_Org")
+                expectedIdentity
+            },
+            tokenRefresher = { _, _, _ ->
+                refreshes++
+                refreshedResponse(idUrl)
+            },
+        )
+
+        assertSame(expectedIdentity, result.identity)
+        assertEquals(failures, refreshes)
+        assertEquals(failures + 1, identityCalls)
+    }
+
+    @Test
+    fun testFetchUserIdentityWithRetry_regularUser_usesRawIdUrlForInitialAndReplay() = runTest {
+        val tokenResponse = createTokenEndpointResponse().apply { tokenType = "Bearer" }
+        val rawIdUrl = tokenResponse.idUrl
+        val expectedIdentity = createIdServiceResponse()
+        val identityUrls = mutableListOf<String>()
+
+        val result = fetchUserIdentityWithRetry(
+            tokenResponse = tokenResponse,
+            loginServer = "https://login.salesforce.com",
+            consumerKey = "test_consumer_key",
+            identityFetcher = { url, _ ->
+                identityUrls += url
+                if (identityUrls.size == 1) throw OAuth2.IdentityServiceException(403, "Wrong_Org")
+                expectedIdentity
+            },
+            tokenRefresher = { _, _, _ ->
+                createTokenEndpointResponse(accessToken = "refreshed-access-token", idUrl = rawIdUrl)
+            },
+        )
+
+        assertSame(expectedIdentity, result.identity)
+        assertEquals(listOf(rawIdUrl, rawIdUrl), identityUrls)
+    }
+
+    @Test
+    fun testFetchUserIdentityWithRetry_anyForbiddenBody_refreshes() = runTest {
+        val tokenResponse = createTokenEndpointResponse()
+        val expectedIdentity = createIdServiceResponse()
         var identityCalls = 0
         var refreshCalls = 0
-        var thrown: OAuth2.IdentityServiceException? = null
+
+        val result = fetchUserIdentityWithRetry(
+            tokenResponse = tokenResponse,
+            loginServer = "https://login.salesforce.com",
+            consumerKey = "test_consumer_key",
+            identityFetcher = { _, _ ->
+                identityCalls++
+                if (identityCalls == 1) throw OAuth2.IdentityServiceException(403, "insufficient_scope")
+                expectedIdentity
+            },
+            tokenRefresher = { _, _, _ ->
+                refreshCalls++
+                createTokenEndpointResponse(accessToken = "refreshed-access-token")
+            },
+        )
+
+        assertSame(expectedIdentity, result.identity)
+        assertEquals(1, refreshCalls)
+    }
+
+    @Test
+    fun testFetchUserIdentityWithRetry_otherStatus_failsImmediatelyWithoutRefresh() = runTest {
+        val tokenResponse = createTokenEndpointResponse()
+        val identityError = OAuth2.IdentityServiceException(500, "server_error")
+        var identityCalls = 0
+        var refreshCalls = 0
+        var thrown: Exception? = null
 
         try {
             fetchUserIdentityWithRetry(
@@ -459,29 +698,26 @@ class AuthenticationUtilitiesTest {
                 consumerKey = "test_consumer_key",
                 identityFetcher = { _, _ ->
                     identityCalls++
-                    throw OAuth2.IdentityServiceException(403, "Wrong_Org")
+                    throw identityError
                 },
                 tokenRefresher = { _, _, _ ->
                     refreshCalls++
-                    refreshedResponse
+                    createTokenEndpointResponse()
                 },
             )
-        } catch (e: OAuth2.IdentityServiceException) {
+        } catch (e: Exception) {
             thrown = e
         }
 
-        assertEquals(403, thrown?.httpStatusCode)
-        assertEquals(2, identityCalls)
-        assertEquals(1, refreshCalls)
+        assertSame(identityError, thrown)
+        assertEquals(1, identityCalls)
+        assertEquals(0, refreshCalls)
     }
 
     @Test
-    fun testFetchUserIdentityWithRetry_unrecognizedForbidden_doesNotRefresh() = runTest {
-        val tokenResponse = createTokenEndpointResponse().apply {
-            tokenType = "DPoP"
-            credentialsIdentifier = "test-credentials-id"
-        }
-        val identityError = OAuth2.IdentityServiceException(403, "insufficient_scope")
+    fun testFetchUserIdentityWithRetry_unauthorizedWithoutRefreshToken_failsWithoutRefresh() = runTest {
+        val tokenResponse = createTokenEndpointResponse(refreshToken = null)
+        val identityError = OAuth2.IdentityServiceException(401, "expired")
         var refreshCalls = 0
         var thrown: Exception? = null
 
@@ -501,8 +737,33 @@ class AuthenticationUtilitiesTest {
         }
 
         assertSame(identityError, thrown)
-        assertEquals("insufficient_scope", identityError.responseBody)
         assertEquals(0, refreshCalls)
+    }
+
+    @Test
+    fun testFetchUserIdentityWithRetry_refreshFailure_isPropagated() = runTest {
+        val tokenResponse = createTokenEndpointResponse()
+        val refreshError = IllegalStateException("refresh failed")
+        var identityCalls = 0
+        var thrown: Exception? = null
+
+        try {
+            fetchUserIdentityWithRetry(
+                tokenResponse = tokenResponse,
+                loginServer = "https://login.salesforce.com",
+                consumerKey = "test_consumer_key",
+                identityFetcher = { _, _ ->
+                    identityCalls++
+                    throw OAuth2.IdentityServiceException(401, "expired")
+                },
+                tokenRefresher = { _, _, _ -> throw refreshError },
+            )
+        } catch (e: Exception) {
+            thrown = e
+        }
+
+        assertSame(refreshError, thrown)
+        assertEquals(1, identityCalls)
     }
 
     @Test
@@ -625,14 +886,18 @@ class AuthenticationUtilitiesTest {
     fun testOnAuthFlowComplete_rotatedRefreshToken_recordsAndRegistersRtrAfterPersistence() = runTest {
         val rotationTime = "2026-09-16T19:45:20Z"
         val userIdentity = createIdServiceResponse()
-        val mockSdkManager = setupMockSdkManager()
+        val mockSdkManager = setupMockSdkManager().also {
+            every { it.accountType } returns "test_account_type"
+            every { it.appContext } returns testContext
+        }
 
         callOnAuthFlowComplete(
             identityFetchResult = IdentityFetchResult(userIdentity, rotationTime),
         )
 
         verifyOrder {
-            mockUserAccountManager.createAccount(
+            mockUserAccountManager.updateAccount(
+                any(),
                 match { it.lastTokenRotationTime == rotationTime },
             )
             mockSdkManager.registerUsedAppFeature(
@@ -667,8 +932,8 @@ class AuthenticationUtilitiesTest {
         // Then
         verify(exactly = 0) { onAuthFlowError.invoke(any(), any(), any()) }
         verify { onAuthFlowSuccess.invoke(expectedAccount) }
-        verify { mockUserAccountManager.createAccount(expectedAccount) }
-        verify { mockUserAccountManager.switchToUser(expectedAccount) }
+        verify { mockUserAccountManager.updateAccount(any(), expectedAccount) }
+        verify { mockUserAccountManager.storeCurrentUserInfo(expectedAccount.userId, expectedAccount.orgId) }
         verify { setAdministratorPreferences.invoke(userIdentity, expectedAccount) }
         verify { handleDuplicateUserAccount.invoke(mockUserAccountManager, expectedAccount, userIdentity) }
         verify { addAccount.invoke(expectedAccount) }
@@ -680,6 +945,54 @@ class AuthenticationUtilitiesTest {
         coVerify(exactly = 1) { fetchUserIdentity.invoke(tokenResponse) }
     }
 
+    @Test
+    fun test_givenNativeLoginOnCommunity_whenAuthFlowCompletes_thenRegistersOnlyL5ForUser() = runTest {
+        val mockSdkManager = setupMockSdkManager().also {
+            every { it.accountType } returns "test_account_type"
+            every { it.appContext } returns testContext
+        }
+        coEvery { fetchUserIdentity.invoke(any()) } returns createIdServiceResponse()
+
+        callOnAuthFlowComplete(nativeLogin = true, loginServer = "https://community.example.my.site.com/shop")
+
+        verify(exactly = 1) { mockSdkManager.registerUsedAppFeature(FEATURE_LOGIN_SERVER_OTHER, any()) }
+        listOf(
+            FEATURE_LOGIN_SERVER_PRODUCTION,
+            FEATURE_LOGIN_SERVER_SANDBOX,
+            FEATURE_LOGIN_SERVER_MY_DOMAIN,
+            FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY,
+        ).forEach { marker ->
+            verify(exactly = 0) { mockSdkManager.registerUsedAppFeature(marker, any()) }
+            verify(exactly = 1) { mockSdkManager.unregisterUsedAppFeature(marker, any()) }
+        }
+    }
+
+    @Test
+    fun test_givenNativeLoginOnMyDomain_whenAuthFlowCompletes_thenRegistersL4FromLoginUrl() = runTest {
+        val mockSdkManager = setupMockSdkManager().also {
+            every { it.accountType } returns "test_account_type"
+            every { it.appContext } returns testContext
+        }
+        coEvery { fetchUserIdentity.invoke(any()) } returns createIdServiceResponse()
+
+        callOnAuthFlowComplete(nativeLogin = true, loginServer = "https://example.my.salesforce.com")
+
+        verify(exactly = 1) { mockSdkManager.registerUsedAppFeature(FEATURE_LOGIN_SERVER_MY_DOMAIN, any()) }
+        verify(exactly = 0) { mockSdkManager.registerUsedAppFeature(FEATURE_LOGIN_SERVER_OTHER, any()) }
+    }
+
+    @Test
+    fun test_givenWebLogin_whenAuthFlowCompletes_thenLeavesLMarkersToLoginActivity() = runTest {
+        val mockSdkManager = setupMockSdkManager().also {
+            every { it.accountType } returns "test_account_type"
+            every { it.appContext } returns testContext
+        }
+        coEvery { fetchUserIdentity.invoke(any()) } returns createIdServiceResponse()
+
+        callOnAuthFlowComplete(loginServer = "https://community.example.my.site.com/shop")
+
+        verify(exactly = 0) { mockSdkManager.registerUsedAppFeature(FEATURE_LOGIN_SERVER_OTHER, any()) }
+    }
 
     // region Token Migration Tests
 
@@ -739,7 +1052,8 @@ class AuthenticationUtilitiesTest {
         verify(exactly = 1) { addAccount.invoke(any()) }
         verify(exactly = 1) { mockUserAccountManager.updateAccount(any<Account>(), any<UserAccount>()) }
         verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
-        verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
+        verify(exactly = 1) { persistScreenLockFeature.invoke(any(), any()) }
+        verify(exactly = 0) { mockUserAccountManager.storeCurrentUserInfo(any(), any()) }
     }
 
     @Test
@@ -839,7 +1153,7 @@ class AuthenticationUtilitiesTest {
 
         // Then - non-migration flow steps should NOT be called
         verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
-        verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
+        verify(exactly = 1) { mockUserAccountManager.updateAccount(any(), any()) }
         verify(exactly = 0) { startMainActivity.invoke() }
         verify(exactly = 0) { updateLoggingPrefs.invoke(any()) }
         verify(exactly = 0) { mockUserAccountManager.sendUserSwitchIntent(any(), any()) }
@@ -847,10 +1161,56 @@ class AuthenticationUtilitiesTest {
 
     // endregion
 
+    // region persistScreenLockFeature Tests
+
+    @Test
+    fun testPersistScreenLockFeature_positiveTimeout_registersFeature() {
+        val mockSdkManager = setupMockSdkManager(
+            screenLockManager = mockk(relaxed = true),
+        )
+        val userIdentity = createIdServiceResponse().apply { screenLockTimeout = 10 }
+        val account = mockk<UserAccount>()
+
+        persistScreenLockFeature(userIdentity, account, mockSdkManager)
+
+        verify { mockSdkManager.registerUsedAppFeature(FEATURE_SCREEN_LOCK, account) }
+        verify(exactly = 0) { mockSdkManager.unregisterUsedAppFeature(any(), any()) }
+    }
+
+    @Test
+    fun testPersistScreenLockFeature_noTimeout_enabledManager_unregistersFeature() {
+        val screenLockManager = mockk<ScreenLockManager>(relaxed = true) {
+            every { enabled } returns true
+        }
+        val mockSdkManager = setupMockSdkManager(screenLockManager = screenLockManager)
+        val account = mockk<UserAccount>()
+
+        persistScreenLockFeature(null, account, mockSdkManager)
+
+        verify { mockSdkManager.unregisterUsedAppFeature(FEATURE_SCREEN_LOCK, account) }
+        verify(exactly = 0) { mockSdkManager.registerUsedAppFeature(any(), any()) }
+    }
+
+    @Test
+    fun testPersistScreenLockFeature_noTimeout_disabledManager_doesNotUpdateFeature() {
+        val screenLockManager = mockk<ScreenLockManager>(relaxed = true) {
+            every { enabled } returns false
+        }
+        val mockSdkManager = setupMockSdkManager(screenLockManager = screenLockManager)
+        val account = mockk<UserAccount>()
+
+        persistScreenLockFeature(null, account, mockSdkManager)
+
+        verify(exactly = 0) { mockSdkManager.registerUsedAppFeature(any(), any()) }
+        verify(exactly = 0) { mockSdkManager.unregisterUsedAppFeature(any(), any()) }
+    }
+
+    // endregion
+
     // region handleScreenLockPolicy Tests
 
     @Test
-    fun testHandleScreenLockPolicy_positiveTimeout_registersFeatureAndStoresPolicy() {
+    fun testHandleScreenLockPolicy_positiveTimeout_storesPolicy() {
         // Given
         val mockScreenLockManager = mockk<ScreenLockManager>(relaxed = true)
         val mockSdkManager = setupMockSdkManager(screenLockManager = mockScreenLockManager)
@@ -865,12 +1225,13 @@ class AuthenticationUtilitiesTest {
         com.salesforce.androidsdk.auth.handleScreenLockPolicy(userIdentity, account)
 
         // Then
-        verify { mockSdkManager.registerUsedAppFeature(FEATURE_SCREEN_LOCK, account) }
+        verify(exactly = 0) { mockSdkManager.registerUsedAppFeature(any(), any()) }
+        verify(exactly = 0) { mockSdkManager.unregisterUsedAppFeature(any(), any()) }
         verify { mockScreenLockManager.storeMobilePolicy(account, enabled = true, 600000) }
     }
 
     @Test
-    fun testHandleScreenLockPolicy_zeroTimeout_enabledManager_unregistersFeatureAndCleansUp() {
+    fun testHandleScreenLockPolicy_zeroTimeout_enabledManager_cleansUp() {
         // Given
         val mockScreenLockManager = mockk<ScreenLockManager>(relaxed = true) {
             every { enabled } returns true
@@ -886,7 +1247,8 @@ class AuthenticationUtilitiesTest {
         com.salesforce.androidsdk.auth.handleScreenLockPolicy(userIdentity, account)
 
         // Then
-        verify { mockSdkManager.unregisterUsedAppFeature(FEATURE_SCREEN_LOCK, account) }
+        verify(exactly = 0) { mockSdkManager.registerUsedAppFeature(any(), any()) }
+        verify(exactly = 0) { mockSdkManager.unregisterUsedAppFeature(any(), any()) }
         verify { mockScreenLockManager.cleanUp(account) }
     }
 
@@ -896,7 +1258,7 @@ class AuthenticationUtilitiesTest {
         val mockScreenLockManager = mockk<ScreenLockManager>(relaxed = true) {
             every { enabled } returns false
         }
-        val mockSdkManager = setupMockSdkManager(screenLockManager = mockScreenLockManager)
+        setupMockSdkManager(screenLockManager = mockScreenLockManager)
 
         val userIdentity = createIdServiceResponse()
         val account = mockk<UserAccount>()
@@ -905,19 +1267,17 @@ class AuthenticationUtilitiesTest {
         com.salesforce.androidsdk.auth.handleScreenLockPolicy(userIdentity, account)
 
         // Then
-        verify(exactly = 0) { mockSdkManager.registerUsedAppFeature(any()) }
-        verify(exactly = 0) { mockSdkManager.unregisterUsedAppFeature(any()) }
         verify(exactly = 0) { mockScreenLockManager.storeMobilePolicy(any(), any(), any()) }
         verify(exactly = 0) { mockScreenLockManager.cleanUp(any()) }
     }
 
     @Test
-    fun testHandleScreenLockPolicy_nullIdentity_enabledManager_unregistersAndCleansUp() {
+    fun testHandleScreenLockPolicy_nullIdentity_enabledManager_cleansUp() {
         // Given
         val mockScreenLockManager = mockk<ScreenLockManager>(relaxed = true) {
             every { enabled } returns true
         }
-        val mockSdkManager = setupMockSdkManager(screenLockManager = mockScreenLockManager)
+        setupMockSdkManager(screenLockManager = mockScreenLockManager)
 
         val account = mockk<UserAccount>()
 
@@ -925,7 +1285,6 @@ class AuthenticationUtilitiesTest {
         com.salesforce.androidsdk.auth.handleScreenLockPolicy(null, account)
 
         // Then
-        verify { mockSdkManager.unregisterUsedAppFeature(FEATURE_SCREEN_LOCK, account) }
         verify { mockScreenLockManager.cleanUp(account) }
     }
 
@@ -943,8 +1302,6 @@ class AuthenticationUtilitiesTest {
         com.salesforce.androidsdk.auth.handleScreenLockPolicy(null, account)
 
         // Then
-        verify(exactly = 0) { mockSdkManager.registerUsedAppFeature(any()) }
-        verify(exactly = 0) { mockSdkManager.unregisterUsedAppFeature(any()) }
         verify(exactly = 0) { mockScreenLockManager.storeMobilePolicy(any(), any(), any()) }
         verify(exactly = 0) { mockScreenLockManager.cleanUp(any()) }
     }
@@ -1295,10 +1652,11 @@ class AuthenticationUtilitiesTest {
         tokenMigration: Boolean = false,
         blockIntegrationUser: Boolean = false,
         identityFetchResult: IdentityFetchResult? = null,
+        loginServer: String = "https://login.salesforce.com",
     ) {
         onAuthFlowComplete(
             tokenResponse = customTokenResponse ?: createTokenEndpointResponse(),
-            loginServer = "https://login.salesforce.com",
+            loginServer = loginServer,
             consumerKey = "test_consumer_key",
             onAuthFlowError = onAuthFlowError,
             onAuthFlowSuccess = onAuthFlowSuccess,
@@ -1317,6 +1675,7 @@ class AuthenticationUtilitiesTest {
             startMainActivity = startMainActivity,
             setAdministratorPreferences = setAdministratorPreferences,
             addAccount = addAccount,
+            persistScreenLockFeature = persistScreenLockFeature,
             handleScreenLockPolicy = handleScreenLockPolicy,
             handleBiometricAuthPolicy = handleBiometricAuthPolicy,
             handleDuplicateUserAccount = handleDuplicateUserAccount

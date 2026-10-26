@@ -33,6 +33,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -79,6 +80,7 @@ class LoginOptionsActivityTest {
     private var originalUseHybridToken: Boolean = false
     private var originalForceAdvancedAuth: Boolean = true
     private var originalUseEphemeralSessionForAdvancedAuth: Boolean = true
+    private var originalCustomTabBrowser: String? = null
     private lateinit var dynamicToggle: SemanticsNodeInteraction
     private lateinit var consumerKeyField: SemanticsNodeInteraction
     private lateinit var redirectUriField: SemanticsNodeInteraction
@@ -98,6 +100,7 @@ class LoginOptionsActivityTest {
         originalForceAdvancedAuth = SalesforceSDKManager.getInstance().forceAdvancedAuthentication
         originalUseEphemeralSessionForAdvancedAuth =
             SalesforceSDKManager.getInstance().useEphemeralSessionForAdvancedAuth
+        originalCustomTabBrowser = SalesforceSDKManager.getInstance().customTabBrowser
         SalesforceSDKManager.getInstance().loginDevMenuReload = false
 
         dynamicToggle = composeTestRule.onNodeWithContentDescription(
@@ -138,8 +141,45 @@ class LoginOptionsActivityTest {
         SalesforceSDKManager.getInstance().forceAdvancedAuthentication = originalForceAdvancedAuth
         SalesforceSDKManager.getInstance().useEphemeralSessionForAdvancedAuth =
             originalUseEphemeralSessionForAdvancedAuth
+        SalesforceSDKManager.getInstance().customTabBrowser = originalCustomTabBrowser
         SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
         SalesforceSDKManager.getInstance().loginDevMenuReload = false
+    }
+
+    @Test
+    fun loginOptionsActivity_CustomTabBrowserSystemDefault_SetsSdkManagerBrowserToNull() {
+        composeTestRule.activity.runOnUiThread {
+            composeTestRule.activity.customTabBrowser.value = "com.android.chrome"
+        }
+        composeTestRule.waitForIdle()
+        assertEquals("com.android.chrome", SalesforceSDKManager.getInstance().customTabBrowser)
+
+        composeTestRule.onNodeWithText("System default").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+
+        assertNull(SalesforceSDKManager.getInstance().customTabBrowser)
+        assertNull(composeTestRule.activity.customTabBrowser.value)
+    }
+
+    @Test
+    fun loginOptionsActivity_CustomTabBrowserSection_ShowsSystemDefaultSelectedWhenBrowserIsNull() {
+        composeTestRule.activity.runOnUiThread {
+            composeTestRule.activity.customTabBrowser.value = null
+        }
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onNodeWithText("Custom Tab Browser").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("System default").performScrollTo().assertIsSelected()
+    }
+
+    @Test
+    fun loginOptionsActivity_CustomTabBrowserLiveData_UpdatesSdkManager() {
+        composeTestRule.activity.runOnUiThread {
+            composeTestRule.activity.customTabBrowser.value = "com.microsoft.emmx"
+        }
+        composeTestRule.waitForIdle()
+
+        assertEquals("com.microsoft.emmx", SalesforceSDKManager.getInstance().customTabBrowser)
     }
 
     @Test
@@ -147,12 +187,12 @@ class LoginOptionsActivityTest {
         val bootConfig = BootConfig.getBootConfig(composeTestRule.activity)
         
         // Check that boot config values are displayed
-        composeTestRule.onNodeWithText(bootConfig.remoteAccessConsumerKey).assertIsDisplayed()
-        composeTestRule.onNodeWithText(bootConfig.oauthRedirectURI).assertIsDisplayed()
+        composeTestRule.onNodeWithText(bootConfig.remoteAccessConsumerKey).performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText(bootConfig.oauthRedirectURI).performScrollTo().assertIsDisplayed()
         
         val scopes = bootConfig.oauthScopes?.joinToString(separator = ", ") ?: ""
         if (scopes.isNotEmpty()) {
-            composeTestRule.onNodeWithText(scopes).assertIsDisplayed()
+            composeTestRule.onNodeWithText(scopes).performScrollTo().assertIsDisplayed()
         }
     }
 
@@ -350,7 +390,7 @@ class LoginOptionsActivityTest {
 
     @Test
     fun loginOptionsActivity_DynamicBootConfigToggle_ShowsInputFields() {
-        dynamicToggle.assertIsDisplayed()
+        dynamicToggle.performScrollTo().assertIsDisplayed()
         dynamicToggle.assertIsOff()
         
         consumerKeyField.assertDoesNotExist()
@@ -358,7 +398,7 @@ class LoginOptionsActivityTest {
         scopesField.assertDoesNotExist()
         
         // Click to enable dynamic config
-        dynamicToggle.performClick()
+        dynamicToggle.performScrollTo().performClick()
         composeTestRule.waitForIdle()
         
         dynamicToggle.assertIsOn()
@@ -368,9 +408,9 @@ class LoginOptionsActivityTest {
         scopesField.assertIsDisplayed()
         
         // Test text input
-        consumerKeyField.performTextInput("test_consumer_key")
-        redirectUriField.performTextInput("test://redirect")
-        scopesField.performTextInput("api web")
+        consumerKeyField.performScrollTo().performTextInput("test_consumer_key")
+        redirectUriField.performScrollTo().performTextInput("test://redirect")
+        scopesField.performScrollTo().performTextInput("api web")
         
         composeTestRule.waitForIdle()
         
@@ -418,7 +458,7 @@ class LoginOptionsActivityTest {
     @Test
     fun bootConfigView_WithEmptyFields_DisablesSaveButton() {
         // Enable dynamic config
-        dynamicToggle.performClick()
+        dynamicToggle.performScrollTo().performClick()
         composeTestRule.waitForIdle()
 
         // Save button should be disabled when fields are empty
@@ -430,12 +470,12 @@ class LoginOptionsActivityTest {
     @Test
     fun bootConfigView_TappingSaveButton_SetsDebugOverrideAppConfig() {
         // Enable dynamic config
-        dynamicToggle.performClick()
+        dynamicToggle.performScrollTo().performClick()
         composeTestRule.waitForIdle()
 
-        consumerKeyField.performTextInput("override_key")
-        redirectUriField.performTextInput("override://uri")
-        scopesField.performTextInput("api web")
+        consumerKeyField.performScrollTo().performTextInput("override_key")
+        redirectUriField.performScrollTo().performTextInput("override://uri")
+        scopesField.performScrollTo().performTextInput("api web")
         composeTestRule.waitForIdle()
 
         // Click save button
@@ -453,11 +493,11 @@ class LoginOptionsActivityTest {
     @Test
     fun bootConfigView_SaveWithOnlyRequiredFields_CreatesOAuthConfig() {
         // Enable dynamic config
-        dynamicToggle.performClick()
+        dynamicToggle.performScrollTo().performClick()
         composeTestRule.waitForIdle()
 
-        consumerKeyField.performTextInput("minimal_key")
-        redirectUriField.performTextInput("minimal://uri")
+        consumerKeyField.performScrollTo().performTextInput("minimal_key")
+        redirectUriField.performScrollTo().performTextInput("minimal://uri")
         composeTestRule.waitForIdle()
 
         // Click save button
@@ -592,8 +632,8 @@ class LoginOptionsActivityTest {
         composeTestRule.waitForIdle()
 
         hostField.performScrollTo()
-        hostField.performTextInput("test.my.salesforce.com")
-        userField.performTextInput("user@example.com")
+        hostField.performScrollTo().performTextInput("test.my.salesforce.com")
+        userField.performScrollTo().performTextInput("user@example.com")
         saveButton.performScrollTo()
         saveButton.performClick()
         composeTestRule.waitForIdle()

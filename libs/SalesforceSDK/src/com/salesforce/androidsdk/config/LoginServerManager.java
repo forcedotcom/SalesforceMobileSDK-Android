@@ -30,11 +30,11 @@ import static android.content.Context.MODE_PRIVATE;
 import static com.salesforce.androidsdk.R.xml.servers;
 import static com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.AppServiceHostLabels;
 import static com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.AppServiceHosts;
+import static com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.OnlyShowAuthorizedHosts;
 import static com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig;
 import static org.xmlpull.v1.XmlPullParser.END_DOCUMENT;
 import static org.xmlpull.v1.XmlPullParser.START_TAG;
 import static java.lang.String.format;
-import static java.util.Arrays.asList;
 import static java.util.Locale.US;
 
 import android.content.Context;
@@ -55,7 +55,8 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-import java.util.Objects;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Class to manage login hosts (default and user entered).
@@ -225,52 +226,31 @@ public class LoginServerManager {
 	 * @return The selected login server
 	 */
 	public LoginServer getSelectedLoginServer() {
-		// Fetch the selected login server.
 		final SharedPreferences selectedServerPrefs = ctx.getSharedPreferences(SERVER_SELECTION_FILE, MODE_PRIVATE);
-		final String selectedServerName = selectedServerPrefs.getString(SERVER_NAME, null);
 		final String selectedServerUrl = selectedServerPrefs.getString(SERVER_URL, null);
-		final boolean selectedServerIsCustom = selectedServerPrefs.getBoolean(IS_CUSTOM, false);
-		final boolean selectedServerHasValidNameAndUrl = selectedServerName != null && selectedServerUrl != null;
-
-		// Refresh the list of mobile device management (MDM) servers from the runtime config.
-		if (isRuntimeConfigAppServiceHostsSet()) {
-			getLoginServersFromRuntimeConfig();
-		}
-
-		// Get the active list of login servers.
 		final List<LoginServer> loginServers = getLoginServers();
-
-		// Check if the selected login server is available in the active list of login servers.
-		final boolean selectedLoginServerIsAvailable = loginServers.stream().anyMatch(server ->
-				server.name.equals(selectedServerName) && server.url.equals(selectedServerUrl)
-		);
-
-		// If the selected login server is valid and is available in the active list of login servers.
-		LoginServer selectedLoginServer = null;
-		if (selectedServerHasValidNameAndUrl) {
-			if (selectedLoginServerIsAvailable) {
-				selectedLoginServer = new LoginServer(selectedServerName, selectedServerUrl, selectedServerIsCustom);
-
-				// Notify live data consumers if the value has changed.
-				if (!selectedLoginServer.equals(selectedServer.getValue())) {
-					selectedServer.postValue(selectedLoginServer);
-				}
+		LoginServer selectedLoginServer;
+		if (loginServers.isEmpty()) {
+			selectedLoginServer = new LoginServer(ctx.getString(R.string.sf__auth_login_production),
+					PRODUCTION_LOGIN_URL, false);
+			persistLoginServer(selectedLoginServer.name, selectedLoginServer.url, false, settings);
+			loginServers.add(selectedLoginServer);
+		} else {
+			selectedLoginServer = loginServers.get(0);
+		}
+		for (LoginServer server : loginServers) {
+			if (selectedServerUrl != null && server.url.equals(selectedServerUrl.trim())) {
+				selectedLoginServer = server;
+				break;
 			}
 		}
-
-		// If the selected login server is invalid or not available in the active list of login servers.
-		if (selectedLoginServer == null) {
-
-			// Default to the first login server on the list.
-			if (!loginServers.isEmpty()) {
-				selectedLoginServer = loginServers.get(0);
-				selectedServer.postValue(selectedLoginServer);
-			}
-
-			// Store the selected login server.
+		if (!selectedLoginServer.equals(selectedServer.getValue())
+				|| !selectedLoginServer.name.equals(selectedServerPrefs.getString(SERVER_NAME, null))
+				|| !selectedLoginServer.url.equals(selectedServerUrl)
+				|| !selectedServerPrefs.contains(IS_CUSTOM)
+				|| selectedLoginServer.isCustom != selectedServerPrefs.getBoolean(IS_CUSTOM, false)) {
 			setSelectedLoginServer(selectedLoginServer);
 		}
-
 		return selectedLoginServer;
 	}
 
@@ -314,7 +294,7 @@ public class LoginServerManager {
 	public void addCustomLoginServer(@NonNull String name, @NonNull String url) {
 		// Prevent duplicate servers.
 		for (LoginServer existingServer : getLoginServers()) {
-			if (url.equals(existingServer.url)) {
+			if (url.trim().equals(existingServer.url)) {
 				setSelectedLoginServer(existingServer);
 				return;
 			}
@@ -326,7 +306,11 @@ public class LoginServerManager {
 				true /* Custom */,
 				getSharedPreferences() /* Active Shared Preferences */
 		);
-		setSelectedLoginServer(new LoginServer(name, url, true));
+		getSelectedLoginServer();
+		final LoginServer addedServer = getLoginServerFromURL(url.trim());
+		if (addedServer != null) {
+			setSelectedLoginServer(addedServer);
+		}
 	}
 
 	/**
@@ -348,11 +332,26 @@ public class LoginServerManager {
 
 	/**
 	 * Removes a custom login server from the list.
+	 * Removes only its owning-store entry. An independently saved duplicate in the other store
+	 * may become visible after the higher-precedence entry is removed.
 	 *
 	 * @param server The server to remove.  If the server is not custom, this method does nothing
 	 */
 	public void removeServer(final LoginServer server) {
-		removeServer(server, settings, false);
+		final SharedPreferences owner = getCustomServerPreferences(server);
+		if (owner != null) {
+			removeServer(server, owner, false);
+		}
+	}
+
+	private SharedPreferences getCustomServerPreferences(final LoginServer server) {
+		if (server == null || !server.isCustom) {
+			return null;
+		}
+		if (getLoginServersFromPreferences(settings).contains(server)) {
+			return settings;
+		}
+		return getLoginServersFromPreferences(runtimePrefs).contains(server) ? runtimePrefs : null;
 	}
 
 	/**
@@ -372,6 +371,9 @@ public class LoginServerManager {
 		final List<LoginServer> servers = getLoginServersFromPreferences(sharedPreferences);
 
 		int index = servers.indexOf(server);
+		if (index == -1) {
+			return;
+		}
 
 		boolean removalAlwaysAllowed = server.isCustom && index != -1;
 		if (allowNonCustomRemoval || removalAlwaysAllowed) {
@@ -399,16 +401,43 @@ public class LoginServerManager {
 	}
 
 	/**
-	 * Returns the list of login servers.  Defaults to mobile device management (MDM) login servers
-	 * from the runtime configuration, if available, or resources login servers from the
-	 * servers.xml.  MDM and resources login servers are not custom and cannot be removed by the
-	 * user. A separate list of custom login servers is stored in a shared preferences for each of
-	 * MDM and resources.
+	 * Returns current MDM servers first. OnlyShowAuthorizedHosts restricts the list only when
+	 * AppServiceHosts contains a nonblank host. Otherwise, resource defaults and custom servers
+	 * from settings followed by runtime preferences are included, deduplicated by trimmed URL.
+	 * Custom entries retain independent ownership: removing an MDM host does not delete a saved
+	 * custom entry for the same URL.
 	 *
 	 * @return The list of login servers
 	 */
 	public List<LoginServer> getLoginServers() {
-		return getLoginServersFromPreferences(getSharedPreferences());
+		getLoginServersFromRuntimeConfig();
+		final Map<String, LoginServer> servers = new LinkedHashMap<>();
+		final List<LoginServer> runtimeServers = getLoginServersFromPreferences(runtimePrefs);
+		final List<LoginServer> resourceServers = getLoginServersFromPreferences(settings);
+		for (LoginServer server : runtimeServers) {
+			if (!server.isCustom) {
+				servers.putIfAbsent(server.url, server);
+			}
+		}
+		if (!isRuntimeConfigAppServiceHostsSet()
+				|| !Boolean.TRUE.equals(runtimeConfig.getBoolean(OnlyShowAuthorizedHosts))) {
+			for (LoginServer server : resourceServers) {
+				if (!server.isCustom) {
+					servers.putIfAbsent(server.url, server);
+				}
+			}
+			for (LoginServer server : resourceServers) {
+				if (server.isCustom) {
+					servers.putIfAbsent(server.url, server);
+				}
+			}
+			for (LoginServer server : runtimeServers) {
+				if (server.isCustom) {
+					servers.putIfAbsent(server.url, server);
+				}
+			}
+		}
+		return new ArrayList<>(servers.values());
 	}
 
 	/**
@@ -429,7 +458,15 @@ public class LoginServerManager {
 	 * server.xml when false
 	 */
 	private boolean isRuntimeConfigAppServiceHostsSet() {
-		return runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts) != null;
+		final String[] hosts = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts);
+		if (hosts != null) {
+			for (String host : hosts) {
+				if (host != null && !host.trim().isEmpty()) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -443,6 +480,7 @@ public class LoginServerManager {
     public List<LoginServer> getLoginServersFromRuntimeConfig() {
 		final String[] mdmLoginServers = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts);
 		final List<LoginServer> allServers = new ArrayList<>();
+		resetNonCustomLoginServers(runtimePrefs);
 		if (mdmLoginServers != null) {
 			String[] mdmLoginServersLabels = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHostLabels);
 			if (mdmLoginServersLabels == null || mdmLoginServersLabels.length != mdmLoginServers.length) {
@@ -450,18 +488,16 @@ public class LoginServerManager {
 				mdmLoginServersLabels = mdmLoginServers;
 			}
 
-			// Reset non-custom servers from Mobile Device Management (MDM).
-			resetNonCustomLoginServers(runtimePrefs);
-
-			// Null-cleanse MDM login server URLs and names.
-			final List<String> mdmLoginServersList = asList(mdmLoginServers);
-			mdmLoginServersList.removeIf(Objects::isNull);
-			final List<String> mdmLoginServersLabelsList = asList(mdmLoginServersLabels);
-			mdmLoginServersLabelsList.removeIf(Objects::isNull);
-
-			for (int i = 0; i < mdmLoginServersList.size(); i++) {
-				final String name = mdmLoginServersLabelsList.get(i);
-				final String url = mdmLoginServersList.get(i);
+			for (int i = 0; i < mdmLoginServers.length; i++) {
+				if (mdmLoginServers[i] == null || mdmLoginServers[i].trim().isEmpty()) {
+					continue;
+				}
+				final String url = mdmLoginServers[i].trim();
+				final String trimmedLabel = mdmLoginServersLabels[i] == null ? "" : mdmLoginServersLabels[i].trim();
+				final String name = trimmedLabel.isEmpty() ? url : trimmedLabel;
+				if (allServers.stream().anyMatch(server -> server.url.equals(url))) {
+					continue;
+				}
 
 				final LoginServer server = new LoginServer(name, url, false);
 				persistLoginServer(
@@ -491,6 +527,9 @@ public class LoginServerManager {
 
 	/**
 	 * Reorders a custom login server in the list of login servers.
+	 * Indices refer to displayed rows and are translated to the server's owning backing store.
+	 * Cross-store targets are clamped to that store's displayed custom range; durable ordering
+	 * across stores is not supported. Hidden rows in the affected backing interval are preserved.
 	 *
 	 * @param originalIndex The original index of the custom login server.  If this is not the index
 	 *                      of a custom login server, this method will do nothing
@@ -503,27 +542,35 @@ public class LoginServerManager {
 			final int originalIndex,
 			int updatedIndex
 	) {
-		// Get the login server at the original index.
 		final List<LoginServer> loginServers = getLoginServers();
-		final LoginServer originalLoginServer = loginServers.get(originalIndex);
-
-		// Guard against reordering a non-custom login server.
-		if (!originalLoginServer.isCustom) {
+		if (originalIndex < 0 || originalIndex >= loginServers.size()) {
 			return;
 		}
-
-		// Adjust the re-ordered custom login server index to be within bounds.
-		final List<LoginServer> servers = getLoginServers();
-		updatedIndex = getIndexAdjustedToCustomLoginServerBounds(updatedIndex, getSharedPreferences());
-
-		// Update the login server list.
-		loginServers.remove(originalIndex);
-		loginServers.add(updatedIndex, originalLoginServer);
-
-		// Edit each login server indexed after the updated index.
-		final Editor editor = getSharedPreferences().edit();
-		for (int i = updatedIndex; i < loginServers.size(); i++) {
-			final LoginServer loginServer = loginServers.get(i);
+		final LoginServer originalLoginServer = loginServers.get(originalIndex);
+		final SharedPreferences owner = getCustomServerPreferences(originalLoginServer);
+		if (owner == null) {
+			return;
+		}
+		final List<LoginServer> backingServers = getLoginServersFromPreferences(owner);
+		final List<Integer> ownerDisplayedIndices = new ArrayList<>();
+		for (int i = 0; i < loginServers.size(); i++) {
+			if (loginServers.get(i).isCustom && getCustomServerPreferences(loginServers.get(i)) == owner) {
+				ownerDisplayedIndices.add(i);
+			}
+		}
+		updatedIndex = Math.max(ownerDisplayedIndices.get(0),
+				Math.min(updatedIndex, ownerDisplayedIndices.get(ownerDisplayedIndices.size() - 1)));
+		final int backingOriginalIndex = backingServers.indexOf(originalLoginServer);
+		final int backingUpdatedIndex = backingServers.indexOf(loginServers.get(updatedIndex));
+		if (backingUpdatedIndex == -1) {
+			return;
+		}
+		backingServers.remove(backingOriginalIndex);
+		backingServers.add(backingUpdatedIndex, originalLoginServer);
+		final Editor editor = owner.edit();
+		for (int i = Math.min(backingOriginalIndex, backingUpdatedIndex);
+			 i <= Math.max(backingOriginalIndex, backingUpdatedIndex); i++) {
+			final LoginServer loginServer = backingServers.get(i);
 			editor.remove(format(US, SERVER_NAME, i))
 					.remove(format(US, SERVER_URL, i))
 					.remove(format(US, IS_CUSTOM, i))
@@ -553,41 +600,27 @@ public class LoginServerManager {
 			return;
 		}
 
-		final int originalIndex = getLoginServers().indexOf(originalCustomLoginServer);
-
-		// Guard against an original login server that doesn't exist.
-		if (originalIndex == -1) {
+		final SharedPreferences owner = getCustomServerPreferences(originalCustomLoginServer);
+		if (owner == null) {
 			return;
 		}
-
-		removeServer(originalCustomLoginServer);
-		addCustomLoginServer(updatedCustomLoginServer.name, updatedCustomLoginServer.url);
-		reorderCustomLoginServer(getLoginServers().size() - 1, originalIndex);
-	}
-
-	/**
-	 * Adjusts a login server index to be within the bounds of the custom login servers.
-	 *
-	 * @param index The login server index
-	 * @param sharedPreferences The login server shared preferences
-	 * @return The adjusted login server index
-	 */
-	private @NonNull Integer getIndexAdjustedToCustomLoginServerBounds(
-			final Integer index,
-			final SharedPreferences sharedPreferences
-	) {
-		// Determine the last non-custom login server index.
-		int firstCustomLoginServerIndex = getNextNonCustomLoginServerIndex(sharedPreferences);
-
-		final List<LoginServer> servers = getLoginServers();
-		if (index == null) {
-			return servers.size();
-		} else if (index <= firstCustomLoginServerIndex) {
-			return firstCustomLoginServerIndex;
-		} else if (index >= servers.size()) {
-			return servers.size() - 1;
+		final LoginServer existingServer = getLoginServerFromURL(updatedCustomLoginServer.url.trim());
+		if (existingServer != null && !existingServer.equals(originalCustomLoginServer)) {
+			removeServer(originalCustomLoginServer, owner, false);
+			setSelectedLoginServer(existingServer);
+			return;
+		}
+		final int index = getLoginServersFromPreferences(owner).indexOf(originalCustomLoginServer);
+		owner.edit()
+				.putString(format(US, SERVER_NAME, index), updatedCustomLoginServer.name.trim())
+				.putString(format(US, SERVER_URL, index), updatedCustomLoginServer.url.trim())
+				.putBoolean(format(US, IS_CUSTOM, index), true)
+				.apply();
+		final LoginServer replacement = getLoginServerFromURL(updatedCustomLoginServer.url.trim());
+		if (replacement != null) {
+			setSelectedLoginServer(replacement);
 		} else {
-			return index;
+			getSelectedLoginServer();
 		}
 	}
 
@@ -666,9 +699,6 @@ public class LoginServerManager {
 	 * user's custom login servers.
 	 */
 	private void initSharedPrefFile() {
-		if (isRuntimeConfigAppServiceHostsSet()) {
-			return;
-		}
 		List<LoginServer> servers = getLoginServersFromXML();
 		if (servers.isEmpty()) {
 			servers = getLegacyLoginServers();
@@ -685,7 +715,8 @@ public class LoginServerManager {
 			);
 
 			// Set the default login server to the first entry once.
-			if (i == 0 && ctx.getSharedPreferences(SERVER_SELECTION_FILE, MODE_PRIVATE).getAll().isEmpty()) {
+			if (i == 0 && !isRuntimeConfigAppServiceHostsSet()
+					&& ctx.getSharedPreferences(SERVER_SELECTION_FILE, MODE_PRIVATE).getAll().isEmpty()) {
 				setSelectedLoginServer(curServer);
 			}
 		}
@@ -713,7 +744,7 @@ public class LoginServerManager {
 		@SuppressWarnings("WrapperTypeMayBePrimitive")
 		@NonNull Integer adjustedIndex;
 		if (isCustom) {
-			adjustedIndex = getIndexAdjustedToCustomLoginServerBounds(null, sharedPreferences);
+			adjustedIndex = numberOfServers;
 		} else {
 			adjustedIndex = getNextNonCustomLoginServerIndex(sharedPreferences);
 		}

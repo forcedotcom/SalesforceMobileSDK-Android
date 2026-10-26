@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <widget xmlns     = "http://www.w3.org/ns/widgets"
     id        = "com.salesforce.androidsdk"
-    version   = "14.0.0">
+    version   = "14.0.1">
 
     <content src="index.html" />
 
@@ -10,6 +10,8 @@
     <allow-navigation href="https://*.force.com" />
     <allow-navigation href="https://*.salesforce.com" />
     <allow-navigation href="https://*.visualforce.com" />
+    <allow-navigation href="https://hybrid-test.example.com" />
+    <allow-navigation href="https://path-scoped.example.com/allowed/*" />
     <allow-navigation href="https://*.documentforce.com" />
     <allow-navigation href="https://*.salesforce-communities.com" />
 

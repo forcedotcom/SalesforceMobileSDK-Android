@@ -153,10 +153,14 @@ import com.salesforce.androidsdk.security.SalesforceKeyGenerator
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getEncryptionKey
 import com.salesforce.androidsdk.security.ScreenLockManager
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity
+import com.salesforce.androidsdk.ui.AuthenticationMode
+import com.salesforce.androidsdk.ui.DebugNativeLoginActivity
 import com.salesforce.androidsdk.ui.DevInfoActivity
 import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.ui.LoginOptionsActivity
 import com.salesforce.androidsdk.ui.LoginViewModel
+import com.salesforce.androidsdk.ui.NativeLoginDebugConfig
+import com.salesforce.androidsdk.ui.NativeLoginDebugSettings
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.AuthConfigUtil.getMyDomainAuthConfig
@@ -260,9 +264,29 @@ open class SalesforceSDKManager protected constructor(
 
     /**
      * The class of the activity used to perform the login process and create
-     * the account.
+     * the account: the app's native login activity when one was provided,
+     * else [DebugNativeLoginActivity] when the debug Login Options select
+     * Native Login (see [debugLoginSettings]), else [webViewLoginActivityClass].
+     * Read for each login attempt, so a debug mode change applies to the next
+     * one.
      */
-    val loginActivityClass: Class<out Activity> = nativeLoginActivity ?: webViewLoginActivityClass
+    val loginActivityClass: Class<out Activity>
+        get() = nativeLoginActivity
+            ?: DebugNativeLoginActivity::class.java.takeIf { isDebugNativeLoginActive }
+            ?: webViewLoginActivityClass
+
+    /**
+     * The debug-only authentication mode and Native Login configuration edited
+     * in the developer support Login Options screen.
+     * @see NativeLoginDebugSettings
+     */
+    val debugLoginSettings: NativeLoginDebugSettings by lazy {
+        NativeLoginDebugSettings(appContext, this)
+    }
+
+    /** True when the debug Login Options route login to [DebugNativeLoginActivity]. */
+    internal val isDebugNativeLoginActive: Boolean
+        get() = debugLoginSettings.mode == AuthenticationMode.NATIVE
 
     /**
      * The client side implementation of the Salesforce App Attestation External
@@ -861,6 +885,35 @@ open class SalesforceSDKManager protected constructor(
         googleCloudProjectId: String? = null,
         isReCaptchaEnterprise: Boolean = false,
     ): NativeLoginManagerInterface {
+        registerNativeLoginFeatures()
+        nativeLoginManager = NativeLoginManager(
+            consumerKey,
+            callbackUrl,
+            communityUrl,
+            reCaptchaSiteKeyId,
+            googleCloudProjectId,
+            isReCaptchaEnterprise
+        )
+        return nativeLoginManager as NativeLoginManagerInterface
+    }
+
+    /**
+     * Uses Native Login with the debug Login Options configuration, whose DPoP
+     * and hybrid choices apply to Native Login only.
+     */
+    internal fun useDebugNativeLogin(config: NativeLoginDebugConfig): NativeLoginManagerInterface {
+        registerNativeLoginFeatures()
+        nativeLoginManager = NativeLoginManager(
+            clientId = config.consumerKey,
+            redirectUri = config.redirectUri,
+            loginUrl = config.communityUrl,
+            useDPoP = config.useDPoP,
+            useHybridAuthentication = config.useHybridFlow,
+        )
+        return nativeLoginManager as NativeLoginManagerInterface
+    }
+
+    private fun registerNativeLoginFeatures() {
         registerUsedAppFeature(FEATURE_NATIVE_LOGIN)
         // Register A5 global — native login does not go through LoginActivity so it sets this here.
         // Clear all other A-markers to keep exactly one active.
@@ -871,15 +924,6 @@ open class SalesforceSDKManager protected constructor(
             FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
         ).forEach { unregisterUsedAppFeature(it) }
         registerUsedAppFeature(FEATURE_AUTH_TYPE_NATIVE)
-        nativeLoginManager = NativeLoginManager(
-            consumerKey,
-            callbackUrl,
-            communityUrl,
-            reCaptchaSiteKeyId,
-            googleCloudProjectId,
-            isReCaptchaEnterprise
-        )
-        return nativeLoginManager as NativeLoginManagerInterface
     }
 
     /**
@@ -1625,6 +1669,18 @@ open class SalesforceSDKManager protected constructor(
         }
     }
 
+    /**
+     * Copies cached feature flags to a newly persisted Native Login account.
+     * Registration may be a no-op when reauthentication keeps the same marker,
+     * even though the replacement account snapshot does not contain those flags.
+     */
+    internal fun synchronizeUserFeatureFlags(user: UserAccount) {
+        val flags = perUserFeatures["${user.orgId}/${user.userId}"] ?: return
+        if (user.featureFlags != flags) {
+            persistUserFeatureFlags(user, flags)
+        }
+    }
+
     private fun persistUserFeatureFlags(user: UserAccount, flags: Set<String>) {
         user.featureFlags = HashSet(flags)
         val account = userAccountManager.buildAccount(user) ?: return
@@ -2216,7 +2272,7 @@ open class SalesforceSDKManager protected constructor(
         protected var INSTANCE: SalesforceSDKManager? = null
 
         /** The current version of this SDK */
-        const val SDK_VERSION = "14.0.0"
+        const val SDK_VERSION = "14.0.1.dev"
 
         /**
          * An intent action meant for instances of Salesforce SDK manager

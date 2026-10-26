@@ -44,6 +44,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.ui.components.LoginViewTestTags
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.COMMUNITY_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.testConfig
 
@@ -67,6 +68,13 @@ private const val FRE_DISMISS_TIMEOUT_MS = 30_000L
  */
 private const val MAX_LOGIN_SUBMISSION_ATTEMPTS = 3
 
+/**
+ * Maximum number of retype attempts when a readback shows a credential field empty or mismatched.
+ * Used only on the community host (see [ChromeCustomTabPageObject.login]), whose single-page login
+ * form has been observed to re-render shortly after being filled, discarding the typed keystrokes.
+ */
+private const val MAX_FIELD_RETYPE_ATTEMPTS = 3
+
 private enum class CredentialField {
     USERNAME,
     PASSWORD,
@@ -83,9 +91,18 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     private var lastFocusedCredentialField: CredentialField? = null
 
     override fun login(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig) {
+        waitForCustomTabOnExpectedHost(knownLoginHostConfig)
         skipGoogleSignIn()
         val (username, password) = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
+        // The community host's single-page login form has been observed to re-render shortly after
+        // being filled, discarding the typed keystrokes (iOS hit the same page-shape issue). Scoped
+        // to that host rather than applied generically, since every other host's form has not shown
+        // this behavior.
+        val verifyTypedFields = knownLoginHostConfig == COMMUNITY_AUTH
         setUsername(username)
+        if (verifyTypedFields) {
+            verifyFieldOrRetype(CredentialField.USERNAME, username) { setUsername(username) }
+        }
         // A combined Salesforce My Domain page renders username + password on ONE screen, so the
         // password field is already present after typing the username. A two-step flow instead
         // shows a username-only page and needs a Log In tap to advance to the password page.
@@ -97,7 +114,15 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         if (!passwordAlreadyVisible) {
             advanceToPasswordStep()
         }
-        submitPassword(password)
+        submitPassword(
+            password,
+            verifyTypedFields = verifyTypedFields,
+            // Only re-check the username field right before submission on the combined-form case:
+            // on a two-step form the username field is no longer on screen once advanceToPasswordStep
+            // has run, and re-typing into whatever EditText(0) resolves to there would corrupt the
+            // password field instead.
+            username = username.takeIf { verifyTypedFields && passwordAlreadyVisible },
+        )
         // Under forced advanced authentication every login completes in the Custom Tab, so the
         // OAuth approval page is always rendered there regardless of the configured host.
         AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(ADVANCED_AUTH)
@@ -185,6 +210,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     }
 
     override fun setUsername(name: String) {
+        allowLocalNetworkAccess()
         // UiSelector.resourceId("username") matches Android View resource IDs, not HTML element
         // IDs inside Chrome — the quick check is a low-cost probe before the full wait.
         val usernameField = device.findObject(UiSelector().resourceId(USERNAME_ID))
@@ -208,6 +234,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     }
 
     override fun setPassword(password: String) {
+        allowLocalNetworkAccess()
         // Current Chrome exposes the HTML password element's ID as its accessibility resource ID.
         // Prefer that stable signal, then support combined forms by position. The final instance(0)
         // fallback is safe after advanceToPasswordStep has confirmed that the password screen is
@@ -232,6 +259,67 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     }
 
     /**
+     * Reads back [field]'s current on-screen text via UiAutomator, trying the same selectors
+     * [setUsername]/[setPassword] use to locate it. Returns null if no matching field is found.
+     */
+    private fun currentFieldText(field: CredentialField): String? {
+        val resourceId = if (field == CredentialField.PASSWORD) PASSWORD_ID else USERNAME_ID
+        val byResourceId = device.findObject(UiSelector().resourceId(resourceId))
+        if (byResourceId.exists()) return runCatching { byResourceId.text }.getOrNull()
+
+        val byPosition = if (field == CredentialField.PASSWORD) {
+            combinedFormPasswordField()
+        } else {
+            device.findObject(UiSelector().className("android.widget.EditText").instance(0))
+        }
+        if (byPosition.exists()) return runCatching { byPosition.text }.getOrNull()
+
+        return findVisibleChromeInput(expectPassword = field == CredentialField.PASSWORD)?.text?.toString()
+    }
+
+    /**
+     * True when [field]'s current readback looks like [expectedValue] was actually accepted.
+     * Compared by exact text for the username (visible as typed), and by non-empty length match
+     * for the password, since Chrome's accessibility tree may expose a masked value (e.g. bullet
+     * characters) rather than the literal characters — a dot count is as much as can be verified
+     * without reading the real value. Never logs [expectedValue] itself.
+     */
+    private fun fieldLooksFilled(field: CredentialField, expectedValue: String): Boolean {
+        val currentText = currentFieldText(field) ?: return false
+        return if (field == CredentialField.PASSWORD) {
+            currentText.isNotEmpty() && currentText.length == expectedValue.length
+        } else {
+            currentText == expectedValue
+        }
+    }
+
+    /**
+     * Community host only (see [login]): the single-page login form has been observed to
+     * re-render shortly after being filled, discarding the typed keystrokes (iOS hit the same
+     * page-shape issue against the same page). Reads [field] back via [fieldLooksFilled] and
+     * retypes it with [retype] when it's empty or doesn't match, up to [MAX_FIELD_RETYPE_ATTEMPTS]
+     * times, then fails fast with a clear message rather than proceeding to submit a form known to
+     * still be wrong. Never logs the expected or actual value — only whether a given attempt's
+     * readback was empty/mismatched.
+     */
+    private fun verifyFieldOrRetype(field: CredentialField, expectedValue: String, retype: () -> Unit) {
+        repeat(MAX_FIELD_RETYPE_ATTEMPTS) { attempt ->
+            if (fieldLooksFilled(field, expectedValue)) return
+            android.util.Log.i(
+                "ChromeCustomTabPageObject",
+                "Community $field field empty or mismatched on readback attempt ${attempt + 1}; retyping.",
+            )
+            retype()
+        }
+        if (!fieldLooksFilled(field, expectedValue)) {
+            throw AssertionError(
+                "Community $field field is still empty or incorrect after " +
+                    "$MAX_FIELD_RETYPE_ATTEMPTS retype attempts",
+            )
+        }
+    }
+
+    /**
      * Waits for a two-step Salesforce login page to replace the username input with the password
      * input before typing. The previous page can remain accessible for several seconds after its
      * Log In button is tapped; falling back to EditText instance(0) during that window overwrites
@@ -253,13 +341,28 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     /**
      * Enters and submits a password, confirming that Chrome actually left the login form. This
      * catches both an autofill popup intercepting the tap and an input event dropped by Chrome.
+     *
+     * [verifyTypedFields] (community host only — see [login]) reads the password field back after
+     * typing and retypes it if it's empty or doesn't match. When [username] is also non-null
+     * (combined-form case only), both fields are read back and retyped once more right before the
+     * submission tap, since the whole form has been observed to re-render shortly after being
+     * filled, discarding either field's keystrokes.
      */
-    fun submitPassword(password: String) {
+    fun submitPassword(password: String, verifyTypedFields: Boolean = false, username: String? = null) {
         setPassword(password)
+        if (verifyTypedFields) {
+            verifyFieldOrRetype(CredentialField.PASSWORD, password) { setPassword(password) }
+        }
         // On the combined page the Log In button sits directly below the password field, so the
         // soft keyboard raised by setPassword covers it. Back closes the IME without leaving the
         // Custom Tab, making the button visible before the checked tap.
         dismissKeyboard()
+        if (username != null) {
+            // Final check right before tapping Log In: re-verify both fields once more rather than
+            // just the one most recently typed, since a re-render can clear either.
+            verifyFieldOrRetype(CredentialField.USERNAME, username) { setUsername(username) }
+            verifyFieldOrRetype(CredentialField.PASSWORD, password) { setPassword(password) }
+        }
         var loginFormWasGone = false
         tapLoginUntil(
             failureMessage = "Login form remained on screen after password submission",
@@ -414,6 +517,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         var enterFallbackUsed = false
 
         while (System.currentTimeMillis() < deadline) {
+            allowLocalNetworkAccess()
             if (condition()) return
 
             val now = System.currentTimeMillis()
@@ -472,14 +576,17 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     private fun isLoginButtonVisible(): Boolean =
         device.findObject(UiSelector().resourceId(LOGIN_BUTTON_ID)).exists() ||
             device.findObject(
-                UiSelector().className("android.widget.Button").textContains("Log In")
+                // textMatches regex with the (?i) flag instead of textContains, since UiSelector's
+                // textContains is case-sensitive and a community ECA's hosted login page is free to
+                // render the button as "Log in" rather than Chrome's own "Log In".
+                UiSelector().className("android.widget.Button").textMatches("(?i).*log in.*")
             ).exists()
 
     private fun findLoginButton(fallbackTimeoutMs: Long) =
         device.findObject(UiSelector().resourceId(LOGIN_BUTTON_ID))
             .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
             ?: device.findObject(
-                UiSelector().className("android.widget.Button").textContains("Log In")
+                UiSelector().className("android.widget.Button").textMatches("(?i).*log in.*")
             ).takeIf { it.waitForExists(fallbackTimeoutMs) }
 
     /**
@@ -516,6 +623,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         val deadline = System.currentTimeMillis() + FRE_DISMISS_TIMEOUT_MS
         while (System.currentTimeMillis() < deadline) {
             if (isCustomTabDisplayed()) {
+                allowLocalNetworkAccess()
                 return
             }
             if (!dismissOneFreControl()) {
@@ -523,6 +631,22 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
                 device.waitForIdle(QUICK_CHECK_TIMEOUT_MS)
             }
         }
+    }
+
+    /**
+     * Accepts Chrome's Local Network Access prompt ("... wants to access other devices on your local
+     * network"), which test hosts on a private network can trigger. The modal covers the login form,
+     * so leaving it up stalls every credential step; allowing it lets the page finish its requests.
+     */
+    private fun allowLocalNetworkAccess() {
+        val prompt = device.findObject(
+            UiSelector().packageName("com.android.chrome").textContains("local network")
+        )
+        if (!prompt.exists()) return
+        device.findObject(UiSelector().resourceId("com.android.chrome:id/positive_button"))
+            .takeIf { it.exists() }
+            ?.click()
+        device.waitForIdle(QUICK_CHECK_TIMEOUT_MS)
     }
 
     /**
@@ -588,22 +712,6 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     }
 
     /**
-     * True when the Custom Tab is showing the OAuth error page produced by a DPoP-enforced ECA that
-     * rejected an unbound `/authorize` request. The enforced server responds with
-     * `error=invalid_request&error_description=missing required dpop_jkt for code binding`, which
-     * Chrome renders as page text. We match on the URL-encoded `dpop_jkt` token — the distinctive,
-     * server-stable part of the description — rather than the full phrase, which is URL-encoded in the
-     * rendered text and could be reworded server-side. Uses [WEBVIEW_ACTION_TIMEOUT_MS] because the
-     * error page is server-rendered and subject to the same latency as the login form.
-     */
-    fun isShowingDPoPBindingError(): Boolean {
-        val errorText = device.findObject(
-            UiSelector().packageName("com.android.chrome").textContains("dpop_jkt")
-        )
-        return errorText.waitForExists(WEBVIEW_ACTION_TIMEOUT_MS)
-    }
-
-    /**
      * Waits up to [timeoutMs] for the Custom Tab to come to the front, returning whether it did.
      * Uses the full [TIMEOUT_MS] window (vs [isCustomTabDisplayed]) to wait out the async auth-config
      * fetch preceding a tab (re)launch. Best-effort: `false` means no tab launched, so the caller
@@ -616,5 +724,57 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
             UiSelector().resourceId("com.android.chrome:id/close_button")
         )
         return closeButton.waitForExists(timeoutMs)
+    }
+
+    /**
+     * Waits, before any typing starts, for the Custom Tab to be in front and showing the host the
+     * test selected. The SDK can fire several VIEW intents in quick succession while it configures
+     * login options and finally launches the chosen host (see AuthFlowTest.loginAndValidate): the
+     * default server's own auth config fires first, then re-configuring login options (app/DPoP)
+     * relaunches the tab, then selecting the target host launches it again. Acting on the first tab
+     * to appear risks typing into a page that is about to be replaced. Keyed on
+     * [knownLoginHostConfig] rather than anything community-specific, so this helps every host.
+     *
+     * Primary signal is the toolbar's url_bar, which shows the loaded page's host. Chrome does not
+     * always expose it (observed intermittently on FTL), so when it is missing or empty this falls
+     * back to the Custom Tab package being present with a login form that has rendered and held
+     * for two consecutive checks — the same "stable observation" debounce [submitPassword] already
+     * uses to confirm a form actually left the screen, applied here in reverse to confirm one has
+     * actually arrived and settled.
+     */
+    private fun waitForCustomTabOnExpectedHost(knownLoginHostConfig: KnownLoginHostConfig) {
+        val expectedHost = testConfig.getLoginHost(knownLoginHostConfig).url
+            .substringAfter("://")
+            .substringBefore("/")
+        val deadline = System.currentTimeMillis() + TIMEOUT_MS
+        var formSeenStable = false
+        while (System.currentTimeMillis() < deadline) {
+            // Idempotent, and also clears the FRE, which otherwise hides the toolbar/form.
+            skipGoogleSignIn()
+            if (!isCustomTabDisplayed()) {
+                formSeenStable = false
+                Thread.sleep(QUICK_CHECK_TIMEOUT_MS)
+                continue
+            }
+            val urlBar = device.findObject(UiSelector().resourceId("com.android.chrome:id/url_bar"))
+            if (urlBar.exists()) {
+                val urlBarText = runCatching { urlBar.text }.getOrDefault("")
+                if (urlBarText.contains(expectedHost, ignoreCase = true)) {
+                    return
+                }
+                formSeenStable = false
+            } else {
+                val formIsVisible = isLoginButtonVisible() || isPasswordStepVisible()
+                if (formIsVisible && formSeenStable) {
+                    return
+                }
+                formSeenStable = formIsVisible
+            }
+            Thread.sleep(QUICK_CHECK_TIMEOUT_MS)
+        }
+        android.util.Log.w(
+            "ChromeCustomTabPageObject",
+            "Timed out waiting for the Custom Tab to show $expectedHost; proceeding anyway.",
+        )
     }
 }

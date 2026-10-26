@@ -334,11 +334,10 @@ class DPoPLoginTests : AuthFlowTest() {
      * Login with DPoP ECA, restart app, verify the DPoP key pair and session survive the restart
      * and that revoke+refresh still works (key pair reloaded from AndroidKeyStore, not regenerated).
      *
-     * Note: restartApp() kills the process and relaunches it, which re-runs
-     * Application.onCreate(). A real app would call setUseDPoP(true) there; AuthFlowTester
-     * does not, so we re-enable DPoP explicitly via the hydratePerUserFeatures path that
-     * reads the per-user DPoP flag from the persisted UserAccount. This test validates that
-     * the key pair stored in AndroidKeyStore survives across process restarts.
+     * Note: restartApp() relaunches the Activity in the same process; it is not a cold restart
+     * (the test runner shares the app's process), so Application.onCreate() does not run again.
+     * This test validates that the key pair stored in AndroidKeyStore still binds the session
+     * after the relaunch.
      */
     @Test
     fun testECAJwtDPoP_WithRestart() {

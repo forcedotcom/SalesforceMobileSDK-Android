@@ -5,6 +5,7 @@
 
     <application android:label="@string/app_name"
         android:name="com.salesforce.androidsdk.TestForceApp"
+        android:networkSecurityConfig="@xml/test_network_security_config"
         android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity">
 
         <!-- Service required for authentication -->
@@ -18,7 +19,8 @@
                 android:resource="@xml/authenticator" />
         </service>
 
-
+        <activity android:name="com.salesforce.androidsdk.ui.CancellationObservingLoginActivity"
+            android:exported="false" />
 
         <!-- Launcher screen -->
         <activity android:name="com.salesforce.androidsdk.MainActivity"

@@ -50,6 +50,7 @@ enum class KnownUserConfig {
 enum class KnownLoginHostConfig {
     REGULAR_AUTH,
     ADVANCED_AUTH,
+    COMMUNITY_AUTH,
 }
 
 enum class KnownAppConfig {
@@ -63,6 +64,8 @@ enum class KnownAppConfig {
     CA_JWT,
     ECA_JWT_DPOP,
     ECA_JWT_DPOP_RTR,
+    ECA_JWT_HEADLESS,
+    ECA_JWT_DPOP_HEADLESS,
 }
 
 private val json = Json { ignoreUnknownKeys = true }
@@ -83,12 +86,69 @@ data class UITestConfig(
     val apps: List<AppConfig>,
 ) {
 
+    /**
+     * True when at least one headless ECA (`eca_jwt_headless` or `eca_jwt_dpop_headless`) is in
+     * `apps`. Native Login tests skip via `assumeTrue` when neither is, for environments that do not
+     * provision them. This only checks names, so a bad Native Login entry never affects other suites.
+     */
+    val hasNativeLoginApps: Boolean
+        get() = NATIVE_LOGIN_APPS.any { findApp(it) != null }
+
+    /**
+     * Resolves the Native Login fixtures by name: the `eca_jwt_headless` and `eca_jwt_dpop_headless`
+     * apps and the first user of the `community_auth` login host.
+     *
+     * @throws NativeLoginConfigException When either app, the host or its user is missing, an app
+     * has an empty consumerKey or an app's redirectUri is not HTTPS.
+     */
+    fun nativeLoginSetup(): NativeLoginSetup {
+        val missingApps = NATIVE_LOGIN_APPS.filter { findApp(it) == null }.map { it.configName }
+        if (missingApps.isNotEmpty()) {
+            throw NativeLoginConfigException(
+                "Native Login tests need both ${NATIVE_LOGIN_APPS.joinToString(" and ") { it.configName }} " +
+                    "in apps of ui_test_config.json; missing: ${missingApps.joinToString()}."
+            )
+        }
+        NATIVE_LOGIN_APPS.forEach { knownApp ->
+            val app = getApp(knownApp)
+            if (app.consumerKey.isBlank()) {
+                throw NativeLoginConfigException("App '${knownApp.configName}' in ui_test_config.json has an empty consumerKey.")
+            }
+            if (!app.redirectUri.lowercase().startsWith("https://")) {
+                throw NativeLoginConfigException("App '${knownApp.configName}' in ui_test_config.json needs an https:// redirectUri.")
+            }
+        }
+        val hostName = KnownLoginHostConfig.COMMUNITY_AUTH.configName
+        val host = loginHosts.find { it.name == hostName }
+            ?: throw NativeLoginConfigException("Native Login tests need the '$hostName' login host in ui_test_config.json.")
+        val hostUser = host.users.firstOrNull()
+            ?: throw NativeLoginConfigException("The '$hostName' login host in ui_test_config.json has no users.")
+        return NativeLoginSetup(
+            host = host,
+            user = hostUser,
+            ecaJwtHeadless = getApp(KnownAppConfig.ECA_JWT_HEADLESS),
+            ecaJwtDPoPHeadless = getApp(KnownAppConfig.ECA_JWT_DPOP_HEADLESS),
+        )
+    }
+
+    private fun findApp(knownAppConfig: KnownAppConfig): AppConfig? =
+        apps.find { it.name == knownAppConfig.configName }
+
     fun requireLoginPoolHost(): String = loginPoolHost
         ?: throw Exception("loginPoolHost not found in ui_test_config.json.")
 
     fun getLoginHost(knownLoginHostConfig: KnownLoginHostConfig): LoginHost = loginHosts.find {
         (name, _, _) -> name == knownLoginHostConfig.name.toLowerCase(Locale.current)
     } ?: throw Exception("LoginHost not found.")
+
+    // Not every environment provisions every login host (e.g. community_auth requires a
+    // dedicated Experience Cloud site). Tests that depend on an optional host should skip
+    // via Assume.assumeTrue(testConfig.hasLoginHost(...)) rather than fail. A host with no
+    // configured users counts as absent so that a partially provisioned host skips instead of
+    // failing in getUser.
+    fun hasLoginHost(knownLoginHostConfig: KnownLoginHostConfig): Boolean = loginHosts.any {
+        (name, _, users) -> name == knownLoginHostConfig.name.toLowerCase(Locale.current) && users.isNotEmpty()
+    }
 
     fun getUser(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig): User =
         getLoginHost(knownLoginHostConfig).users[knownUserConfig.ordinal]
@@ -103,6 +163,23 @@ data class UITestConfig(
         }
 
 }
+
+/** The Native Login fixtures. The user is reused from the host's `users`, never duplicated. */
+data class NativeLoginSetup(
+    val host: LoginHost,
+    val user: User,
+    /** Headless ECA that accepts, but does not require, DPoP. */
+    val ecaJwtHeadless: AppConfig,
+    /** Headless ECA that requires DPoP: authorize without `dpop_jkt` is rejected. */
+    val ecaJwtDPoPHeadless: AppConfig,
+)
+
+private val NATIVE_LOGIN_APPS = listOf(KnownAppConfig.ECA_JWT_HEADLESS, KnownAppConfig.ECA_JWT_DPOP_HEADLESS)
+
+private val KnownAppConfig.configName: String get() = name.lowercase()
+private val KnownLoginHostConfig.configName: String get() = name.lowercase()
+
+class NativeLoginConfigException(message: String) : Exception(message)
 
 @Serializable
 data class LoginHost(

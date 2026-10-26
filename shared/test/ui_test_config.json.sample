@@ -1,8 +1,9 @@
 {
+  "loginPoolHost": "https://login.your-env.salesforce.com",
   "loginHosts": [
     {
       "name": "regular_auth",
-      "url": "https://authflowtestingmsdksdb38.test1.my.pc-rnd.salesforce.com",
+      "url": "https://your-test-org.my.salesforce.com",
       "users": [
         {
           "username": "testandroid1@authflowtesting.msdk.sdb38.com",
@@ -28,7 +29,7 @@
     },
     {
       "name": "advanced_auth",
-      "url": "https://advauthflowtestingmsdksdb38.test1.my.pc-rnd.salesforce.com",
+      "url": "https://your-advanced-test-org.my.salesforce.com",
       "users": [
         {
           "username": "testandroid1@advauthflowtesting.msdk.sdb38.com",
@@ -52,6 +53,16 @@
         }
       ]
     },
+    {
+      "name": "community_auth",
+      "url": "https://<your-community>.my.site.com/<path>",
+      "users": [
+        {
+          "username": "testandroid@community.authflowtesting.msdk.sdb38.com",
+          "password": "yourPasswordHere"
+        }
+      ]
+    }
   ],
   "apps": [
     {
@@ -113,6 +124,18 @@
       "consumerKey": "your_consumer_key_here",
       "redirectUri": "ecajwtdpoprtr://success/done",
       "scopes": "api content id lightning refresh_token sfap_api web"
+    },
+    {
+      "name": "eca_jwt_headless",
+      "consumerKey": "your_consumer_key_here",
+      "redirectUri": "https://<your-community>.my.site.com/<path>/services/oauth2/echo",
+      "scopes": "api content id lightning refresh_token sfap_api visualforce web"
+    },
+    {
+      "name": "eca_jwt_dpop_headless",
+      "consumerKey": "your_consumer_key_here",
+      "redirectUri": "https://<your-community>.my.site.com/<path>/services/oauth2/echo",
+      "scopes": "api content id lightning refresh_token sfap_api visualforce web"
     }
   ]
 }

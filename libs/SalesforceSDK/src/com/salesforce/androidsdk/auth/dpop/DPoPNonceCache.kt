@@ -31,32 +31,52 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * Thread-safe in-memory nonce cache for DPoP proof JWTs.
  *
- * RFC 9449 §8 allows the AS/RS to supply a `DPoP-Nonce` response header. The
- * client must echo that value in the `nonce` claim of its next DPoP proof for the
- * same endpoint. This cache is keyed by `(credentialsIdentifier, host)` so that
- * the AS nonce (login host) and RS nonce (instance host) never overwrite each other.
- * This matches the per-host isolation used by the iOS implementation, while also
- * ensuring per-user isolation consistent with [DPoPKeyManager].
+ * RFC 9449 §8 allows a server to supply a `DPoP-Nonce` response header. Salesforce
+ * issues nonces from the token endpoint; resource-server responses (identity, REST)
+ * are not expected to carry one, though the SDK still harvests a `DPoP-Nonce` from
+ * any response that does (e.g. the userinfo nonce-challenge retry in
+ * `AuthenticationUtilities`). This cache is keyed by `(credentialsIdentifier, host)`
+ * so a nonce supplied by a specific host takes precedence for that host.
+ *
+ * Since resource servers aren't expected to issue their own nonce, [get] falls back to the most
+ * recently stored nonce for [credentialsIdentifier] (any host) when there is no entry
+ * for the exact `(credentialsIdentifier, host)` pair, so the client reuses the latest
+ * token-endpoint nonce on every DPoP call for that credential. An exact host match
+ * always takes precedence over the fallback. Logins where the token host differs from
+ * the resource hosts (e.g. communities, login.* pool servers) rely on this fallback.
+ * This matches the credential-scoped fallback used by the iOS implementation
+ * (`DPoPNonceCache.swift`'s `nonce(htu:scope:) ?? latest(forScope:)`), layered on top
+ * of Android's existing per-host isolation.
  */
 object DPoPNonceCache {
 
     private val cache = ConcurrentHashMap<String, String>()
+    private val latestByCredential = ConcurrentHashMap<String, String>()
 
     private fun cacheKey(credentialsIdentifier: String, host: String) =
         "$credentialsIdentifier|$host"
 
+    /**
+     * Returns the nonce cached for the exact `(credentialsIdentifier, host)` pair, or,
+     * if none was ever stored for that host, the most recently stored nonce for
+     * [credentialsIdentifier] on any host — i.e. the latest nonce issued at the token
+     * endpoint for this credential. Returns null if neither is available.
+     */
     fun get(credentialsIdentifier: String, host: String): String? =
-        cache[cacheKey(credentialsIdentifier, host)]
+        cache[cacheKey(credentialsIdentifier, host)] ?: latestByCredential[credentialsIdentifier]
 
     fun store(credentialsIdentifier: String, host: String, nonce: String) {
         cache[cacheKey(credentialsIdentifier, host)] = nonce
+        latestByCredential[credentialsIdentifier] = nonce
     }
 
     fun clear(credentialsIdentifier: String) {
         cache.keys.removeAll { it.startsWith("$credentialsIdentifier|") }
+        latestByCredential.remove(credentialsIdentifier)
     }
 
     fun clearAll() {
         cache.clear()
+        latestByCredential.clear()
     }
 }

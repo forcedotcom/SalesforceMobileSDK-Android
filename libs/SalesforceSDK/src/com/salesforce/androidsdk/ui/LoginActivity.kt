@@ -34,6 +34,7 @@ import android.accounts.AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.content.Intent.FLAG_ACTIVITY_FORWARD_RESULT
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.app.AlertDialog
 import android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE
@@ -77,6 +78,9 @@ import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.activity.viewModels
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.CoroutineStart
+import com.salesforce.androidsdk.auth.NativeLoginManager
 import androidx.annotation.OptIn
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.Companion.PROTECTED
@@ -260,6 +264,8 @@ open class LoginActivity : FragmentActivity() {
     private var wasBackgrounded = false
     private var completedViaBrowserTab = false
     private var completedViaAdminCustomTab = false
+    private var customTabResultHandled = false
+    private var pendingCustomTabCancellation = false
     private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
     private var accountAuthenticatorResult: Bundle? = null
     private var newUserIntent = false
@@ -293,12 +299,16 @@ open class LoginActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        initializeLogin(savedInstanceState)
+    }
+
+    private fun initializeLogin(savedInstanceState: Bundle?) {
+        customTabResultHandled = savedInstanceState?.getBoolean(CUSTOM_TAB_RESULT_HANDLED) ?: false
+        pendingCustomTabCancellation = savedInstanceState?.getBoolean(PENDING_CUSTOM_TAB_CANCELLATION) ?: false
         enableEdgeToEdge()
         if (viewModel.dynamicBackgroundTheme.value == DARK) {
             SalesforceSDKManager.getInstance().setViewNavigationVisibility(this)
         }
-
-        applyIntent()
 
         // Don't let sharedBrowserSession org setting stop a new user from logging in.
         if (intent.extras?.getBoolean(NEW_USER) == true) {
@@ -324,6 +334,38 @@ open class LoginActivity : FragmentActivity() {
             }
         }
 
+        // Observe front door bridge URL to load in the WebView when present.
+        viewModel.frontDoorBridgeUrl.observe(this) { url ->
+            if (url != null) {
+                viewModel.loading.value = true
+            }
+        }
+
+        // On API 33+ the predictive back gesture (enableOnBackInvokedCallback) bypasses
+        // onKeyDown, so route Back through the dispatcher. handleBackBehavior() no-ops while locked.
+        // TODO:  Remove SDK_INT check when min API > 33
+        if (SDK_INT >= TIRAMISU) {
+            onBackPressedDispatcher.addCallback(this) { handleBackBehavior() }
+        }
+
+        // Set callback for when browser custom tab URL is ready to launch.
+        viewModel.onBrowserCustomTabReady = ::handleBrowserCustomTabReady
+
+        // Only authentication startup waits for native publication. Content, state,
+        // callbacks and back handling are ready before onCreate returns, even if
+        // native account persistence currently holds the completion mutex.
+        lifecycleScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            NativeLoginManager.onFallbackActivityStarted(intent)
+            if (!isFinishing) startLoginAuthentication()
+        }
+
+        // Preserve notification ordering when authentication can start immediately.
+        EventsObservable.get().notifyEvent(LoginActivityCreateComplete, this)
+    }
+
+    private fun startLoginAuthentication() {
+        applyIntent()
+
         // Present Biometric Prompt if necessary.
         val biometricAuthenticationManager =
             SalesforceSDKManager.getInstance().biometricAuthenticationManager as? BiometricAuthenticationManager
@@ -339,33 +381,20 @@ open class LoginActivity : FragmentActivity() {
             certAuthOrLogin()
         }
 
-        // Observe front door bridge URL to load in the WebView when present.
-        viewModel.frontDoorBridgeUrl.observe(this) { url ->
-            if (url != null) {
-                viewModel.loading.value = true
-            }
-        }
-
-        // On API 33+ the predictive back gesture (enableOnBackInvokedCallback) bypasses
-        // onKeyDown, so route Back through the dispatcher. handleBackBehavior() no-ops while locked.
-        // TODO:  Remove SDK_INT check when min API > 33
-        if (SDK_INT >= TIRAMISU) {
-            onBackPressedDispatcher.addCallback(this) { handleBackBehavior() }
-        }
-
-        // Add view model observers.
         viewModel.pendingServer.observe(this, PendingServerObserver())
+    }
 
-        // Set callback for when browser custom tab URL is ready to launch.
-        viewModel.onBrowserCustomTabReady = ::handleBrowserCustomTabReady
-
-        // Let observers know onCreate is complete.
-        EventsObservable.get().notifyEvent(LoginActivityCreateComplete, this)
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean(CUSTOM_TAB_RESULT_HANDLED, customTabResultHandled)
+        outState.putBoolean(PENDING_CUSTOM_TAB_CANCELLATION, pendingCustomTabCancellation)
+        super.onSaveInstanceState(outState)
     }
 
     override fun onResume() {
         super.onResume()
         wasBackgrounded = false
+        resolvePendingCustomTabCancellation()
+        if (isFinishing) return
 
         // If debug LoginOptions were changed reload the webview.
         //
@@ -373,6 +402,18 @@ open class LoginActivity : FragmentActivity() {
         // we can safely ignore that scenario.
         with(SalesforceSDKManager.getInstance()) {
             if (isDebugBuild && loginDevMenuReload) {
+                // Login Options selected Native Login: hand this login attempt to the debug form,
+                // unless this activity is that form's browser fallback.
+                if (isDebugNativeLoginActive && !intent.getBooleanExtra(DebugNativeLoginActivity.EXTRA_BROWSER_FALLBACK, false)) {
+                    loginDevMenuReload = false
+                    startActivity(
+                        Intent(intent)
+                            .setClass(this@LoginActivity, DebugNativeLoginActivity::class.java)
+                            .addFlags(FLAG_ACTIVITY_FORWARD_RESULT)
+                    )
+                    finish()
+                    return
+                }
                 // Login Options may have changed the auth surface (e.g. disabled Web Server Flow).
                 // Reset completedViaBrowserTab so a subsequent in-app WebView login does not
                 // inherit the browser-tab path.  If reloadWebView() re-launches a Custom Tab,
@@ -406,8 +447,11 @@ open class LoginActivity : FragmentActivity() {
 
         // Store the new intent and apply it to the activity.
         setIntent(intent)
-        applyIntent()
-        viewModel.applyPendingServer(pendingLoginServer = viewModel.pendingServer.value)
+        lifecycleScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            NativeLoginManager.onFallbackActivityStarted(intent)
+            applyIntent()
+            viewModel.applyPendingServer(pendingLoginServer = viewModel.pendingServer.value)
+        }
     }
 
     @VisibleForTesting
@@ -779,6 +823,16 @@ open class LoginActivity : FragmentActivity() {
         )
 
     /**
+     * Called when the user dismisses login or its browser Custom Tab. Returning
+     * to the server picker cancels the browser attempt. Lifecycle teardown and
+     * Login for Admin dismissal do not notify.
+     *
+     * Runs on the UI thread before dismissal handling. Overrides should return
+     * quickly and dispatch expensive work to a background thread or coroutine.
+     */
+    protected open fun onAuthFlowCancelled() = Unit
+
+    /**
      * A callback when the user facing part of the authentication flow completed
      * with an error.
      *
@@ -850,6 +904,8 @@ open class LoginActivity : FragmentActivity() {
     }
 
     private fun completeAdvAuthFlow(intent: Intent) {
+        customTabResultHandled = true
+        pendingCustomTabCancellation = false
         val params = UriFragmentParser.parse(intent.data)
         val error = params["error"]
         // Did we fail?
@@ -869,11 +925,33 @@ open class LoginActivity : FragmentActivity() {
         }
     }
 
+    private fun notifyAuthFlowCancelled() {
+        if (!isFinishing && !isDestroyed && !viewModel.authFinished.value) {
+            onAuthFlowCancelled()
+        }
+    }
+
+    @VisibleForTesting
+    internal fun resolvePendingCustomTabCancellation() {
+        if (!pendingCustomTabCancellation) return
+        pendingCustomTabCancellation = false
+        if (customTabResultHandled || isFinishing || isDestroyed) return
+        customTabResultHandled = true
+        notifyAuthFlowCancelled()
+        if (viewModel.singleServerCustomTabActivity) {
+            viewModel.loginUrl.value = ABOUT_BLANK
+            finish()
+        } else {
+            clearWebView(showServerPicker = !sharedBrowserSession)
+        }
+    }
+
     internal fun handleBackBehavior() {
         with(SalesforceSDKManager.getInstance()) {
             // If app is using Native Login this activity is a fallback and can be dismissed.
-            if (nativeLoginActivity != null) {
+            if (nativeLoginActivity != null || isDebugNativeLoginActive) {
                 setResult(RESULT_CANCELED)
+                notifyAuthFlowCancelled()
                 finish()
                 return // If we don't call return here moveTaskToBack can also be called below.
             }
@@ -892,6 +970,7 @@ open class LoginActivity : FragmentActivity() {
                 wasBackgrounded = true
                 if (userAccountManager.authenticatedUsers != null || viewModel.shouldShowBackButton) {
                     setResult(RESULT_CANCELED)
+                    notifyAuthFlowCancelled()
                     finish()
                 } else {
                     moveTaskToBack(true)
@@ -1214,6 +1293,8 @@ open class LoginActivity : FragmentActivity() {
 
         runCatching {
             customTabsIntent.intent.setData(urlString.toUri())
+            customTabResultHandled = false
+            pendingCustomTabCancellation = false
             customTabLauncher.launch(customTabsIntent.intent)
         }.onFailure { throwable ->
             e(TAG, "Unable to launch Advanced Authentication, Chrome browser not installed.", throwable)
@@ -1722,6 +1803,8 @@ open class LoginActivity : FragmentActivity() {
 
         internal const val NEW_USER = "new_user"
         private const val SETUP_REQUEST_CODE = 72
+        private const val CUSTOM_TAB_RESULT_HANDLED = "custom_tab_result_handled"
+        private const val PENDING_CUSTOM_TAB_CANCELLATION = "pending_custom_tab_cancellation"
         private const val TAG = "LoginActivity"
         private const val PROMPT_LOGIN = "&prompt=login"
 
@@ -1786,10 +1869,10 @@ open class LoginActivity : FragmentActivity() {
          * Exactly one of L1–L5 is selected.
          *
          * @param usedWelcomeDiscovery Whether the Welcome Discovery flow was used (captured before WD global is cleared)
-         * @param loginServerUrl The selected login server URL at auth completion time
+         * @param loginServerUrl The selected login server URL at auth completion time, or the
+         * Native Login URL for a Native Login
          * @return The L-marker feature code to register
          */
-        @VisibleForTesting
         internal fun selectLMarker(usedWelcomeDiscovery: Boolean, loginServerUrl: String): String = when {
             usedWelcomeDiscovery -> FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY                         // L3
             LoginServerManager.isProductionLoginServer(loginServerUrl) -> FEATURE_LOGIN_SERVER_PRODUCTION  // L1
@@ -2150,15 +2233,12 @@ open class LoginActivity : FragmentActivity() {
 
         override fun onActivityResult(result: ActivityResult) {
             // Check if the user backed out of the custom tab.
-            if (result.resultCode == RESULT_CANCELED) {
-                if (activity.viewModel.singleServerCustomTabActivity) {
-                    // Show blank page and spinner until PKCE is done.
-                    activity.viewModel.loginUrl.value = ABOUT_BLANK
-                    finish()
-                } else {
-                    // Don't show server picker if we are re-authenticating with cookie.
-                    activity.clearWebView(showServerPicker = !activity.sharedBrowserSession)
-                }
+            if (result.resultCode == RESULT_CANCELED && !activity.customTabResultHandled
+                && !activity.isFinishing && !activity.isDestroyed
+            ) {
+                // Android can deliver this result before the OAuth redirect. Resolve it on
+                // resume, after onNewIntent has a chance to handle that redirect.
+                activity.pendingCustomTabCancellation = true
             }
         }
     }

@@ -65,6 +65,8 @@ import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.GapWebViewCreateComplete
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.isSameUser
+import java.net.URI
+import java.net.URISyntaxException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.launch
@@ -120,6 +122,26 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
 
     @VisibleForTesting
     internal var recreateAfterUserSwitch: () -> Unit = ::recreate
+
+    /** Cordova's navigation policy, or null until the Cordova web view is initialized. */
+    @VisibleForTesting
+    internal var redirectNavigationPolicy: () -> ((String) -> Boolean)? = {
+        if (appView?.isInitialized == true) {
+            { url: String -> cordovaWebView.pluginManager.shouldAllowNavigation(url) }
+        } else {
+            null
+        }
+    }
+
+    @VisibleForTesting
+    internal var sendRefreshRequest: (RestClient, AsyncRequestCallback) -> Unit = { client, callback ->
+        client.sendAsync(getCheapRequest(VERSION_NUMBER), callback)
+    }
+
+    @VisibleForTesting
+    internal var authenticateForRefresh: () -> Unit = {
+        SalesforceSDKManager.getInstance().getRestClient(this) { recreate() }
+    }
 
     /**
      * Called when the activity is first created.
@@ -428,7 +450,7 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
      * @param url The page to load once the session has been refreshed
      */
     fun refresh(url: String) {
-        i(TAG, "reload called url:$url")
+        i(TAG, "Refreshing authenticated redirect")
 
         /*
          * If client is null at this point, authentication hasn't been performed
@@ -439,16 +461,19 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
          */
 
         if (restClient == null) {
-            SalesforceSDKManager.getInstance().getRestClient(this) { recreate() }
+            authenticateForRefresh()
             return
         }
+
+        // The return URL is untrusted. Validate it before the refresh and again before loading.
+        val validatedUrl = validatedRedirectDestination(url) ?: return
 
         val expectedManager = clientManager ?: return
         val expectedUser = boundCurrentUser() ?: return
         val expectedClient = restClient ?: return
 
-        expectedClient.sendAsync(
-            getCheapRequest(VERSION_NUMBER), object : AsyncRequestCallback {
+        sendRefreshRequest(
+            expectedClient, object : AsyncRequestCallback {
 
                 override fun onSuccess(
                     request: RestRequest,
@@ -464,7 +489,11 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
 
                     runOnUiThread {
                         if (isStillBoundTo(expectedUser, expectedManager)) {
-                            loadRemoteStartPage(url)
+                            validatedRedirectDestination(validatedUrl)?.let { approvedUrl ->
+                                i(TAG, "Loading validated authenticated redirect")
+                                loadUrl(approvedUrl)
+                                webAppLoaded = true
+                            }
                         }
                     }
                 }
@@ -529,6 +558,27 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
         i(TAG, "loadRemoteStartPage called - loading! - $url")
         loadUrl(url)
         webAppLoaded = true
+    }
+
+    /**
+     * Resolves and validates a redirect return URL against Cordova's navigation policy.
+     * @return The URL that may be loaded, or null if the redirect must not be followed
+     */
+    private fun validatedRedirectDestination(destination: String): String? {
+        val navigationPolicy = redirectNavigationPolicy()
+        if (navigationPolicy == null) {
+            w(TAG, "Redirect evaluated before the Cordova web view was initialized")
+        }
+        val approvedUrl = resolveAllowedRedirectDestination(
+            destination = destination,
+            clientInfo = restClient?.clientInfo,
+            configuredStartPage = bootConfig?.startPage,
+            isCordovaNavigationAllowed = navigationPolicy
+        )
+        if (approvedUrl == null) {
+            w(TAG, "[HYBRID_REDIRECT_REJECTED] Redirect denied; retaining current page")
+        }
+        return approvedUrl
     }
 
     /**
@@ -687,4 +737,60 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
         private const val TAG = "SfDroidGapActivity"
     }
 
+}
+
+/**
+ * Resolves a redirect return URL and returns it only if it may be loaded. Relative paths are
+ * resolved against the authenticated instance first, and the final URL must be HTTP(S) and
+ * allowed by Cordova's navigation policy (a null policy means Cordova is not initialized).
+ * The native-configured start page is trusted by exact URL only, never by origin, and is the
+ * recovery target when the requested destination is denied.
+ */
+internal fun resolveAllowedRedirectDestination(
+    destination: String,
+    clientInfo: RestClient.ClientInfo?,
+    configuredStartPage: String?,
+    isCordovaNavigationAllowed: ((String) -> Boolean)?
+): String? {
+    val configuredUrl = configuredStartPage?.let { resolveRedirectUrl(it, clientInfo) }
+
+    fun approve(candidate: String): String? {
+        val resolvedUrl = resolveRedirectUrl(candidate, clientInfo) ?: return null
+        val allowed = isCordovaNavigationAllowed?.invoke(resolvedUrl) == true ||
+                resolvedUrl == configuredUrl
+        return resolvedUrl.takeIf { allowed }
+    }
+
+    return approve(destination) ?: configuredUrl?.let(::approve)
+}
+
+/** Parse HTTP(S) URLs, optionally permitting relative paths without an authority. */
+private fun parseRedirectUri(destination: String, allowRelative: Boolean): URI? {
+    if (destination.isBlank()) return null
+    val uri = try {
+        URI(destination)
+    } catch (_: URISyntaxException) {
+        return null
+    }
+    if (uri.scheme == null) {
+        return uri.takeIf { allowRelative && it.rawAuthority == null }
+    }
+    return uri.takeIf {
+        (it.scheme.equals("http", ignoreCase = true) || it.scheme.equals("https", ignoreCase = true)) &&
+                it.rawAuthority != null && !it.host.isNullOrBlank()
+    }
+}
+
+/** Resolve relative paths using the SDK's authenticated instance/community URL resolution. */
+private fun resolveRedirectUrl(destination: String, clientInfo: RestClient.ClientInfo?): String? {
+    val uri = parseRedirectUri(destination, allowRelative = true) ?: return null
+    val resolvedUrl = if (uri.scheme != null) {
+        destination
+    } else {
+        clientInfo?.resolveUrl(destination)?.toString() ?: return null
+    }
+    if (parseRedirectUri(resolvedUrl, allowRelative = false) == null) return null
+    // Canonicalize dot segments (including encoded dots) so Cordova's path matching and the
+    // WebView evaluate the same destination.
+    return resolvedUrl.toHttpUrlOrNull()?.toString()
 }

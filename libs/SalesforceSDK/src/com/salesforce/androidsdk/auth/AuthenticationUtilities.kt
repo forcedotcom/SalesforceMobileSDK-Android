@@ -52,6 +52,11 @@ import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_H
 import com.salesforce.androidsdk.app.Features.FEATURE_BEACON
 import com.salesforce.androidsdk.app.Features.FEATURE_BIOMETRIC_AUTH
 import com.salesforce.androidsdk.app.Features.FEATURE_DPOP
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_OTHER
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_PRODUCTION
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_SANDBOX
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
 import com.salesforce.androidsdk.app.Features.FEATURE_RTR
 import com.salesforce.androidsdk.app.Features.FEATURE_SCREEN_LOCK
 import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_JWT
@@ -75,6 +80,7 @@ import com.salesforce.androidsdk.rest.RestClient.clearCaches
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.isBiometricAuthenticationEnabled
 import com.salesforce.androidsdk.security.ScreenLockManager
+import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.i
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
@@ -85,14 +91,18 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Request.Builder
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 import java.net.HttpURLConnection.HTTP_FORBIDDEN
+import java.net.HttpURLConnection.HTTP_OK
 import java.net.HttpURLConnection.HTTP_UNAUTHORIZED
+import java.net.ProtocolException
 import java.net.URI
 import java.time.Instant
 import java.util.function.Consumer
@@ -107,7 +117,6 @@ private const val TAG = "AuthenticationUtilities"
 private const val BAD_OAUTH_TOKEN = "Bad_OAuth_Token"
 private const val WRONG_ORG = "Wrong_Org"
 
-@VisibleForTesting
 internal data class IdentityFetchResult(
     val identity: OAuth2.IdServiceResponse?,
     val refreshTokenRotationTime: String? = null,
@@ -123,7 +132,6 @@ internal data class IdentityFetchResult(
  *  * Creates an Account.
  *  * Checks for any CA/ECA settings such as Screen Lock or Biometric Authentication.
  */
-@VisibleForTesting
 internal suspend fun onAuthFlowComplete(
     tokenResponse: TokenEndpointResponse,
     loginServer: String,
@@ -146,7 +154,10 @@ internal suspend fun onAuthFlowComplete(
     startMainActivity: () -> Unit = ::startMainActivityHelper,
     setAdministratorPreferences: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::setAdministratorPreferences,
     addAccount: (account: UserAccount) -> Unit = ::addAccountHelper,
-    handleScreenLockPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleScreenLockPolicy,
+    persistScreenLockFeature: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit
+        = { userIdentity, account -> com.salesforce.androidsdk.auth.persistScreenLockFeature(userIdentity, account) },
+    handleScreenLockPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Boolean
+        = ::handleScreenLockPolicy,
     handleBiometricAuthPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleBiometricAuthPolicy,
     handleDuplicateUserAccount: (userAccountManager: UserAccountManager, account: UserAccount, userIdentity: OAuth2.IdServiceResponse?) -> Unit
         = { uam, acct, identity -> com.salesforce.androidsdk.auth.handleDuplicateUserAccount(uam, acct, identity) },
@@ -271,7 +282,7 @@ internal suspend fun onAuthFlowComplete(
     } else {
         if (nativeLogin) {
             // Native login bypasses LoginActivity.onAuthFlowSuccess, so A-marker per-user
-            // promotion and JT/OT/BN/TM writes must happen here.
+            // promotion and L/JT/OT/BN/TM writes must happen here.
             val sdkManager = SalesforceSDKManager.getInstance()
             val allAMarkers = listOf(
                 FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
@@ -280,10 +291,29 @@ internal suspend fun onAuthFlowComplete(
                 FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
                 FEATURE_AUTH_TYPE_NATIVE,
             )
-            val activeAMarker = allAMarkers.firstOrNull { sdkManager.isGlobalFeatureRegistered(it) }
+            // The loop below clears the global A-markers, so a second native login in the same process
+            // (useNativeLogin is only called once) finds none registered and must still resolve to A5.
+            val activeAMarker = allAMarkers.firstOrNull { sdkManager.isGlobalFeatureRegistered(it) } ?: FEATURE_AUTH_TYPE_NATIVE
             for (marker in allAMarkers) {
                 sdkManager.unregisterUsedAppFeature(marker)
                 if (marker == activeAMarker) {
+                    sdkManager.registerUsedAppFeature(marker, account)
+                } else {
+                    sdkManager.unregisterUsedAppFeature(marker, account)
+                }
+            }
+            // L-markers: exactly one "which login server" marker per-user, from the Native Login
+            // URL (a community site resolves to L5). Native Login never uses Welcome Discovery.
+            val allLMarkers = listOf(
+                FEATURE_LOGIN_SERVER_PRODUCTION,
+                FEATURE_LOGIN_SERVER_SANDBOX,
+                FEATURE_LOGIN_SERVER_MY_DOMAIN,
+                FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY,
+                FEATURE_LOGIN_SERVER_OTHER,
+            )
+            val lMarker = LoginActivity.selectLMarker(usedWelcomeDiscovery = false, loginServerUrl = loginServer.trim())
+            for (marker in allLMarkers) {
+                if (marker == lMarker) {
                     sdkManager.registerUsedAppFeature(marker, account)
                 } else {
                     sdkManager.unregisterUsedAppFeature(marker, account)
@@ -303,25 +333,38 @@ internal suspend fun onAuthFlowComplete(
                 sdkManager.unregisterUsedAppFeature(FEATURE_BEACON, account)
             }
         }
-        userAccountManager.createAccount(account)
-        userAccountManager.switchToUser(account)
+    }
 
-        // Init user logging
+    if (!tokenMigration) {
+        withContext(IO) {
+            userAccountManager.persistAccount(account)
+            persistScreenLockFeature(userIdentity, account)
+        }
         updateLoggingPrefs(account)
-
-        // Send User Switch Intent, create user and switch to user.
         val numAuthenticatedUsers = userAccountManager.authenticatedUsers?.size ?: 0
         val userSwitchType = when {
-            // We've already authenticated the first user, so there should be one
             numAuthenticatedUsers == 1 -> USER_SWITCH_TYPE_FIRST_LOGIN
-
-            // Otherwise we're logging in with an additional user
             numAuthenticatedUsers > 1 -> USER_SWITCH_TYPE_LOGIN
-
-            // This should never happen but if it does, pass in the "unknown" value
             else -> USER_SWITCH_TYPE_DEFAULT
         }
+        userAccountManager.storeCurrentUserInfo(account.userId, account.orgId)
         userAccountManager.sendUserSwitchIntent(userSwitchType, null)
+    } else {
+        withContext(IO) {
+            persistScreenLockFeature(userIdentity, account)
+        }
+    }
+
+    // Native login bypasses LoginActivity.onAuthFlowSuccess. Publish the final
+    // binding marker only after persistence, including DPoP-to-Bearer reauthentication.
+    if (nativeLogin && !tokenMigration) {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        if (DPoPKeyManager.isDPoPTokenType(account.tokenType)) {
+            sdkManager.registerUsedAppFeature(FEATURE_DPOP, account)
+        } else {
+            sdkManager.unregisterUsedAppFeature(FEATURE_DPOP, account)
+        }
+        sdkManager.synchronizeUserFeatureFlags(account)
     }
 
     // Registration persists the per-user feature flag, so it must happen only after the account
@@ -349,16 +392,15 @@ internal suspend fun onAuthFlowComplete(
     // is still in front, i.e. before startMainActivity() below occludes it.
     handleBiometricAuthPolicy(userIdentity, account)
 
+    val shouldLock = withContext(IO) { handleScreenLockPolicy(userIdentity, account) }
     withContext(Dispatchers.Main) {
         onAuthFlowFinished {
-            // Kickoff the end of the flow before storing mobile policy to prevent launching
-            // the main activity over/after the screen lock.
             if (!tokenMigration) {
                 startMainActivity()
             }
-
-            // Screen lock required by mobile policy
-            handleScreenLockPolicy(userIdentity, account)
+            if (shouldLock) {
+                (SalesforceSDKManager.getInstance().screenLockManager as ScreenLockManager?)?.lock()
+            }
         }
     }
 }
@@ -437,6 +479,86 @@ internal fun fetchIsSalesforceIntegrationUser(
 }
 
 /**
+ * Downloads a user's profile photo with OkHttp, authenticating the request the
+ * same way as other Salesforce API calls: `Authorization` scheme from
+ * [tokenType] plus, for a DPoP-bound credential, a signed proof (re-signed on
+ * every Salesforce redirect hop, with one retry on a `use_dpop_nonce`
+ * challenge).
+ *
+ * The body is streamed to a temporary file next to [destFile] and renamed over
+ * it only on a 200 response, so a failed download never disturbs an existing
+ * cached photo. This is non-fatal: failures are logged and reported through
+ * the return value, and never trigger a token refresh.
+ *
+ * @param photoUrl The photo URL
+ * @param destFile The cache file to write
+ * @param authToken The access token captured by the caller
+ * @param tokenType The token type captured by the caller
+ * @param credentialsIdentifier The DPoP credentials identifier captured by the caller
+ * @return True if the photo was downloaded and stored
+ */
+@VisibleForTesting
+internal fun downloadProfilePhotoToFile(
+    photoUrl: String,
+    destFile: File,
+    authToken: String?,
+    tokenType: String?,
+    credentialsIdentifier: String?,
+): Boolean {
+    val tempFile = File(destFile.parentFile, "${destFile.name}.download")
+    return try {
+        val httpUrl = photoUrl.toHttpUrlOrNull() ?: return false
+
+        fun buildAuthenticatedRequest(): Request {
+            val builder: Builder = Builder().url(httpUrl).get()
+            attachAuthHeaders(builder, authToken, tokenType, credentialsIdentifier)
+            return requirePhotoProof(builder.build())
+        }
+
+        val client = HttpAccess.DEFAULT.okHttpClient.newBuilder()
+            .addNetworkInterceptor { chain: Interceptor.Chain ->
+                reattachAuthOnRedirect(
+                    chain, httpUrl.toString(), authToken, tokenType, credentialsIdentifier,
+                    requireFreshDPoPProof = true,
+                )
+            }
+            .build()
+
+        var request = buildAuthenticatedRequest()
+        var response = client.newCall(request).execute()
+        val attachedDPoP = request.header(DPOP_HEADER) != null
+
+        if (attachedDPoP) {
+            harvestNonce(response, credentialsIdentifier, response.request.url.host)
+        }
+        if (attachedDPoP && isNonceChallenge(response)) {
+            response.close()
+            request = buildAuthenticatedRequest()
+            response = client.newCall(request).execute()
+            harvestNonce(response, credentialsIdentifier, response.request.url.host)
+        }
+
+        response.use {
+            if (it.code != HTTP_OK) {
+                w(TAG, "Profile photo download failed with status ${it.code}")
+                return false
+            }
+            tempFile.outputStream().use { out -> it.body.byteStream().copyTo(out) }
+        }
+        if (!tempFile.renameTo(destFile)) {
+            w(TAG, "Could not move downloaded profile photo into place")
+            return false
+        }
+        true
+    } catch (e: Exception) {
+        w(TAG, "Profile photo download failed", e)
+        false
+    } finally {
+        tempFile.delete()
+    }
+}
+
+/**
  * Attaches the Authorization header and, for a DPoP-bound credential, a
  * signed DPoP proof to [builder]. Shared by the initial request and the
  * redirect-reattachment path so both stay in sync.
@@ -451,10 +573,18 @@ private fun attachAuthHeaders(
     attachProof(builder, credentialsIdentifier, tokenType, authToken)
 }
 
+private fun requirePhotoProof(request: Request): Request {
+    val usesDPoP = request.header("Authorization")
+        ?.startsWith("${DPoPKeyManager.DPOP_TOKEN_TYPE} ", ignoreCase = true) == true
+    if (usesDPoP && request.header(DPOP_HEADER).isNullOrEmpty()) {
+        throw ProtocolException("Could not attach a DPoP proof to the profile photo request")
+    }
+    return request
+}
+
 /**
- * Network interceptor body for [fetchIsSalesforceIntegrationUser]. Re-attaches
- * the Authorization/DPoP headers when [chain]'s request URL no longer matches
- * [originalUrl] (i.e. we were redirected) and the new URL is a Salesforce host.
+ * Re-attaches authentication on Salesforce redirects. The photo path also removes
+ * any prior proof and stops before network I/O if a DPoP proof cannot be signed.
  */
 @VisibleForTesting
 internal fun reattachAuthOnRedirect(
@@ -463,18 +593,28 @@ internal fun reattachAuthOnRedirect(
     authToken: String?,
     tokenType: String?,
     credentialsIdentifier: String?,
+    requireFreshDPoPProof: Boolean = false,
 ): Response {
     val url = chain.request().url
     val interceptedRequestBuilder = chain.request().newBuilder()
+    val redirected = url.toString() != originalUrl
 
-    // if the url no longer matches we were redirected
-    if (url.toString() != originalUrl && url.isSalesforceUrl()) {
+    if (requireFreshDPoPProof && redirected) {
+        // OkHttp carries custom headers across redirects, including the old proof.
+        interceptedRequestBuilder.removeHeader(DPOP_HEADER)
+    }
+
+    if (redirected && url.isSalesforceUrl()) {
         attachAuthHeaders(
             interceptedRequestBuilder, authToken, tokenType, credentialsIdentifier
         )
     }
 
-    return chain.proceed(interceptedRequestBuilder.build())
+    val request = interceptedRequestBuilder.build()
+    if (requireFreshDPoPProof) {
+        requirePhotoProof(request)
+    }
+    return chain.proceed(request)
 }
 
 private fun HttpUrl.isSalesforceUrl(): Boolean {
@@ -525,28 +665,20 @@ private fun logAddAccount(account: UserAccount?, loginServerManager: LoginServer
 }
 
 /**
- * Fetches user identity using the URL appropriate for the login server.
+ * Fetches user identity the same way iOS does: always from the raw [TokenEndpointResponse.idUrl]
+ * returned by the token endpoint, for every user and every attempt.
  *
- * Salesforce always puts the pool-server host in the `id` field of the token response
- * regardless of which server issued the token. [TokenEndpointResponse.idUrlWithInstance]
- * corrects this by substituting the issuing server's host, which is correct for My Domain
- * logins and for Bearer tokens on any server.
+ * The identity service can answer 401 or 403 (including `Wrong_Org` and `Bad_OAuth_Token`) for a
+ * valid token, for example when the id host is not the host that issued the token (pool server
+ * logins, community users) or right after login. Every 401 or 403 is therefore treated as
+ * refreshable: the credentials are refreshed, the complete refreshed state (including a rotated
+ * refresh token) is merged into [tokenResponse], and the request is replayed. This repeats with no
+ * cap, as on iOS, until the identity service accepts the token or a refresh fails. Any other error
+ * fails immediately, as does a 401 or 403 when there is no refresh token.
  *
- * Workaround for
- * [W-23992239](https://gus.my.salesforce.com/lightning/r/ADM_Work__c/a07EE00002imeECYAY/view):
- * for DPoP tokens issued by a pool server, [TokenEndpointResponse.idUrlWithInstance] points
- * to My Domain, which rejects pool-server-issued DPoP tokens with `Bad_OAuth_Token` — it
- * does not issue a nonce challenge the way data endpoints do. The raw
- * [TokenEndpointResponse.idUrl] (pool-server host) must be used for the initial request instead.
- * If that request requires a credential refresh, the refreshed token is issued by the instance
- * token endpoint, so the replay uses [TokenEndpointResponse.idUrlWithInstance].
- *
- * Identity 401 responses and the known `Bad_OAuth_Token`/`Wrong_Org` 403 responses trigger one
- * refresh against the instance token endpoint. The complete refreshed credential state (including
- * a rotated refresh token) is applied before one replay. Other 403 responses are surfaced without
- * retry so authorization failures are not masked.
+ * One `IDENTITY_ATTEMPTS` info line is logged when the fetch finishes (see [logIdentityAttempts]),
+ * and one line per 401/403 received. Neither contains tokens or user data.
  */
-@VisibleForTesting
 internal suspend fun fetchUserIdentityWithRetry(
     tokenResponse: TokenEndpointResponse,
     loginServer: String,
@@ -559,41 +691,83 @@ internal suspend fun fetchUserIdentityWithRetry(
         consumerKey: String,
     ) -> TokenEndpointResponse = ::refreshCredentialsForIdentity,
 ): IdentityFetchResult {
-    val initialUrl = if (
-        "DPoP".equals(tokenResponse.tokenType, ignoreCase = true) &&
-        LoginServerManager.isPoolServer(loginServer)
-    ) tokenResponse.idUrl else tokenResponse.idUrlWithInstance
+    val startNanos = System.nanoTime()
+    var attempts = 0
+    var refreshes = 0
+    var refreshTokenRotated = false
 
-    try {
-        return IdentityFetchResult(identityFetcher(initialUrl, tokenResponse))
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        if (!isRefreshableIdentityFailure(e) || tokenResponse.refreshToken.isNullOrBlank()) {
-            w(TAG, "Cannot fetch user identity due to an error.", e)
+    fun logAttemptsSummary(status: String) = logIdentityAttempts(
+        tokenResponse, loginServer, attempts, refreshes, status,
+        (System.nanoTime() - startNanos) / 1_000_000,
+    )
+
+    while (true) {
+        try {
+            attempts++
+            val identity = identityFetcher(tokenResponse.idUrl, tokenResponse)
+            logAttemptsSummary("200")
+            return IdentityFetchResult(
+                identity = identity,
+                refreshTokenRotationTime = if (refreshTokenRotated) Instant.now().toString() else null,
+            )
+        } catch (e: CancellationException) {
             throw e
+        } catch (e: Exception) {
+            val statusCode = (e as? OAuth2.IdentityServiceException)?.httpStatusCode
+            if (statusCode != null) {
+                i(TAG, "Identity request returned HTTP $statusCode errorCode=${identityErrorCode(e)}")
+            }
+            if (!isRefreshableIdentityFailure(e) || tokenResponse.refreshToken.isNullOrBlank()) {
+                w(TAG, "Cannot fetch user identity due to an error.", e)
+                logAttemptsSummary(statusCode?.toString() ?: "error")
+                throw e
+            }
         }
 
-        val statusCode = (e as OAuth2.IdentityServiceException).httpStatusCode
-        i(TAG, "Identity request returned HTTP $statusCode; refreshing credentials once.")
+        try {
+            val previousRefreshToken = tokenResponse.refreshToken
+            val refreshedResponse = tokenRefresher(tokenResponse, loginServer, consumerKey)
+            refreshes++
+            if (!refreshedResponse.refreshToken.isNullOrBlank() &&
+                refreshedResponse.refreshToken != previousRefreshToken
+            ) refreshTokenRotated = true
+            mergeRefreshedCredentials(tokenResponse, refreshedResponse)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            w(TAG, "Cannot refresh credentials while fetching user identity.", e)
+            logAttemptsSummary("refresh_failed")
+            throw e
+        }
     }
+}
 
-    val originalRefreshToken = tokenResponse.refreshToken
-    val refreshedResponse = tokenRefresher(tokenResponse, loginServer, consumerKey)
-    val refreshTokenRotated = !refreshedResponse.refreshToken.isNullOrBlank() &&
-        refreshedResponse.refreshToken != originalRefreshToken
-    mergeRefreshedCredentials(tokenResponse, refreshedResponse)
+/** Logs the greppable `IDENTITY_ATTEMPTS` summary line; it carries no tokens or user data. */
+private fun logIdentityAttempts(
+    tokenResponse: TokenEndpointResponse,
+    loginServer: String,
+    attempts: Int,
+    refreshes: Int,
+    status: String,
+    elapsedMs: Long,
+) {
+    val host = runCatching { URI(loginServer).host }.getOrNull() ?: "unknown"
+    i(
+        TAG,
+        "IDENTITY_ATTEMPTS attempts=$attempts refreshes=$refreshes status=$status " +
+            "elapsedMs=$elapsedMs " +
+            "dpop=${DPoPKeyManager.isDPoPTokenType(tokenResponse.tokenType)} " +
+            "community=${!tokenResponse.communityUrl.isNullOrEmpty()} " +
+            "pool=${LoginServerManager.isPoolServer(loginServer)} host=$host",
+    )
+}
 
-    return try {
-        IdentityFetchResult(
-            identity = identityFetcher(tokenResponse.idUrlWithInstance, tokenResponse),
-            refreshTokenRotationTime = if (refreshTokenRotated) Instant.now().toString() else null,
-        )
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        w(TAG, "Cannot fetch user identity after refreshing credentials.", e)
-        throw e
+private fun identityErrorCode(error: OAuth2.IdentityServiceException): String {
+    val body = error.responseBody ?: return "none"
+    return when {
+        body.contains(WRONG_ORG, ignoreCase = true) -> WRONG_ORG
+        body.contains(BAD_OAUTH_TOKEN, ignoreCase = true) -> BAD_OAUTH_TOKEN
+        else -> "other"
     }
 }
 
@@ -616,8 +790,8 @@ private suspend fun refreshCredentialsForIdentity(
     consumerKey: String,
 ): TokenEndpointResponse = withContext(IO) {
     // Login has not created a UserAccount yet, so ClientManager's per-account refresh coordinator
-    // cannot coordinate this request. This flow owns the response and permits exactly one refresh.
-    // If Android gains a credential-scoped pre-account coordinator, route this refresh through it.
+    // cannot coordinate this request. This flow owns the response, and each call performs one refresh;
+    // the caller's retry loop decides how many calls are made. If Android gains a credential-scoped pre-account coordinator, route this refresh through it.
     OAuth2.refreshAuthToken(
         HttpAccess.DEFAULT,
         OAuth2.overrideLoginServerIfNeeded(
@@ -634,15 +808,10 @@ private suspend fun refreshCredentialsForIdentity(
     )
 }
 
+/** iOS refreshes on every 401 or 403: the identity service answers 403 for expired sessions. */
 private fun isRefreshableIdentityFailure(error: Exception): Boolean {
-    val identityError = error as? OAuth2.IdentityServiceException ?: return false
-    if (identityError.httpStatusCode == HTTP_UNAUTHORIZED) return true
-    if (identityError.httpStatusCode != HTTP_FORBIDDEN) return false
-
-    return identityError.responseBody?.let { body ->
-        body.contains(BAD_OAUTH_TOKEN, ignoreCase = true) ||
-            body.contains(WRONG_ORG, ignoreCase = true)
-    } == true
+    val code = (error as? OAuth2.IdentityServiceException)?.httpStatusCode
+    return code == HTTP_UNAUTHORIZED || code == HTTP_FORBIDDEN
 }
 
 /**
@@ -743,22 +912,37 @@ private fun updateLoggingPrefsHelper(account: UserAccount) {
 internal fun handleScreenLockPolicy(
     userIdentity: OAuth2.IdServiceResponse?,
     account: UserAccount,
-) {
+): Boolean {
     val internalScreenLockManager =
         SalesforceSDKManager.getInstance().screenLockManager as ScreenLockManager?
 
+    // Keep this feature-policy decision aligned with persistScreenLockFeature.
     // compareTo(0) is used to check if screenLockTimeout is non-null and greater than 0.
     if (userIdentity?.screenLockTimeout?.compareTo(0) == 1) {
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SCREEN_LOCK, account)
         val timeoutInMills = userIdentity.screenLockTimeout * 1000 * 60
         internalScreenLockManager?.storeMobilePolicy(
             account,
             enabled = userIdentity.screenLock,
             timeoutInMills,
         )
+        return userIdentity.screenLock
     } else if (internalScreenLockManager?.enabled == true) {
-        SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_SCREEN_LOCK, account)
         internalScreenLockManager.cleanUp(account)
+    }
+    return false
+}
+
+/** Persists the screen-lock feature before the completed account becomes observable to the app. */
+@VisibleForTesting
+internal fun persistScreenLockFeature(
+    userIdentity: OAuth2.IdServiceResponse?,
+    account: UserAccount,
+    sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
+) {
+    if (userIdentity?.screenLockTimeout?.compareTo(0) == 1) {
+        sdkManager.registerUsedAppFeature(FEATURE_SCREEN_LOCK, account)
+    } else if ((sdkManager.screenLockManager as ScreenLockManager?)?.enabled == true) {
+        sdkManager.unregisterUsedAppFeature(FEATURE_SCREEN_LOCK, account)
     }
 }
 
@@ -871,7 +1055,7 @@ internal fun handleDuplicateUserAccount(
  * users where [UserAccountManager.createAccount] cannot be used because
  * it unconditionally calls [UserAccountManager.storeCurrentUserInfo].
  */
-private fun UserAccountManager.persistAccount(
+internal fun UserAccountManager.persistAccount(
     userAccount: UserAccount,
     accountType: String = SalesforceSDKManager.getInstance().accountType,
     acctManager: AccountManager = AccountManager.get(SalesforceSDKManager.getInstance().appContext),

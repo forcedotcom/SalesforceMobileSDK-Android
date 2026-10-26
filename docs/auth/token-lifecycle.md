@@ -5,7 +5,9 @@ proof JWTs are attached, how nonces are managed, and how Refresh Token Rotation 
 handled safely under concurrency.
 
 The primary classes are:
-- **`OAuth2.java`** — all calls to the Salesforce token and identity endpoints
+- **`NativeLoginManager.kt`** — direct native authorize/token exchange and transaction ownership
+- **`AuthenticationUtilities.kt`** — shared identity/account completion, including native DP markers
+- **`OAuth2.java`** — shared token and identity endpoint calls
 - **`ClientManager.java`** (`AccMgrAuthTokenProvider`) — RTR-safe token refresh coordination
 - **`RestClient.java`** (`OAuthRefreshInterceptor`) — per-request auth header attachment and
   automatic refresh on 401
@@ -18,13 +20,15 @@ The primary classes are:
 
 **Entry point:** `OAuth2.exchangeCode()`
 
-After the user completes the OAuth2 authorization code flow in the login WebView,
+After the user completes web authentication (embedded WebView or system browser),
 `LoginActivity` calls `exchangeCode()` with the authorization `code` and `code_verifier`
 (PKCE). This method:
 
 1. Builds a `POST /services/oauth2/token` form body with `grant_type=authorization_code`
    (or `hybrid_auth_code` when hybrid authentication is enabled).
-2. If `isUseDPoP()` is `true` and a `credentialsIdentifier` was generated at login start:
+2. `makeTokenEndpointRequest()` uses `DPoPKeyManager.shouldAttachDPoP(credentialsIdentifier,
+   tokenType)`. For initial code exchange, `tokenType` is null and the gate checks for the
+   identifier's existing key material (created when authorize requested DPoP):
    - Looks up (or generates) the EC keypair via `DPoPKeyManager.generateOrLoadKeyPair()`.
    - Proactively reads any cached nonce via `DPoPNonceCache.get(credentialsIdentifier, tokenHost)` — null on first ever login.
    - Builds a DPoP proof JWT via `DPoPProofBuilder.buildProof()` and attaches it as the `DPoP` header.
@@ -34,12 +38,117 @@ After the user completes the OAuth2 authorization code flow in the login WebView
    into the cache immediately.
 5. On `use_dpop_nonce` (400/401 with that error body): the nonce was just harvested (step 4);
    rebuild the proof with it and retry once. Fail-closed on a second nonce failure.
-6. `TokenEndpointResponse` is returned to `LoginActivity`, which persists the tokens into
-   `AccountManager` and calls `callIdentityService()` to fetch the user's identity record.
+6. `TokenEndpointResponse` is returned to the login flow. Shared
+   `AuthenticationUtilities.onAuthFlowComplete()` retrieves identity first, builds the account
+   and handles duplicates, then persists it to `AccountManager` before completing login.
 
 **DPoP note:** the `credentialsIdentifier` is a UUID generated at login start and stored on
-`UserAccount` as the `dpopScope` AccountManager extra. It is the stable key for the DPoP
+`UserAccount` via the `credentialsIdentifier` AccountManager extra
+(`AuthenticatorService.KEY_CREDENTIALS_IDENTIFIER`). It is the stable key for the DPoP
 keypair and nonce cache for this user's session.
+
+---
+
+### 1.1 Native Login code exchange
+
+**Entry points:** `NativeLoginManager.login()`, `submitPasswordlessAuthorizationRequest()`
+and `completeRegistration()`. Their direct REST exchange uses `nativeRestCall()` rather
+than `OAuth2.exchangeCode()` / `makeTokenEndpointRequest()`.
+
+1. Under `nativeCompletionMutex`, create an app-wide `NativeTransaction` that captures the
+   current `useDPoP` setting as an optional fresh credentials identifier. A newer attempt
+   supersedes the previous one, including attempts with DPoP disabled.
+2. With DPoP enabled, create/load that identifier's key off the main thread. The authorize
+   URL carries `dpop_jkt`. POST the authorization form with a DPoP proof, then parse the JSON
+   code/community response and POST the token form to that community's token endpoint.
+   The grant is `authorization_code` or `hybrid_auth_code` according to the hybrid setting.
+   Both native proofs omit `ath` and use the same transaction key.
+3. `nativeRestCall()` checks active ownership before sending and after receiving a response.
+   It harvests nonempty nonce headers from both the initial and retried response. Each
+   authorize/token request may retry once only for HTTP 400/401, exact JSON
+   `error=use_dpop_nonce`, and a nonempty `DPoP-Nonce`. An unrelated error/header alone,
+   malformed JSON, missing nonce or repeated challenge does not permit another replay.
+   Retain the request body/key and generate a fresh proof. Native key/proof errors abort the
+   attempt; they do not send unsigned fallback requests.
+4. `suspendFinishAuthFlow()` carries the identifier into `TokenEndpointResponse` and calls
+   `AuthenticationUtilities.onAuthFlowComplete(nativeLogin=true)`. Identity retrieval uses
+   the existing retry/refresh implementation with the owning credentials. Acquire the
+   completion mutex after identity network work, then validate authority and serialize the
+   remaining account-completion/policy work before reporting success.
+5. After account persistence and the user-switch intent, set/remove DP from the actual
+   resulting token type (before the authentication-success callback) and
+   synchronize the account snapshot's cached feature set. See
+   [Native Login DP-marker persistence](login-feature-flag-persistence.md#native-login-dp-marker-persistence).
+
+Authorize can seed the token nonce cache, so the first token request need not start without
+a nonce. DPoP-disabled native attempts skip proof/key creation but retain the same lifecycle
+protection. Subsequent refresh and REST requests use the persisted token type, independent
+of later changes to the global flag.
+
+Native completion bypasses `LoginActivity.onAuthFlowSuccess()`, so shared completion handles
+DP registration/removal. Public feature registration skips writes when membership is unchanged;
+a replacement account snapshot can therefore miss already-cached flags. Native completion
+calls `synchronizeUserFeatureFlags(account)` to persist the final cached set when it differs
+from the snapshot. This preserves other cached markers and repeated DPoP → DPoP / DPoP →
+Bearer correctness without changing public registration no-op behavior.
+
+For diagnostics, do not consume a successful native `RestResponse` before nonce harvesting
+or token completion: `getRawResponse()` returns null once consumed. With developer support
+enabled `nativeRestCall()` passes each response to the internal `NativeLoginDiagnostics`, which keeps
+only the stage, HTTP status, OAuth error and description, and whether a DPoP proof was sent and
+a nonce received. It reads failure bodies only, through OkHttp `peekBody()`, so the original
+response stays open.
+
+#### Debug Native Login mode
+
+Apps with developer support enabled (the default in debug builds) can switch to Native Login, unless they register their own Native Login activity, from the
+developer support **Login Options** screen (**Authentication Mode**: Browser / Native). The
+choice and its External Client App (consumer key, HTTPS callback URL, community URL with path,
+DPoP, hybrid) persist in `SalesforceSDKManager.debugLoginSettings` (`NativeLoginDebugSettings`),
+apart from the boot config and the global `useDPoP` / `useHybridAuthentication` flags. They are
+inert unless `isDevSupportEnabled()` is true and the app registered no `nativeLoginActivity`.
+For automation, `debugLoginSettings.apply(json)` takes the same JSON keys as the Login Options
+import and iOS (`consumerKey`, `redirectUri`, `communityUrl`, `useDPoP`, `useHybridFlow`,
+`authenticationMode` = `browser|native`); it saves nothing when the JSON is malformed or Native
+mode would have an incomplete config. `reset()` restores Browser mode with no native config.
+If the saved Native configuration is still incomplete, the debug form shows a "Native Login is
+not configured" error that points to Login Options (iOS falls back to the browser login instead).
+
+- **Routing.** `loginActivityClass` resolves at each read: the app's `nativeLoginActivity`, else
+  `DebugNativeLoginActivity` in debug Native mode, else the web login activity. A
+  `LoginActivity` already on screen when Login Options switches to Native hands its intent to
+  `DebugNativeLoginActivity` (`FLAG_ACTIVITY_FORWARD_RESULT`), and the reverse when switching back.
+- **Manager.** `DebugNativeLoginActivity` registers the Native Login features and creates a
+  `NativeLoginManager` from the debug config, passing its DPoP and hybrid choices explicitly so
+  the browser values are untouched. The token refresh of the resulting account follows the
+  global hybrid flag, like other refreshes.
+- **L marker.** On success, `AuthenticationUtilities.onAuthFlowComplete` registers exactly one
+  per-user login-server marker from the Native Login URL with `LoginActivity.selectLMarker`, as
+  iOS does: a community URL gives `L5`, a My Domain URL `L4`. Native Login never starts
+  `LoginActivity`, which registers it for browser logins.
+- **Fallback.** **Log In with Browser** uses `getFallbackWebAuthenticationIntent()` marked so
+  that `LoginActivity` does not redirect back; the browser login uses the boot config and
+  browser options.
+- **Leaving Native** unregisters `NL` and `A5` so later browser logins do not report them.
+
+### 1.2 Cancellation, cleanup and fallback
+
+Native completion checks cancellation and ownership after acquiring the completion mutex.
+Persistence and policy work can still suspend; only final cleanup explicitly runs in
+`NonCancellable + IO` under the completion mutex.
+It clears active authority only if the transaction still owns it. It reclaims credentials
+only when no actual AccountManager account references the identifier; account-reference read
+errors preserve the key rather than risking deletion of a live account's material. Old
+identifiers from same-user replacement are checked separately from the replacement key.
+
+Web fallback is independent: no native credential identifier, key, nonce or proof is
+handed over. Creating the fallback intent does not revoke authority. Receipt of its native
+fallback marker calls `onFallbackActivityStarted()` under the same completion mutex, revokes
+native authority and consumes the marker. `LoginActivity.onCreate()` installs restored state,
+content, back handling and callbacks synchronously. Only authentication startup waits for that
+invalidation, so mutex contention must not leave an uninitialized Activity. `onNewIntent()`
+also coordinates invalidation before starting its authentication work. The web flow uses
+its own existing settings and transaction state.
 
 ---
 
@@ -254,6 +363,18 @@ HTTP calls in the worst case — happens entirely outside the lock.
 
 ## 5. DPoP Nonce Lifecycle
 
+`DPoPURLHelper.canonicalize()` strips query/fragment and temporarily removes a case-insensitive
+`vforcesite` suffix from the first path segment immediately after the leading slash, with
+a nonempty prefix before the suffix:
+`/sitevforcesite/services/oauth2/token` → `/site/services/oauth2/token`. It does not rewrite
+`/site/vforcesite/...` or a suffix in a later segment. Only proof canonicalization changes;
+the outbound URL is unchanged. This helper is shared by native, refresh and resource proofs.
+Remove the rewrite when server validation is corrected.
+
+The native authorize/token rule is documented in §1.1. The shared helper behavior below is
+separate: `OAuth2.makeTokenEndpointRequest()` harvests the first response before testing its
+400/401 error body and does not harvest its retry response in that helper.
+
 Salesforce normally seeds and rotates the session nonce at the **`/token` endpoint**. The SDK
 also implements RFC 9449 resource-server challenge handling so it remains correct if a resource
 host returns HTTP 400 `use_dpop_nonce` with a `DPoP-Nonce` header, such as when the process-local
@@ -291,8 +412,28 @@ if response is HTTP 400 use_dpop_nonce and the request carried a DPoP proof:
     retry once
 ```
 
-The identity endpoint does not harvest or retry inline. Its 401/403 path refreshes through the
-token endpoint, and the subsequent identity request is rebuilt with the refreshed credentials.
+`OAuth2.callIdentityService()` handles nonce challenges inline for identity requests that carry a
+DPoP proof. It caches a nonempty `DPoP-Nonce` from the first response, and if
+`DPoPRequestDecorator.isNonceChallenge()` matches, it rebuilds the proof and retries once, then
+harvests the retry response too. Any remaining 401/403 takes the token-endpoint refresh path, and
+the subsequent identity request is rebuilt with the refreshed credentials.
+
+**Identity fetch at login** (`fetchUserIdentityWithRetry`), identical to iOS for every user:
+- The raw token-response `id` URL is used for the first request and every replay. No
+  instance-host substitution is applied (it is rejected with 403 `Wrong_Org` for community users and
+  for DPoP tokens from a pool server).
+- Any 401 or 403 is refreshable. The flow refreshes through the token endpoint, merges the
+  complete refreshed credentials (including a rotated refresh token), and replays. A rotation
+  during this fetch records `lastTokenRotationTime` and registers the `RT` feature flag, so an RTR
+  app can already show `RT` on the first screen (matches iOS). Right after
+  login the identity service can keep answering 401 or 403 (`Wrong_Org`, `Bad_OAuth_Token`) for a
+  valid token, so this repeats with no cap until the identity service accepts the token (community
+  logins have needed up to 17 cycles). Other statuses fail immediately, as does a 401/403 with no
+  refresh token, and a failed refresh is propagated.
+- One info-level line is logged when the fetch finishes, with no tokens or user data:
+  `IDENTITY_ATTEMPTS attempts=N refreshes=M status=... elapsedMs=... dpop=... community=...
+  pool=... host=...` (`attempts=1` means the first request was accepted). Each 401/403 also logs
+  its status and error code (`Wrong_Org`, `Bad_OAuth_Token` or `other`).
 
 ### Read path (interceptor + OAuth2.java)
 
@@ -401,7 +542,6 @@ intercept()
         harvest DPoP-Nonce  →  DPoPNonceCache.store(...)
         isNonceChallenge()  →  true  →  retry with fresh nonce
         POST /token  (DPoP proof + correct nonce)
-        harvest DPoP-Nonce from success response (server may rotate)
         200: new access_token
       lock: publish, notifyAll(); lock released
   buildAuthenticatedRequest()   (new token + nonce now in cache)

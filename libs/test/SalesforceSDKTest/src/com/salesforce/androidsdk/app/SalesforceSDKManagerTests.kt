@@ -1169,6 +1169,43 @@ class SalesforceSDKManagerTests {
     // -------------------------------------------------------------------------
 
     @Test
+    fun test_givenFreshAccountSnapshot_whenSynchronizingCachedFeatures_thenPersistsCompleteFeatureSet() {
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+        val original = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+        sdkManager.registerUsedAppFeature(Features.FEATURE_DPOP, original)
+        sdkManager.registerUsedAppFeature(Features.FEATURE_RTR, original)
+
+        val replacement = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+        sdkManager.registerUsedAppFeature(Features.FEATURE_DPOP, replacement)
+        sdkManager.synchronizeUserFeatureFlags(replacement)
+
+        assertEquals(setOf(Features.FEATURE_DPOP, Features.FEATURE_RTR), replacement.featureFlags)
+        verify(exactly = 3) { sdkManager.userAccountManager.updateAccount(any(), any()) }
+        // Once this snapshot agrees with the cache, repeated registration stays a no-op.
+        sdkManager.registerUsedAppFeature(Features.FEATURE_DPOP, replacement)
+        sdkManager.synchronizeUserFeatureFlags(replacement)
+        verify(exactly = 3) { sdkManager.userAccountManager.updateAccount(any(), any()) }
+    }
+
+    @Test
+    fun test_givenStaleAccountSnapshot_whenSynchronizingFeatures_thenPersistsCachedFlags() {
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+        val original = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+        sdkManager.registerUsedAppFeature(Features.FEATURE_RTR, original)
+
+        val replacement = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+        replacement.featureFlags = setOf(Features.FEATURE_DPOP)
+        sdkManager.unregisterUsedAppFeature(Features.FEATURE_DPOP, replacement)
+        sdkManager.synchronizeUserFeatureFlags(replacement)
+
+        assertEquals(setOf(Features.FEATURE_RTR), replacement.featureFlags)
+        verify(exactly = 2) { sdkManager.userAccountManager.updateAccount(any(), any()) }
+        sdkManager.unregisterUsedAppFeature(Features.FEATURE_DPOP, replacement)
+        sdkManager.synchronizeUserFeatureFlags(replacement)
+        verify(exactly = 2) { sdkManager.userAccountManager.updateAccount(any(), any()) }
+    }
+
+    @Test
     fun test_givenFeatureAlreadyRegistered_whenRegisterUsedAppFeatureAgain_thenAccountIsNotPersistedAgain() {
         /*
          * Regression guard: registerUsedAppFeature(code, user) must not re-run

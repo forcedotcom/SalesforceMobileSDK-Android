@@ -111,6 +111,7 @@ import com.salesforce.samples.authflowtester.components.ManyRequestInterruption
 import com.salesforce.samples.authflowtester.components.manyRequestCountContentDescription
 import com.salesforce.samples.authflowtester.components.manyRequestInterruptionContentDescription
 import com.salesforce.samples.authflowtester.components.manyRequestSquareTestTag
+import com.salesforce.samples.authflowtester.testUtility.AppConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
@@ -608,6 +609,12 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         )
     }
 
+    /** Token type only: unlike [getDpopInfo], this works for Bearer sessions, which have no DPoP nonce. */
+    fun getTokenType(): String {
+        expandUserCredentialsSection(targetNode = OAUTH_TOKEN_TYPE)
+        return getText(OAUTH_TOKEN_TYPE)
+    }
+
     fun getDpopInfo(): DpopInfo {
         expandUserCredentialsSection(targetNode = OAUTH_TOKEN_TYPE)
         return DpopInfo(
@@ -673,7 +680,49 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, expectedRtMarker = expectedRtMarker, isDpop = isDpop, expectedBMarker = expectedBMarker, expectedLMarker = expectedLMarker, expectedAMarker = expectedAMarker, wasMigrated = wasMigrated, isJwt = isJwt, isBeacon = isBeacon)
     }
 
-    fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection, useHybridAuthToken: Boolean = true, isDpop: Boolean? = null) {
+    /** The current user's user agent, including its `ftr_` feature markers. */
+    fun getUserAgent(): String {
+        expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
+        return getText(USER_AGENT_CONTENT_DESC)
+    }
+
+    /** Asserts the `ftr_` user-agent flags: every one of [present] is set and none of [absent] is. */
+    fun validateUserAgentFlags(present: Set<String>, absent: Set<String> = emptySet()) {
+        val userAgent = getUserAgent()
+        val flags = userAgent.substringAfter("ftr_", missingDelimiterValue = "").substringBefore(" ").split(".").toSet()
+        present.forEach { assert(it in flags) { "Expected '$it' in ftr_ flags of: $userAgent" } }
+        absent.forEach { assert(it !in flags) { "Unexpected '$it' in ftr_ flags of: $userAgent" } }
+    }
+
+    /**
+     * Asserts the OAuth values of a Native Login session: consumer key, granted scopes, token
+     * format and token type (DPoP-bound or Bearer). Hybrid-SID checks are left to the web-flow
+     * validation because Native Login does not use the hybrid token flow.
+     */
+    fun validateNativeOAuthValues(app: AppConfig, isDpop: Boolean) {
+        val (accessToken, refreshToken) = getTokens()
+        assert(accessToken.isNotEmpty()) { "Expected non-empty access token" }
+        assert(refreshToken.isNotEmpty()) { "Expected non-empty refresh token" }
+
+        expandUserCredentialsSection(targetNode = CLIENT_ID)
+        assertEquals(app.consumerKey, getSensitiveValue(CLIENT_ID))
+        // Native Login's token response can grant more than was configured (e.g. visualforce).
+        val granted = getText(SCOPES).split(" ").filter { it.isNotEmpty() }.toSet()
+        assert(granted.containsAll(app.scopeList)) { "Granted scopes $granted should include ${app.scopeList}" }
+        assertEquals(app.expectedTokenFormat, getText(TOKEN_FORMAT))
+
+        if (isDpop) {
+            val dpopInfo = getDpopInfo()
+            assertEquals("DPoP", dpopInfo.tokenType)
+            assert(dpopInfo.keyThumbprint.matches(Regex("[A-Za-z0-9_-]{43}"))) {
+                "DPoP key thumbprint must be a 43-char base64url string; got: '${dpopInfo.keyThumbprint}'"
+            }
+        } else {
+            assertEquals("Bearer", getTokenType())
+        }
+    }
+
+    fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection, useHybridAuthToken: Boolean = true, isDpop: Boolean? = null, knownLoginHostConfig: KnownLoginHostConfig = KnownLoginHostConfig.REGULAR_AUTH) {
         val expected = testConfig.getApp(knownAppConfig)
         val (accessToken, refreshToken) = getTokens()
 
@@ -699,10 +748,10 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
             }
         }
 
-        validateSIDs(isDpop = isDpop ?: expected.isDpop, accessToken = accessToken, isJwt = expected.issuesJwt, useHybrid = useHybridAuthToken, scopeList = expected.scopeList)
+        validateSIDs(isDpop = isDpop ?: expected.isDpop, accessToken = accessToken, isJwt = expected.issuesJwt, useHybrid = useHybridAuthToken, scopeList = expected.scopeList, isCommunity = knownLoginHostConfig == KnownLoginHostConfig.COMMUNITY_AUTH)
     }
 
-    private fun validateSIDs(isDpop: Boolean, accessToken: String, isJwt: Boolean, useHybrid: Boolean, scopeList: List<String>) {
+    private fun validateSIDs(isDpop: Boolean, accessToken: String, isJwt: Boolean, useHybrid: Boolean, scopeList: List<String>, isCommunity: Boolean = false) {
         val hasContentScope = scopeList.contains("content")
         val hasLightningScope = scopeList.contains("lightning")
         val hasVisualforceScope = scopeList.contains("visualforce")
@@ -719,12 +768,23 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         val mainSid = getSensitiveValue(MAIN_SID).emptyIfPlaceholder()
         val uiSid = getSensitiveValue(UI_SID).emptyIfPlaceholder()
 
-        assertNotEmpty(contentDomain, shouldNotBeEmpty = hasContentScope && useHybrid, "Content domain")
-        assertNotEmpty(contentSid, shouldNotBeEmpty = hasContentScope && useHybrid, "Content SID")
-        assertNotEmpty(lightningDomain, shouldNotBeEmpty = hasLightningScope && useHybrid, "Lightning domain")
-        assertNotEmpty(lightningSid, shouldNotBeEmpty = hasLightningScope && useHybrid, "Lightning SID")
-        assertNotEmpty(vfDomain, shouldNotBeEmpty = hasVisualforceScope && useHybrid, "VF domain")
-        assertNotEmpty(vfSid, shouldNotBeEmpty = hasVisualforceScope && useHybrid, "VF SID")
+        // Community (Experience Cloud) logins never populate the content/Lightning/Visualforce
+        // domain+SID pairs, even when the corresponding scope is granted and the hybrid flow is
+        // used: these fields come straight from the token endpoint's content_domain/content_sid
+        // (and lightning_*/visualforce_*) response fields (see OAuth2.java), so an empty value
+        // here reflects what the community's token response actually contains, not an SDK bug.
+        // Confirmed against the test1 org community (ECA_OPAQUE, hybrid): content/lightning/VF
+        // domain and SID all empty, while mainSid (the field this flow actually relies on) was
+        // populated correctly. Matches iOS's prior finding of an empty Lightning domain/SID on
+        // community hybrid login (see tmp/dpop-community-investigation/).
+        val expectFeatureDomains = useHybrid && !isCommunity
+
+        assertNotEmpty(contentDomain, shouldNotBeEmpty = hasContentScope && expectFeatureDomains, "Content domain")
+        assertNotEmpty(contentSid, shouldNotBeEmpty = hasContentScope && expectFeatureDomains, "Content SID")
+        assertNotEmpty(lightningDomain, shouldNotBeEmpty = hasLightningScope && expectFeatureDomains, "Lightning domain")
+        assertNotEmpty(lightningSid, shouldNotBeEmpty = hasLightningScope && expectFeatureDomains, "Lightning SID")
+        assertNotEmpty(vfDomain, shouldNotBeEmpty = hasVisualforceScope && expectFeatureDomains, "VF domain")
+        assertNotEmpty(vfSid, shouldNotBeEmpty = hasVisualforceScope && expectFeatureDomains, "VF SID")
         assertNotEmpty(parentSid, shouldNotBeEmpty = isJwt && useHybrid, "Parent SID")
         assertNotEmpty(uiSid, shouldNotBeEmpty = isDpop && useHybrid, "UI SID")
 

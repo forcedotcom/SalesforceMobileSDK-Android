@@ -141,11 +141,17 @@ internal class TokenMigrationActivity : ComponentActivity() {
         viewModel.dpopOverride =
             if (intent.hasExtra(EXTRA_USE_DPOP)) intent.getBooleanExtra(EXTRA_USE_DPOP, false) else null
 
+        // Community users authorize and exchange the code against the account's community URL (its
+        // path prefix is part of the authorize endpoint), not the instance host. iOS reaches the
+        // same result differently: it builds both from the global login host preference, which
+        // only carries the community path when it is set to the community URL.
+        val migrationServer = user.communityUrl?.takeIf { it.isNotEmpty() } ?: user.instanceServer
+
         lifecycleScope.launch {
             val frontDoorUrl = withContext(IO) {
                 runCatching {
                     val authorizationPath = viewModel.generateMigrationAuthorizationPath(
-                        server = user.instanceServer,
+                        server = migrationServer,
                         migrationOAuthConfig = oAuthConfig,
                     )
                     val request = RestRequest.getRequestForSingleAccess(authorizationPath)
@@ -181,7 +187,7 @@ internal class TokenMigrationActivity : ComponentActivity() {
                     )
                 ) {
                     TokenMigrationView(
-                        webViewFactory = { buildAuthWebview(frontDoorUrl, resultCallback, user.instanceServer) }
+                        webViewFactory = { buildAuthWebview(frontDoorUrl, resultCallback, migrationServer) }
                     )
                 }
             }

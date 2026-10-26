@@ -26,6 +26,9 @@
  */
 package com.salesforce.androidsdk.ui
 
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
@@ -43,6 +46,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -53,6 +57,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -80,6 +85,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.browser.customtabs.CustomTabsService
+import androidx.core.net.toUri
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import com.salesforce.androidsdk.R
@@ -107,6 +114,20 @@ class LoginOptionsActivity: ComponentActivity() {
         SalesforceSDKManager.getInstance().useEphemeralSessionForAdvancedAuth,
     )
     val useDPoP = MutableLiveData(SalesforceSDKManager.getInstance().useDPoP)
+
+    // Debug authentication mode and Native Login configuration, saved as they are edited.
+    private val debugLoginSettings get() = SalesforceSDKManager.getInstance().debugLoginSettings
+    val authenticationMode = MutableLiveData(debugLoginSettings.mode)
+    val nativeLoginConfig = MutableLiveData(debugLoginSettings.config)
+
+    // The configured browser at creation time is offered as the "App default" option.
+    val customTabBrowser = MutableLiveData(SalesforceSDKManager.getInstance().customTabBrowser)
+    private val customTabBrowserOptions by lazy {
+        buildCustomTabBrowserOptions(
+            appDefaultPackage = customTabBrowser.value,
+            installedBrowsers = findCustomTabBrowsers(packageManager),
+        )
+    }
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Suppress("DEPRECATION")
@@ -150,6 +171,25 @@ class LoginOptionsActivity: ComponentActivity() {
             },
         )
 
+        customTabBrowser.observe(
+            /* owner = */ this,
+            Observer<String?> {
+                value -> SalesforceSDKManager.getInstance().customTabBrowser = value
+            },
+        )
+        authenticationMode.observe(
+            /* owner = */ this,
+            Observer<AuthenticationMode> {
+                value -> debugLoginSettings.mode = value
+            },
+        )
+        nativeLoginConfig.observe(
+            /* owner = */ this,
+            Observer<NativeLoginDebugConfig> {
+                value -> debugLoginSettings.config = value
+            },
+        )
+
         setContent {
             MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme()) {
                 Scaffold(
@@ -162,6 +202,7 @@ class LoginOptionsActivity: ComponentActivity() {
                         )
                     }
                 ) { innerPadding ->
+                    val mode by authenticationMode.observeAsState(initial = authenticationMode.value)
                     LoginOptionsScreen(
                         innerPadding,
                         useWebServer,
@@ -170,6 +211,31 @@ class LoginOptionsActivity: ComponentActivity() {
                         useEphemeralSessionForAdvancedAuth,
                         useDPoP,
                         SalesforceSDKManager.getInstance().debugOverrideAppConfig,
+                        customTabBrowserContent = {
+                            val selectedBrowser by customTabBrowser.observeAsState(initial = null)
+                            CustomTabBrowserSelector(
+                                options = customTabBrowserOptions,
+                                selectedPackage = selectedBrowser,
+                                onSelect = { customTabBrowser.value = it },
+                            )
+                        },
+                        // Apps with their own native login activity always use it.
+                        authenticationModeContent = if (debugLoginSettings.isAvailable) {
+                            {
+                                AuthenticationModeSection(
+                                    authenticationMode,
+                                    nativeLoginConfig,
+                                    onImport = { json ->
+                                        debugLoginSettings.apply(json)
+                                        authenticationMode.value = debugLoginSettings.mode
+                                        nativeLoginConfig.value = debugLoginSettings.config
+                                    },
+                                )
+                            }
+                        } else {
+                            null
+                        },
+                        showBrowserOptions = mode != AuthenticationMode.NATIVE,
                     )
                 }
             }
@@ -352,6 +418,9 @@ fun LoginOptionsScreen(
     overrideConfig: OAuthConfig?,
     bootConfig: BootConfig = BootConfig.getBootConfig(LocalContext.current),
     sdkManager: SalesforceSDKManager? = SalesforceSDKManager.getInstance(),
+    customTabBrowserContent: (@Composable () -> Unit)? = null,
+    authenticationModeContent: (@Composable () -> Unit)? = null,
+    showBrowserOptions: Boolean = true,
 ) {
     var useDynamicConfig by remember { mutableStateOf(overrideConfig != null) }
 
@@ -361,118 +430,270 @@ fun LoginOptionsScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
-        OptionToggle(
-            "Use Web Server Flow",
-            stringResource(R.string.sf__login_options_webserver_toggle_content_description),
-            useWebServer,
-        )
-        OptionToggle(
-            "Use Hybrid Auth Token",
-            stringResource(R.string.sf__login_options_hybrid_toggle_content_description),
-            useHybridToken,
-        )
-        OptionToggle(
-            "Force Advanced Authentication",
-            stringResource(R.string.sf__login_options_force_advanced_auth_toggle_content_description),
-            forceAdvancedAuth,
-        )
-        OptionToggle(
-            "Use Ephemeral Session",
-            stringResource(R.string.sf__login_options_ephemeral_session_toggle_content_description),
-            useEphemeralSessionForAdvancedAuth,
-        )
-        OptionToggle(
-            "Use DPoP",
-            stringResource(R.string.sf__login_options_dpop_toggle_content_description),
-            useDPoP,
-        )
-
-        HorizontalDivider()
-
-        Text(
-            text = "Boot Config File",
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(PADDING_SIZE.dp)
-        )
-
-        val scopes = bootConfig.oauthScopes ?: emptyArray<String>()
-        val bootConfigList = listOf(
-            "Consumer Key" to bootConfig.remoteAccessConsumerKey,
-            "Redirect URI" to bootConfig.oauthRedirectURI,
-            "Scopes" to scopes.joinToString(separator = ", "),
-        )
-        bootConfigList.forEach { (name, value) ->
-            BootConfigItem(name, value)
+        authenticationModeContent?.let {
+            it()
+            HorizontalDivider()
         }
 
-        HorizontalDivider()
-
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(PADDING_SIZE.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = "Override Boot Config",
-                modifier = Modifier.height( 50.dp).wrapContentHeight(align = Alignment.CenterVertically),
+        if (showBrowserOptions) {
+            OptionToggle(
+                "Use Web Server Flow",
+                stringResource(R.string.sf__login_options_webserver_toggle_content_description),
+                useWebServer,
             )
-            val dynamicConfigToggleDesc = stringResource(R.string.sf__login_options_dynamic_config_toggle_content_description)
-            Switch(
-                checked = useDynamicConfig,
-                onCheckedChange = {
-                    useDynamicConfig = it
-                    // Reset the stored value on uncheck so it is not used.
-                    if (!useDynamicConfig) {
-                        SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
-                    }
-                },
-                modifier = Modifier.clearAndSetSemantics {
-                    contentDescription = dynamicConfigToggleDesc
-                    toggleableState = ToggleableState(useDynamicConfig)
-                    role = Role.Switch
-                }
+            OptionToggle(
+                "Use Hybrid Auth Token",
+                stringResource(R.string.sf__login_options_hybrid_toggle_content_description),
+                useHybridToken,
             )
-        }
+            OptionToggle(
+                "Force Advanced Authentication",
+                stringResource(R.string.sf__login_options_force_advanced_auth_toggle_content_description),
+                forceAdvancedAuth,
+            )
+            OptionToggle(
+                "Use Ephemeral Session",
+                stringResource(R.string.sf__login_options_ephemeral_session_toggle_content_description),
+                useEphemeralSessionForAdvancedAuth,
+            )
+            OptionToggle(
+                "Use DPoP",
+                stringResource(R.string.sf__login_options_dpop_toggle_content_description),
+                useDPoP,
+            )
 
-        if (useDynamicConfig) {
-            BootConfigView(overrideConfig)
-        }
+            if (customTabBrowserContent != null) {
+                HorizontalDivider()
+                customTabBrowserContent()
+            }
 
-        // Welcome Discovery simulation editor: visible only when the launcher Activity flagged
-        // the process as UI-testing (and only in debug builds, enforced by the setter).
-        // Mirrors iOS' IS_UI_TESTING gate in LoginOptionsViewController.swift.
-        if (sdkManager?.isDebugBuild == true && sdkManager.isUiTesting) {
             HorizontalDivider()
 
-            var simulateDiscovery by remember {
-                mutableStateOf(sdkManager.simulatedDiscoveryResult != null)
+            Text(
+                text = "Boot Config File",
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(PADDING_SIZE.dp)
+            )
+
+            val scopes = bootConfig.oauthScopes ?: emptyArray<String>()
+            val bootConfigList = listOf(
+                "Consumer Key" to bootConfig.remoteAccessConsumerKey,
+                "Redirect URI" to bootConfig.oauthRedirectURI,
+                "Scopes" to scopes.joinToString(separator = ", "),
+            )
+            bootConfigList.forEach { (name, value) ->
+                BootConfigItem(name, value)
             }
+
+            HorizontalDivider()
+
             Row(
                 modifier = Modifier.fillMaxWidth().padding(PADDING_SIZE.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = stringResource(R.string.sf__login_options_discovery_simulate_title),
-                    modifier = Modifier.height(50.dp).wrapContentHeight(align = Alignment.CenterVertically),
+                    text = "Override Boot Config",
+                    modifier = Modifier.height( 50.dp).wrapContentHeight(align = Alignment.CenterVertically),
                 )
-                val toggleDesc = stringResource(R.string.sf__login_options_discovery_toggle_content_description)
+                val dynamicConfigToggleDesc = stringResource(R.string.sf__login_options_dynamic_config_toggle_content_description)
                 Switch(
-                    checked = simulateDiscovery,
+                    checked = useDynamicConfig,
                     onCheckedChange = {
-                        simulateDiscovery = it
-                        if (!simulateDiscovery) {
-                            sdkManager.simulatedDiscoveryResult = null
+                        useDynamicConfig = it
+                        // Reset the stored value on uncheck so it is not used.
+                        if (!useDynamicConfig) {
+                            SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
                         }
                     },
                     modifier = Modifier.clearAndSetSemantics {
-                        contentDescription = toggleDesc
-                        toggleableState = ToggleableState(simulateDiscovery)
+                        contentDescription = dynamicConfigToggleDesc
+                        toggleableState = ToggleableState(useDynamicConfig)
                         role = Role.Switch
                     }
                 )
             }
 
-            if (simulateDiscovery) {
-                DiscoveryResultEditor()
+            if (useDynamicConfig) {
+                BootConfigView(overrideConfig)
+            }
+
+            // Welcome Discovery simulation editor: visible only when the launcher Activity flagged
+            // the process as UI-testing (and only in debug builds, enforced by the setter).
+            // Mirrors iOS' IS_UI_TESTING gate in LoginOptionsViewController.swift.
+            if (sdkManager?.isDebugBuild == true && sdkManager.isUiTesting) {
+                HorizontalDivider()
+
+                var simulateDiscovery by remember {
+                    mutableStateOf(sdkManager.simulatedDiscoveryResult != null)
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(PADDING_SIZE.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = stringResource(R.string.sf__login_options_discovery_simulate_title),
+                        modifier = Modifier.height(50.dp).wrapContentHeight(align = Alignment.CenterVertically),
+                    )
+                    val toggleDesc = stringResource(R.string.sf__login_options_discovery_toggle_content_description)
+                    Switch(
+                        checked = simulateDiscovery,
+                        onCheckedChange = {
+                            simulateDiscovery = it
+                            if (!simulateDiscovery) {
+                                sdkManager.simulatedDiscoveryResult = null
+                            }
+                        },
+                        modifier = Modifier.clearAndSetSemantics {
+                            contentDescription = toggleDesc
+                            toggleableState = ToggleableState(simulateDiscovery)
+                            role = Role.Switch
+                        }
+                    )
+                }
+
+                if (simulateDiscovery) {
+                    DiscoveryResultEditor()
+                }
+            }
+        }
+    }
+}
+
+/** A browser installed on the device that supports Custom Tabs. */
+internal data class InstalledBrowser(val label: String, val packageName: String)
+
+internal enum class CustomTabBrowserOptionType { AppDefault, SystemDefault, Browser }
+
+/**
+ * A selectable row in the Custom Tab browser selector.  [packageName] is null only for
+ * [CustomTabBrowserOptionType.SystemDefault].  [installed] is false when the app default package
+ * was not found among the discovered browsers.
+ */
+internal data class CustomTabBrowserOption(
+    val type: CustomTabBrowserOptionType,
+    val packageName: String?,
+    val label: String? = null,
+    val installed: Boolean = true,
+)
+
+/**
+ * Builds the selector rows: the app default (omitted when null, as it would duplicate the system
+ * default), the system default, then the remaining installed browsers.
+ */
+internal fun buildCustomTabBrowserOptions(
+    appDefaultPackage: String?,
+    installedBrowsers: List<InstalledBrowser>,
+): List<CustomTabBrowserOption> = buildList {
+    if (appDefaultPackage != null) {
+        val match = installedBrowsers.firstOrNull { it.packageName == appDefaultPackage }
+        add(
+            CustomTabBrowserOption(
+                CustomTabBrowserOptionType.AppDefault,
+                appDefaultPackage,
+                match?.label,
+                installed = match != null,
+            )
+        )
+    }
+    add(CustomTabBrowserOption(CustomTabBrowserOptionType.SystemDefault, null))
+    installedBrowsers
+        .filter { it.packageName != appDefaultPackage }
+        .forEach { add(CustomTabBrowserOption(CustomTabBrowserOptionType.Browser, it.packageName, it.label)) }
+}
+
+/** Index of the row to show as selected for the current [selectedPackage]; -1 when none matches. */
+internal fun selectedCustomTabBrowserIndex(
+    options: List<CustomTabBrowserOption>,
+    selectedPackage: String?,
+): Int = options.indexOfFirst { it.packageName == selectedPackage }
+
+/**
+ * Finds installed browsers that handle https links and also expose a Custom Tabs service.
+ * Note: the app is responsible for package visibility (`<queries>`) on Android 11+.
+ */
+internal fun findCustomTabBrowsers(packageManager: PackageManager): List<InstalledBrowser> {
+    val viewIntent = Intent(Intent.ACTION_VIEW, "https://www.salesforce.com".toUri())
+        .addCategory(Intent.CATEGORY_BROWSABLE)
+    val serviceIntent = Intent(CustomTabsService.ACTION_CUSTOM_TABS_CONNECTION)
+
+    val customTabPackages: Set<String>
+    val browsers: List<InstalledBrowser>
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        customTabPackages = packageManager
+            .queryIntentServices(serviceIntent, PackageManager.ResolveInfoFlags.of(0))
+            .map { it.serviceInfo.packageName }.toSet()
+        browsers = packageManager
+            .queryIntentActivities(viewIntent, PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_ALL.toLong()))
+            .map { InstalledBrowser(it.loadLabel(packageManager).toString(), it.activityInfo.packageName) }
+    } else {
+        @Suppress("DEPRECATION")
+        customTabPackages = packageManager.queryIntentServices(serviceIntent, 0)
+            .map { it.serviceInfo.packageName }.toSet()
+        @Suppress("DEPRECATION")
+        browsers = packageManager.queryIntentActivities(viewIntent, PackageManager.MATCH_ALL)
+            .map { InstalledBrowser(it.loadLabel(packageManager).toString(), it.activityInfo.packageName) }
+    }
+
+    return browsers
+        .filter { it.packageName in customTabPackages }
+        .distinctBy { it.packageName }
+        .sortedBy { it.label.lowercase() }
+}
+
+@Composable
+internal fun CustomTabBrowserSelector(
+    options: List<CustomTabBrowserOption>,
+    selectedPackage: String?,
+    onSelect: (String?) -> Unit,
+) {
+    val selectedIndex = selectedCustomTabBrowserIndex(options, selectedPackage)
+    val noBrowsersVisible = options.none {
+        it.type == CustomTabBrowserOptionType.Browser ||
+            (it.type == CustomTabBrowserOptionType.AppDefault && it.installed)
+    }
+
+    Column {
+        Text(
+            text = stringResource(R.string.sf__login_options_custom_tab_browser_title),
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(PADDING_SIZE.dp),
+        )
+        if (noBrowsersVisible) {
+            Text(
+                text = stringResource(R.string.sf__login_options_custom_tab_browser_none_visible),
+                fontSize = TEXT_SIZE.sp,
+                color = colorScheme.onSecondaryContainer,
+                modifier = Modifier.padding(horizontal = PADDING_SIZE.dp),
+            )
+        }
+        options.forEachIndexed { index, option ->
+            val title = when (option.type) {
+                CustomTabBrowserOptionType.AppDefault -> stringResource(
+                    if (option.installed) R.string.sf__login_options_custom_tab_browser_app_default
+                    else R.string.sf__login_options_custom_tab_browser_app_default_not_found,
+                    option.packageName ?: "",
+                )
+                CustomTabBrowserOptionType.SystemDefault ->
+                    stringResource(R.string.sf__login_options_custom_tab_browser_system_default)
+                CustomTabBrowserOptionType.Browser -> stringResource(
+                    R.string.sf__login_options_custom_tab_browser_row,
+                    option.label ?: "",
+                    option.packageName ?: "",
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .selectable(
+                        selected = index == selectedIndex,
+                        onClick = { onSelect(option.packageName) },
+                        role = Role.RadioButton,
+                    )
+                    .padding(horizontal = PADDING_SIZE.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(selected = index == selectedIndex, onClick = null)
+                Text(text = title, modifier = Modifier.padding(PADDING_SIZE.dp))
             }
         }
     }

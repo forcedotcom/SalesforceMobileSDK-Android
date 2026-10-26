@@ -65,6 +65,18 @@ fun testECAOpaque_AllScopes() {
         loginAndValidate(knownAppConfig = ECA_OPAQUE, scopeSelection = ALL)
     }
 
+    // Login with ECA opaque using the hybrid auth token flow (explicit).
+    @Test
+    fun testECAOpaque_Hybrid() {
+        loginAndValidate(knownAppConfig = ECA_OPAQUE, useHybridAuthToken = true)
+    }
+
+    // Login with ECA opaque without the hybrid auth token flow.
+    @Test
+    fun testECAOpaque_NoHybrid() {
+        loginAndValidate(knownAppConfig = ECA_OPAQUE, useHybridAuthToken = false)
+    }
+
     // region ECA JWT Tests
 
     // Login with ECA JWT using default scopes and web server flow.
@@ -86,6 +98,12 @@ fun testECAJwt_AllScopes() {
     }
 
     // region ECA Pool Server Tests
+
+    // Login via the pool server with an opaque access token, without DPoP, and verify the session is valid.
+    @Test
+    fun testECAOpaque_ViaLoginPoolServer() {
+        loginAndValidate(knownAppConfig = ECA_OPAQUE, useLoginPoolHost = true)
+    }
 
     // Login via the pool server without DPoP and verify the session is valid.
     @Test
