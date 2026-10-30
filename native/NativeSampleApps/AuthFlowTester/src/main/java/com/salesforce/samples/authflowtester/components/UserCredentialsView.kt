@@ -39,7 +39,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -62,7 +61,6 @@ import com.salesforce.samples.authflowtester.USER_AGENT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.REQUEST_USER_AGENTS_CONTENT_DESC
 import com.salesforce.samples.authflowtester.REQUEST_USER_AGENT_CONTENT_DESC_PREFIX
 import com.salesforce.samples.authflowtester.INNER_CARD_PADDING
-import com.salesforce.samples.authflowtester.R
 import java.security.interfaces.ECPublicKey
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -140,6 +138,9 @@ private const val BEACON_CHILD_CONSUMER_SECRET = "Beacon Child Consumer Secret"
 private const val ADDITIONAL_OAUTH_FIELDS = "Additional OAuth Fields"
 private const val USER_AGENT_LABEL = "User Agent"
 const val REQUEST_USER_AGENTS = "Request User Agents"
+const val REQUEST_USER_AGENT_HIGH_WATER_SEQUENCE = "Request User Agent High Water Sequence"
+const val LAST_TOKEN_REQUEST_USER_AGENT = "Last Token Request User Agent"
+const val CAPTURED_TOKEN_REQUEST_COUNT = "Captured Token Request Count"
 const val REQUEST_USER_AGENT_HIGH_WATER_CONTENT_DESC = "request_capture_high_water"
 
 @Composable
@@ -240,24 +241,24 @@ fun UserCredentialsView(currentUser: UserAccount?) {
             )
             if (SalesforceSDKManager.getInstance().isUiTesting) {
                 InfoRowView(
-                    label = stringResource(R.string.sf__request_user_agent_high_water_sequence),
+                    label = REQUEST_USER_AGENT_HIGH_WATER_SEQUENCE,
                     value = highWaterSequence.toString(),
                     contentDescription = REQUEST_USER_AGENT_HIGH_WATER_CONTENT_DESC,
                 )
                 InfoRowView(
-                    label = stringResource(R.string.sf__last_token_request_user_agent),
+                    label = LAST_TOKEN_REQUEST_USER_AGENT,
                     value = lastTokenRequestUserAgent,
                     contentDescription = TOKEN_ENDPOINT_USER_AGENT_CONTENT_DESC,
                 )
                 InfoRowView(
-                    label = stringResource(R.string.sf__captured_token_request_count),
+                    label = CAPTURED_TOKEN_REQUEST_COUNT,
                     value = capturedTokenRequestCount.toString(),
                     contentDescription = TOKEN_ENDPOINT_REQUEST_COUNT_CONTENT_DESC,
                 )
                 if (capturedRequests.isNotEmpty()) {
                     Column(Modifier.padding(INNER_CARD_PADDING.dp)) {
                         Text(
-                            text = stringResource(R.string.sf__request_user_agents),
+                            text = REQUEST_USER_AGENTS,
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.semantics { contentDescription = REQUEST_USER_AGENTS_CONTENT_DESC },
                         )
@@ -308,7 +309,8 @@ private fun computeDpopThumbprint(credentialsIdentifier: String?): String {
     } ?: "Unavailable"
 }
 
-private fun generateCredentialsJSON(user: UserAccount?): String {
+@androidx.annotation.VisibleForTesting
+internal fun generateCredentialsJSON(user: UserAccount?): String {
     if (user == null) return "{}"
 
     try {

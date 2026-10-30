@@ -1472,7 +1472,7 @@ class AuthenticationUtilitiesTest {
         // Given
         val mockClientManager = mockk<ClientManager>(relaxed = true)
         setupMockSdkManager(clientManager = mockClientManager)
-        val mockRevokeRefreshToken = mockk<(HttpAccess, URI, String, OAuth2.LogoutReason) -> Unit>(relaxed = true)
+        val mockRevokeRefreshToken = mockk<(HttpAccess, URI, String, OAuth2.LogoutReason, UserAccount) -> Unit>(relaxed = true)
 
         val duplicateUser = buildTestUserAccount(
             refreshToken = "old_token",
@@ -1496,7 +1496,8 @@ class AuthenticationUtilitiesTest {
                 any(),
                 any(),
                 eq("old_token"),
-                eq(OAuth2.LogoutReason.REFRESH_TOKEN_ROTATED)
+                eq(OAuth2.LogoutReason.REFRESH_TOKEN_ROTATED),
+                eq(duplicateUser),
             )
         }
     }
@@ -1511,7 +1512,7 @@ class AuthenticationUtilitiesTest {
             clientManager = mockClientManager
         )
         setupBiometricEnabledPrefs(mockSdkManager)
-        val mockRevokeRefreshToken = mockk<(HttpAccess, URI, String, OAuth2.LogoutReason) -> Unit>(relaxed = true)
+        val mockRevokeRefreshToken = mockk<(HttpAccess, URI, String, OAuth2.LogoutReason, UserAccount) -> Unit>(relaxed = true)
 
         val duplicateUser = buildTestUserAccount(
             refreshToken = "old_token",
@@ -1535,7 +1536,8 @@ class AuthenticationUtilitiesTest {
                 any(),
                 any(),
                 eq("old_token"),
-                eq(OAuth2.LogoutReason.REFRESH_TOKEN_ROTATED)
+                eq(OAuth2.LogoutReason.REFRESH_TOKEN_ROTATED),
+                eq(duplicateUser),
             )
         }
     }

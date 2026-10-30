@@ -27,6 +27,7 @@
 package com.salesforce.samples.authflowtester
 
 import android.content.Context
+import android.util.Log
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess
@@ -44,14 +45,14 @@ class TokenRequestCapturingHttpAccess(context: Context) : HttpAccess(context, nu
         super.createNewClientBuilder().eventListenerFactory { call ->
             // Taken at call creation, not execution: queued calls belong to their original session.
             val enabled = SalesforceSDKManager.getInstance().isUiTesting
-            val ticket = captureStore.beginRequest(userKey(call.request().tag(UserAccount::class.java)))
+            val ticket = captureStore.beginRequest(userKey(call.request()))
             object : EventListener() {
                 override fun requestHeadersEnd(call: Call, request: Request) {
                     // Runs once per wire exchange, after all network interceptors (including
                     // RestClient's appended UserAgentInterceptor), also for retries/redirects.
                     captureStore.record(
                         request.url.encodedPath,
-                        userKey(request.tag(UserAccount::class.java)),
+                        userKey(request),
                         request.header(USER_AGENT_HEADER),
                         enabled && SalesforceSDKManager.getInstance().isUiTesting,
                         ticket,
@@ -82,9 +83,15 @@ class TokenRequestCapturingHttpAccess(context: Context) : HttpAccess(context, nu
             userKey(user)?.let(captureStore::retireUser)
         }
 
-        private fun userKey(user: UserAccount?): String? {
-            val orgId = user?.orgId
-            val userId = user?.userId
+        private fun userKey(request: Request): String? =
+            userKey(request.tag(UserAccount::class.java))
+                ?: request.tag(HttpAccess.RequestUserIdentity::class.java)?.let {
+                    userKey(it.orgId, it.userId)
+                }
+
+        private fun userKey(user: UserAccount?): String? = userKey(user?.orgId, user?.userId)
+
+        private fun userKey(orgId: String?, userId: String?): String? {
             return if (orgId.isNullOrBlank() || userId.isNullOrBlank()) null else "$orgId/$userId"
         }
     }
@@ -123,9 +130,11 @@ internal class RequestUserAgentCaptureStore {
         path: String?, userKey: String?, userAgent: String?, enabled: Boolean,
         ticket: RequestTicket = beginRequest(userKey),
     ) {
-        if (!enabled || path.isNullOrBlank() || userAgent.isNullOrBlank() ||
-            !CONTRACT_PATH.matches(path)
-        ) return
+        if (!enabled || path.isNullOrBlank() || userAgent.isNullOrBlank()) return
+        if (!CONTRACT_PATH.matches(path)) {
+            Log.d(TAG, "Ignoring request capture outside contract: $path")
+            return
+        }
         synchronized(lock) {
             val owner = userKey?.takeIf { it.isNotBlank() } ?: UNKNOWN_OWNER
             if (ticket.session != session || ticket.owner != owner ||
@@ -175,6 +184,7 @@ internal class RequestUserAgentCaptureStore {
     }
 
     companion object {
+        private const val TAG = "RequestUserAgentCapture"
         private const val CAPACITY = 200
         private const val UNKNOWN_OWNER = "unknown"
         private const val TOKEN_ENDPOINT_PATH = "/services/oauth2/token"

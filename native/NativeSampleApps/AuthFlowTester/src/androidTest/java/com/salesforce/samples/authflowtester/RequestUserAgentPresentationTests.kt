@@ -48,6 +48,11 @@ import android.os.Build
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.samples.authflowtester.components.UserCredentialsView
+import com.salesforce.samples.authflowtester.components.CAPTURED_TOKEN_REQUEST_COUNT
+import com.salesforce.samples.authflowtester.components.LAST_TOKEN_REQUEST_USER_AGENT
+import com.salesforce.samples.authflowtester.components.REQUEST_USER_AGENTS
+import com.salesforce.samples.authflowtester.components.REQUEST_USER_AGENT_HIGH_WATER_SEQUENCE
+import com.salesforce.samples.authflowtester.components.generateCredentialsJSON
 import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
 import okhttp3.Request
 import org.json.JSONObject
@@ -93,27 +98,17 @@ class RequestUserAgentPresentationTests {
         return request.header("User-Agent").orEmpty()
     }
 
-    private fun exportedOther(): JSONObject {
-        val method = Class.forName("com.salesforce.samples.authflowtester.components.UserCredentialsViewKt")
-            .getDeclaredMethod("generateCredentialsJSON", com.salesforce.androidsdk.accounts.UserAccount::class.java)
-        method.isAccessible = true
-        return JSONObject(method.invoke(null, user) as String).getJSONObject("Other")
-    }
+    private fun exportedOther(): JSONObject = JSONObject(generateCredentialsJSON(user)).getJSONObject("Other")
 
     @Test
-    fun test_givenCaptureLabels_whenRendered_thenAppStringResourcesAreUsed() {
+    fun test_givenCaptureLabels_whenRendered_thenStableLabelsAreUsed() {
         capture()
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
         val labels = listOf(
-            "sf__request_user_agent_high_water_sequence",
-            "sf__last_token_request_user_agent",
-            "sf__captured_token_request_count",
-            "sf__request_user_agents",
-        ).map { name ->
-            val id = context.resources.getIdentifier(name, "string", context.packageName)
-            assertTrue("Missing app string resource: $name", id != 0)
-            context.getString(id)
-        }
+            REQUEST_USER_AGENT_HIGH_WATER_SEQUENCE,
+            LAST_TOKEN_REQUEST_USER_AGENT,
+            CAPTURED_TOKEN_REQUEST_COUNT,
+            REQUEST_USER_AGENTS,
+        )
         compose.setContent { MaterialTheme { UserCredentialsView(user) } }
         compose.onNodeWithText("User Credentials").performClick()
         labels.take(3).forEach { compose.onNodeWithText("$it:").assertExists() }
@@ -149,7 +144,7 @@ class RequestUserAgentPresentationTests {
         compose.setContent { MaterialTheme { UserCredentialsView(user) } }
         compose.onNodeWithText("User Credentials").performClick()
         compose.onNodeWithContentDescription("request_user_agents").assertTextEquals(
-            InstrumentationRegistry.getInstrumentation().targetContext.getString(R.string.sf__request_user_agents)
+            REQUEST_USER_AGENTS
         )
         val seq = TokenRequestCapturingHttpAccess.capturedRequests.value.single().seq
         compose.onNodeWithContentDescription("request_user_agent_$seq")

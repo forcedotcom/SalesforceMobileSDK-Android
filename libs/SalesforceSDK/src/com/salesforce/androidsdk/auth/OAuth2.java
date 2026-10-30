@@ -518,7 +518,7 @@ public class OAuth2 {
     public static TokenEndpointResponse refreshAuthToken(HttpAccess httpAccessor, URI loginServer,
                                                          String clientId, String refreshToken,
                                                          Map<String,String> addlParams,
-                                                        @Nullable String credentialsIdentifier)
+                                                          @Nullable String credentialsIdentifier)
             throws OAuthFailedException, IOException {
         return refreshAuthToken(httpAccessor, loginServer, clientId, refreshToken, addlParams,
                 credentialsIdentifier, null);
@@ -671,9 +671,9 @@ public class OAuth2 {
      * @throws IOException See {@link IOException}.
      */
     public static IdServiceResponse callIdentityService(HttpAccess httpAccessor,
-                                                        String identityServiceIdUrl,
-                                                        String authToken,
-                                                        @Nullable String tokenType,
+                                                         String identityServiceIdUrl,
+                                                         String authToken,
+                                                         @Nullable String tokenType,
                                                          @Nullable String credentialsIdentifier)
             throws IOException {
         return callIdentityService(httpAccessor, identityServiceIdUrl, authToken, tokenType,

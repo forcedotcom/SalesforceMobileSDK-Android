@@ -31,6 +31,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RestrictTo;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -193,6 +194,7 @@ public class HttpAccess {
 
         private String userAgent;
         @Nullable private UserAccount user;
+        @Nullable private RequestUserIdentity userIdentity;
 
         public UserAgentInterceptor() {
             // Use this constructor to have the user agent computed for each call (falls back to current user)
@@ -206,15 +208,28 @@ public class HttpAccess {
             this.user = user;
         }
 
+        /** Internal constructor for RestClient requests that retain identity without credentials. */
+        @RestrictTo(RestrictTo.Scope.LIBRARY)
+        public UserAgentInterceptor(@Nullable RequestUserIdentity userIdentity) {
+            this.userIdentity = userIdentity;
+        }
+
         @Override
         public Response intercept(Chain chain) throws IOException {
             Request originalRequest = chain.request();
             final UserAccount requestUser = originalRequest.tag(UserAccount.class);
+            final RequestUserIdentity requestUserIdentity = originalRequest.tag(RequestUserIdentity.class);
             final String resolvedUserAgent;
             if (requestUser != null) {
                 resolvedUserAgent = SalesforceSDKManager.getInstance().getUserAgent("", requestUser);
+            } else if (requestUserIdentity != null) {
+                resolvedUserAgent = SalesforceSDKManager.getInstance().getUserAgentForIdentity(
+                        "", requestUserIdentity.orgId, requestUserIdentity.userId);
             } else if (userAgent != null) {
                 resolvedUserAgent = userAgent;
+            } else if (userIdentity != null) {
+                resolvedUserAgent = SalesforceSDKManager.getInstance().getUserAgentForIdentity(
+                        "", userIdentity.orgId, userIdentity.userId);
             } else {
                 resolvedUserAgent = SalesforceSDKManager.getInstance().getUserAgent("", user);
             }
@@ -222,6 +237,18 @@ public class HttpAccess {
                     .header(HttpAccess.USER_AGENT, resolvedUserAgent)
                     .build();
             return chain.proceed(requestWithUserAgent);
+        }
+    }
+
+    /** Lightweight identity tag for request attribution without constructing a UserAccount. */
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    public static final class RequestUserIdentity {
+        public final String orgId;
+        public final String userId;
+
+        public RequestUserIdentity(String orgId, String userId) {
+            this.orgId = orgId;
+            this.userId = userId;
         }
     }
 }

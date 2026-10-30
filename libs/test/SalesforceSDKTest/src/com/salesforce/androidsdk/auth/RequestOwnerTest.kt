@@ -69,7 +69,10 @@ class RequestOwnerTest {
         val request = restClient().buildRequest(RestRequest(RestRequest.RestMethod.GET, "/services/data/"))
 
         assertOwner(owner, request)
-        assertSame(request.tag(UserAccount::class.java), request.newBuilder().build().tag(UserAccount::class.java))
+        assertEquals(
+            request.tag(HttpAccess.RequestUserIdentity::class.java),
+            request.newBuilder().build().tag(HttpAccess.RequestUserIdentity::class.java),
+        )
     }
 
     @Test
@@ -120,10 +123,7 @@ class RequestOwnerTest {
     fun test_givenBoundOwner_whenFeaturesChange_thenUserAgentIsComputedForEachRequest() {
         val manager = SalesforceSDKManager.getInstance()
         var userAgent = "owner-features-before"
-        every { manager.getUserAgent("", any()) } answers {
-            val user = secondArg<UserAccount>()
-            assertEquals(owner.orgId, user.orgId)
-            assertEquals(owner.userId, user.userId)
+        every { manager.getUserAgent("", owner.orgId, owner.userId) } answers {
             userAgent
         }
         val client = restClient()
@@ -154,7 +154,7 @@ class RequestOwnerTest {
         val client = RestClient(RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null)
         val request = client.buildRequest(RestRequest(RestRequest.RestMethod.GET, "https://instance.example.com/"))
 
-        assertNull(request.tag(UserAccount::class.java))
+        assertNull(request.tag(HttpAccess.RequestUserIdentity::class.java))
         verify(exactly = 0) { users.getUserFromOrgAndUserId(any(), any()) }
     }
 
@@ -259,7 +259,7 @@ class RequestOwnerTest {
     }
 
     private fun assertOwner(expected: UserAccount, request: Request) {
-        val actual = request.tag(UserAccount::class.java)
+        val actual = request.tag(HttpAccess.RequestUserIdentity::class.java)
         assertEquals(expected.orgId, actual?.orgId)
         assertEquals(expected.userId, actual?.userId)
     }

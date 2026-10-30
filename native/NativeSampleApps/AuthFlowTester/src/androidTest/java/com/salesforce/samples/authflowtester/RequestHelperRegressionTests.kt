@@ -20,6 +20,10 @@ import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.RequestEndpointPaths
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
+import okhttp3.tls.HandshakeCertificates
+import okhttp3.tls.HeldCertificate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -66,7 +70,7 @@ class RequestHelperRegressionTests {
 
     @Test
     fun test_givenAuthenticationAddedAfterAudit_whenSent_thenMissingProofIsDetected() {
-        assertEquals(listOf("GET 127.0.0.1/services/data/v65.0/limits"), audit(proof = false))
+        assertEquals(listOf("GET localhost/services/data/v65.0/limits"), audit(proof = false))
     }
 
     @Test
@@ -88,26 +92,21 @@ class RequestHelperRegressionTests {
                 chain.proceed(authenticated.build())
             }
             .build()
-        // Exercise the registered interceptors in OkHttp's application-before-network order.
-        // The chain boundary is faked so this test needs neither org credentials nor cleartext
-        // network-policy exceptions. The real audit and the simulated authentication step run.
-        val interceptors = client.interceptors + client.networkInterceptors
-        fun proceed(index: Int, request: Request): okhttp3.Response {
-            if (index == interceptors.size) return okhttp3.Response.Builder()
-                .request(request).protocol(okhttp3.Protocol.HTTP_1_1).code(200).message("OK").build()
-            val chain = java.lang.reflect.Proxy.newProxyInstance(
-                okhttp3.Interceptor.Chain::class.java.classLoader,
-                arrayOf(okhttp3.Interceptor.Chain::class.java),
-            ) { _, method, args ->
-                when (method.name) {
-                    "request" -> request
-                    "proceed" -> proceed(index + 1, args[0] as Request)
-                    else -> error("Unexpected chain operation: ${method.name}")
-                }
-            } as okhttp3.Interceptor.Chain
-            return interceptors[index].intercept(chain)
+        val certificate = HeldCertificate.Builder().addSubjectAlternativeName("localhost").build()
+        val serverCertificates = HandshakeCertificates.Builder().heldCertificate(certificate).build()
+        val clientCertificates = HandshakeCertificates.Builder().addTrustedCertificate(certificate.certificate).build()
+        MockWebServer().use { server ->
+            server.useHttps(serverCertificates.sslSocketFactory(), false)
+            server.enqueue(MockResponse().setResponseCode(200))
+            server.start()
+            val secureClient = client.newBuilder()
+                .sslSocketFactory(clientCertificates.sslSocketFactory(), clientCertificates.trustManager)
+                .build()
+            assertEquals(200, secureClient.newCall(
+                Request.Builder().url(server.url("/services/data/v65.0/limits")).build(),
+            ).execute().use { it.code })
+            server.takeRequest()
         }
-        assertEquals(200, proceed(0, Request.Builder().url("https://127.0.0.1/services/data/v65.0/limits").build()).code)
         return violations.toList()
     }
 }

@@ -46,6 +46,7 @@ import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.ui.AuthenticationMode
 import com.salesforce.androidsdk.ui.components.LoginViewTestTags
 import com.salesforce.samples.authflowtester.AuthFlowTesterActivity
+import com.salesforce.samples.authflowtester.TokenRequestCapturingHttpAccess
 import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
 import com.salesforce.samples.authflowtester.components.ConcurrentRequestTestHooks
 import com.salesforce.samples.authflowtester.pageObjects.AuthorizationPageObject
@@ -469,6 +470,7 @@ abstract class AuthFlowTest {
             // SDK regenerates the OAuth URL and re-launches the Custom Tab on LoginActivity.onResume.
         }
 
+        val loginCaptureSince = TokenRequestCapturingHttpAccess.highWaterSequence.value
         if (useWelcomeDiscovery) {
             // Drive the flow through the SDK's server picker via Welcome Discovery URL.
             // The SDK's switchDefaultOrSalesforceWelcomeDiscoveryLogin path consumes the
@@ -550,6 +552,7 @@ abstract class AuthFlowTest {
             assertUsername = assertUsername,
         )
         app.validateOAuthValues(knownAppConfig, scopeSelection, useHybridAuthToken = useHybridAuthToken, isDpop = useDPoP, knownLoginHostConfig = knownLoginHostConfig)
+        assertUnaffiliatedIdentityUserAgent(loginCaptureSince)
         validateApiRequestAndSentUserAgent(accountFor(knownUserConfig, knownLoginHostConfig))
     }
 
@@ -1275,15 +1278,7 @@ abstract class AuthFlowTest {
         assertSentUserAgent(apiRequestPath(), user, since)
     }
 
-    /**
-     * Asserts exact owner, resolved endpoint path, sequence boundary, and final User-Agent.
-     *
-     * Unaffiliated identity coverage is deferred: identity fetch can reuse an existing account
-     * during re-login/migration, and its raw response idUrl is not necessarily the persisted
-     * instance-rewritten idUrl. A reliable assertion needs a fresh-identity login fixture plus
-     * that response URL/sequence boundary; do not infer it from the eventual user or weaken the
-     * contract to accept any unknown-owner identity capture.
-     */
+    /** Asserts exact owner, resolved endpoint path, sequence boundary, and final User-Agent. */
     fun assertSentUserAgent(path: String, user: UserAccount, since: Long) {
         val account = accountForUsername(user.username)
         val client = requireNotNull(com.salesforce.androidsdk.rest.ClientManager(
@@ -1300,6 +1295,20 @@ abstract class AuthFlowTest {
         assertTrue(
             "No exact request User-Agent match for path=$expectedPath owner=$key seq>$since expected=$expected; captured=$entries",
             entries.any { it.seq > since && it.path == expectedPath && it.userKey == key && it.userAgent == expected },
+        )
+    }
+
+    private fun assertUnaffiliatedIdentityUserAgent(since: Long) {
+        val expectedPrefix = SalesforceSDKManager.getInstance().getUserAgent(
+            "", SalesforceSDKManager.getInstance().userAccountManager.currentUser,
+        ).substringBefore(" ftr_")
+        val entries = app.getCapturedRequestUserAgents()
+        assertTrue(
+            "No unaffiliated identity request User-Agent match after seq=$since prefix=$expectedPrefix; captured=$entries",
+            entries.any {
+                it.seq > since && it.path.startsWith("/id/") && it.userKey == "unknown" &&
+                    it.userAgent.substringBefore(" ftr_") == expectedPrefix
+            },
         )
     }
 
