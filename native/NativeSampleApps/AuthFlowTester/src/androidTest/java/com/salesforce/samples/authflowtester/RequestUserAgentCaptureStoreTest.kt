@@ -60,12 +60,12 @@ class RequestUserAgentCaptureStoreTest {
     @Test
     fun test_givenCompleteObservations_whenCaptured_thenOnlyContractFieldsArePublished() {
         val store = Store()
-        listOf(TOKEN, "/services/oauth2/revoke", REST, "/id/org/user",
-            "/community/services/oauth2/token", "/community/id/org/user").forEach {
+        listOf(TOKEN, "/services/oauth2/revoke", VERSIONS, REST, "/id/org/user",
+            "/community/services/oauth2/token", "/community$VERSIONS", "/community/id/org/user").forEach {
             store.record(it, null, "final-agent")
         }
-        assertEquals(6, store.entries.size)
-        assertEquals((1L..6L).toList(), store.entries.map { it["seq"] })
+        assertEquals(8, store.entries.size)
+        assertEquals((1L..8L).toList(), store.entries.map { it["seq"] })
         store.entries.forEach {
             assertEquals(setOf("path", "userKey", "userAgent", "seq"), it.keys)
             assertEquals("unknown", it["userKey"])
@@ -223,6 +223,7 @@ class RequestUserAgentCaptureStoreTest {
 
     companion object {
         private const val TOKEN = "/services/oauth2/token"
+        private const val VERSIONS = "/services/data/"
         private const val REST = "/services/data/v67.0/sobjects"
     }
 }

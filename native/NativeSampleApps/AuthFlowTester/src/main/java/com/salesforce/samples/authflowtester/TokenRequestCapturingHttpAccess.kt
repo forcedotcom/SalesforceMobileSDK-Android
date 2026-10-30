@@ -190,7 +190,7 @@ internal class RequestUserAgentCaptureStore {
         private const val TOKEN_ENDPOINT_PATH = "/services/oauth2/token"
         // A trailing-slash community base produces an empty prefix segment on the wire.
         private val CONTRACT_PATH = Regex(
-            "^/(?:[^/?#]*/)*(?:services/oauth2/(?:token|revoke)|services/data/[^?#]+|id/[^/?#]+/[^/?#]+)$"
+            "^/(?:[^/?#]*/)*(?:services/oauth2/(?:token|revoke)|services/data/(?:[^?#]+)?|id/[^/?#]+/[^/?#]+)$"
         )
     }
 }
