@@ -123,7 +123,7 @@ class RequestOwnerTest {
     fun test_givenBoundOwner_whenFeaturesChange_thenUserAgentIsComputedForEachRequest() {
         val manager = SalesforceSDKManager.getInstance()
         var userAgent = "owner-features-before"
-        every { manager.getUserAgent("", owner.orgId, owner.userId) } answers {
+        every { manager.getUserAgentForIdentity("", owner.orgId, owner.userId) } answers {
             userAgent
         }
         val client = restClient()

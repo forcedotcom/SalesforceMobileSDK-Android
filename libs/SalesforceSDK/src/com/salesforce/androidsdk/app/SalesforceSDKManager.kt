@@ -1566,8 +1566,7 @@ open class SalesforceSDKManager protected constructor(
      * side effects such as registering SDK features.
      */
     @RestrictTo(RestrictTo.Scope.LIBRARY)
-    @JvmName("getUserAgentForIdentity")
-    internal fun getUserAgent(qualifier: String, orgId: String?, userId: String?): String {
+    open fun getUserAgentForIdentity(qualifier: String, orgId: String?, userId: String?): String {
         val userKey = if (orgId.isNullOrBlank() || userId.isNullOrBlank()) null else "$orgId/$userId"
         return buildUserAgent(qualifier, userKey)
     }
