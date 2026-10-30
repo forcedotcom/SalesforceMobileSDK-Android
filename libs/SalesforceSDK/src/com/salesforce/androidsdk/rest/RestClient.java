@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.rest;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountBuilder;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.dpop.DPoPRequestDecorator;
@@ -268,10 +269,7 @@ public class RestClient {
             okHttpClientBuilder = httpAccessor.createNewClientBuilder();
             if (!cacheKey.equals("unauthenticated")) {
                 okHttpClientBuilder.addInterceptor(getOAuthRefreshInterceptor());
-                final UserAccount user = SalesforceSDKManager.getInstance()
-                        .getUserAccountManager()
-                        .getUserFromOrgAndUserId(clientInfo.orgId, clientInfo.userId);
-                okHttpClientBuilder.addNetworkInterceptor(new HttpAccess.UserAgentInterceptor(user));
+                okHttpClientBuilder.addNetworkInterceptor(new HttpAccess.UserAgentInterceptor(clientInfo.getRequestOwner()));
             }
 
             OK_CLIENT_BUILDERS.put(getCacheKey(), okHttpClientBuilder);
@@ -410,13 +408,15 @@ public class RestClient {
      * @return The HTTP request
      */
     public Request buildRequest(RestRequest restRequest) {
-        final URI uri = oAuthRefreshInterceptor.clientInfo.resolveUrl(restRequest);
+        final ClientInfo requestClientInfo = getClientInfo();
+        final URI uri = requestClientInfo.resolveUrl(restRequest);
         if (uri == null) return null;
         final HttpUrl url = HttpUrl.get(uri);
         if (url == null) return null;
         final Request.Builder builder = new Request.Builder()
                 .url(url)
                 .method(restRequest.getMethod().toString(), restRequest.getRequestBody());
+        builder.tag(UserAccount.class, requestClientInfo.getRequestOwner());
 
         // Adding additional headers
         final Map<String, String> additionalHttpHeaders = restRequest.getAdditionalHttpHeaders();
@@ -508,6 +508,9 @@ public class RestClient {
      */
     public static class ClientInfo {
 
+        // Attribution needs only identity, not a live account or credentials. Keeping this with
+        // ClientInfo also follows Login As and preserves ownership after account removal.
+        private UserAccount requestOwner;
         public final URI instanceUrl;
         public final URI loginUrl;
         public final URI identityUrl;
@@ -589,6 +592,16 @@ public class RestClient {
             this.contentDomain = contentDomain;
             this.contentSid = contentSid;
             this.csrfToken = csrfToken;
+        }
+
+        private synchronized UserAccount getRequestOwner() {
+            // UserAccount construction registers SDK features, so keep ClientInfo usable before
+            // SDK initialization by creating this credential-free snapshot only for client use.
+            if (requestOwner == null && orgId != null && !orgId.trim().isEmpty()
+                    && userId != null && !userId.trim().isEmpty()) {
+                requestOwner = UserAccountBuilder.getInstance().orgId(orgId).userId(userId).build();
+            }
+            return requestOwner;
         }
 
         /**

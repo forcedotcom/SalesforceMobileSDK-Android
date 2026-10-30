@@ -781,6 +781,10 @@ private suspend fun fetchIdentityForAuthentication(
         response.authToken,
         response.tokenType,
         response.credentialsIdentifier,
+        if (response.orgId != null && response.userId != null) {
+            SalesforceSDKManager.getInstance().userAccountManager
+                .getUserFromOrgAndUserId(response.orgId, response.userId)
+        } else null,
     )
 }
 
@@ -997,7 +1001,7 @@ internal fun handleDuplicateUserAccount(
     userAccountManager: UserAccountManager,
     account: UserAccount,
     userIdentity: OAuth2.IdServiceResponse?,
-    revokeRefreshToken: (HttpAccess, URI, String, OAuth2.LogoutReason) -> Unit = OAuth2::revokeRefreshToken,
+    revokeRefreshToken: ((HttpAccess, URI, String, OAuth2.LogoutReason) -> Unit)? = null,
 ) {
     userAccountManager.authenticatedUsers?.let { existingUsers ->
         // Check if the user already exists
@@ -1024,12 +1028,22 @@ internal fun handleDuplicateUserAccount(
                                 as? BiometricAuthenticationManager)?.onUnlock()
                     }
                     CoroutineScope(IO).launch {
-                        revokeRefreshToken(
-                            HttpAccess.DEFAULT,
-                            uri,
-                            duplicateUserAccount.refreshTokenForPersistence,
-                            OAuth2.LogoutReason.REFRESH_TOKEN_ROTATED,
-                        )
+                        if (revokeRefreshToken != null) {
+                            revokeRefreshToken(
+                                HttpAccess.DEFAULT,
+                                uri,
+                                duplicateUserAccount.refreshTokenForPersistence,
+                                OAuth2.LogoutReason.REFRESH_TOKEN_ROTATED,
+                            )
+                        } else {
+                            OAuth2.revokeRefreshToken(
+                                HttpAccess.DEFAULT,
+                                uri,
+                                duplicateUserAccount.refreshTokenForPersistence,
+                                OAuth2.LogoutReason.REFRESH_TOKEN_ROTATED,
+                                duplicateUserAccount,
+                            )
+                        }
                     }
                 }
             }

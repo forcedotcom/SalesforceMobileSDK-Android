@@ -1352,6 +1352,7 @@ open class SalesforceSDKManager protected constructor(
                         URI(loginServer),
                         refreshToken,
                         logoutReason,
+                        userAccount,
                     )
                 }.onFailure { error ->
                     w(TAG, "Revoking token failed", error)

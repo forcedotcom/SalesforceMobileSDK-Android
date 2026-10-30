@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- UI-test request capture diagnostics. JSON keys and content descriptions stay stable. -->
+    <string name="sf__request_user_agent_high_water_sequence">Request User Agent High Water Sequence</string>
+    <string name="sf__last_token_request_user_agent">Last Token Request User Agent</string>
+    <string name="sf__captured_token_request_count">Captured Token Request Count</string>
+    <string name="sf__request_user_agents">Request User Agents</string>
+</resources>

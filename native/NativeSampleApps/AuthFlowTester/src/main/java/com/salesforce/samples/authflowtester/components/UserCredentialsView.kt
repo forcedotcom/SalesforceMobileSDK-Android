@@ -29,6 +29,9 @@ package com.salesforce.samples.authflowtester.components
 
 import android.content.res.Configuration
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -36,6 +39,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -51,12 +59,18 @@ import com.salesforce.samples.authflowtester.TOKEN_ENDPOINT_USER_AGENT_CONTENT_D
 import com.salesforce.samples.authflowtester.TOKEN_ENDPOINT_REQUEST_COUNT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.TokenRequestCapturingHttpAccess
 import com.salesforce.samples.authflowtester.USER_AGENT_CONTENT_DESC
+import com.salesforce.samples.authflowtester.REQUEST_USER_AGENTS_CONTENT_DESC
+import com.salesforce.samples.authflowtester.REQUEST_USER_AGENT_CONTENT_DESC_PREFIX
+import com.salesforce.samples.authflowtester.INNER_CARD_PADDING
+import com.salesforce.samples.authflowtester.R
 import java.security.interfaces.ECPublicKey
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
+import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.addJsonObject
 
 private const val CARD_TITLE = "User Credentials"
 
@@ -125,9 +139,13 @@ private const val BEACON_CHILD_CONSUMER_SECRET = "Beacon Child Consumer Secret"
 // Other fields
 private const val ADDITIONAL_OAUTH_FIELDS = "Additional OAuth Fields"
 private const val USER_AGENT_LABEL = "User Agent"
+const val REQUEST_USER_AGENTS = "Request User Agents"
+const val REQUEST_USER_AGENT_HIGH_WATER_CONTENT_DESC = "request_capture_high_water"
 
 @Composable
 fun UserCredentialsView(currentUser: UserAccount?) {
+    val capturedRequests by TokenRequestCapturingHttpAccess.capturedRequests.collectAsState()
+    val highWaterSequence by TokenRequestCapturingHttpAccess.highWaterSequence.collectAsState()
     val lastTokenRequestUserAgent by TokenRequestCapturingHttpAccess
         .lastTokenRequestUserAgent
         .collectAsState()
@@ -222,15 +240,37 @@ fun UserCredentialsView(currentUser: UserAccount?) {
             )
             if (SalesforceSDKManager.getInstance().isUiTesting) {
                 InfoRowView(
-                    label = "Last Token Request User Agent",
+                    label = stringResource(R.string.sf__request_user_agent_high_water_sequence),
+                    value = highWaterSequence.toString(),
+                    contentDescription = REQUEST_USER_AGENT_HIGH_WATER_CONTENT_DESC,
+                )
+                InfoRowView(
+                    label = stringResource(R.string.sf__last_token_request_user_agent),
                     value = lastTokenRequestUserAgent,
                     contentDescription = TOKEN_ENDPOINT_USER_AGENT_CONTENT_DESC,
                 )
                 InfoRowView(
-                    label = "Captured Token Request Count",
+                    label = stringResource(R.string.sf__captured_token_request_count),
                     value = capturedTokenRequestCount.toString(),
                     contentDescription = TOKEN_ENDPOINT_REQUEST_COUNT_CONTENT_DESC,
                 )
+                if (capturedRequests.isNotEmpty()) {
+                    Column(Modifier.padding(INNER_CARD_PADDING.dp)) {
+                        Text(
+                            text = stringResource(R.string.sf__request_user_agents),
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.semantics { contentDescription = REQUEST_USER_AGENTS_CONTENT_DESC },
+                        )
+                        capturedRequests.forEach { entry ->
+                            Text(
+                                text = "${entry.path} · ${entry.userKey} · ${entry.userAgent}",
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(vertical = (INNER_CARD_PADDING / 4).dp)
+                                    .semantics { contentDescription = REQUEST_USER_AGENT_CONTENT_DESC_PREFIX + entry.seq },
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -344,6 +384,21 @@ private fun generateCredentialsJSON(user: UserAccount?): String {
             putJsonObject(OTHER) {
                 put(ADDITIONAL_OAUTH_FIELDS, formatAdditionalOAuthFields(user))
                 put(USER_AGENT_LABEL, getUserAgentString(user))
+                if (SalesforceSDKManager.getInstance().isUiTesting) {
+                    val entries = TokenRequestCapturingHttpAccess.capturedRequests.value
+                    if (entries.isNotEmpty()) {
+                        putJsonArray(REQUEST_USER_AGENTS) {
+                            entries.forEach { entry ->
+                                addJsonObject {
+                                    put("path", entry.path)
+                                    put("userKey", entry.userKey)
+                                    put("userAgent", entry.userAgent)
+                                    put("seq", entry.seq)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
