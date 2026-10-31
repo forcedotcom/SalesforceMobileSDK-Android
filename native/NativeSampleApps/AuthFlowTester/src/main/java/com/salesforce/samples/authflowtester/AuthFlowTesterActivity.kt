@@ -177,6 +177,8 @@ const val SCROLL_CONTAINER_CONTENT_DESC = "scroll_container"
 const val USER_AGENT_CONTENT_DESC = "user_agent"
 const val TOKEN_ENDPOINT_USER_AGENT_CONTENT_DESC = "token_endpoint_user_agent"
 const val TOKEN_ENDPOINT_REQUEST_COUNT_CONTENT_DESC = "token_endpoint_request_count"
+const val REQUEST_USER_AGENTS_CONTENT_DESC = "request_user_agents"
+const val REQUEST_USER_AGENT_CONTENT_DESC_PREFIX = "request_user_agent_"
 
 class AuthFlowTesterActivity : SalesforceActivity() {
     private var client: RestClient? = null
@@ -192,6 +194,7 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         // SalesforceActivity builds its RestClient during onResume, after this method completes,
         // so UI-test mode is known before any auth request can use the replacement HTTP client.
         if (sdkManager.isUiTesting) {
+            TokenRequestCapturingHttpAccess.reset()
             HttpAccess.DEFAULT = TokenRequestCapturingHttpAccess(applicationContext)
         }
 
@@ -270,8 +273,21 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         // Set current user when it changes to update UI.
         DisposableEffect(Unit) {
             val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+            var knownUsers = UserAccountManager.getInstance().authenticatedUsers.orEmpty()
             val receiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
+                    if (SalesforceSDKManager.getInstance().isUiTesting) {
+                        val users = UserAccountManager.getInstance().authenticatedUsers.orEmpty()
+                        if (intent.action == SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION) {
+                            knownUsers.filter { previous -> users.none { it == previous } }
+                                .forEach(TokenRequestCapturingHttpAccess::retireUser)
+                            knownUsers = users
+                        } else if (intent.action == UserAccountManager.USER_SWITCH_INTENT_ACTION) {
+                            users.filter { user -> knownUsers.none { it == user } }
+                                .forEach(TokenRequestCapturingHttpAccess::userLoggedIn)
+                            knownUsers = (knownUsers + users).distinct()
+                        }
+                    }
                     if (intent.action == SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION) showLogoutDialog = false
                     with(UserAccountManager.getInstance()) {
                         this.currentUser?.let {

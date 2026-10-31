@@ -893,7 +893,7 @@ class SalesforceSDKManagerTests {
 
         verify(exactly = 0) { fixture.accountManager.removeAccountExplicitly(any()) }
         verify(exactly = 0) { PushMessaging.unregisterForLogout(any(), any(), any()) }
-        verify(exactly = 0) { OAuth2.revokeRefreshToken(any(), any(), any(), any()) }
+        verify(exactly = 0) { OAuth2.revokeRefreshToken(any(), any(), any(), any(), any()) }
         assertTrue(fixture.sdkManager.cleanedUsers.isEmpty())
         assertFalse(fixture.sdkManager.isLoggingOut)
     }
@@ -909,7 +909,7 @@ class SalesforceSDKManagerTests {
             fixture.accountManager.removeAccountExplicitly(fixture.account)
         }
         verify(exactly = 0) { PushMessaging.unregisterForLogout(any(), any(), any()) }
-        verify(exactly = 0) { OAuth2.revokeRefreshToken(any(), any(), any(), any()) }
+        verify(exactly = 0) { OAuth2.revokeRefreshToken(any(), any(), any(), any(), any()) }
         verify(exactly = 1) {
             fixture.userAccountManager.clearStoredCurrentUserInfo()
         }
@@ -956,7 +956,7 @@ class SalesforceSDKManagerTests {
         }
         verifyPersistedCredentialsCleared(fixture)
         verify(exactly = 0) { PushMessaging.unregisterForLogout(any(), any(), any()) }
-        verify(exactly = 0) { OAuth2.revokeRefreshToken(any(), any(), any(), any()) }
+        verify(exactly = 0) { OAuth2.revokeRefreshToken(any(), any(), any(), any(), any()) }
         assertEquals(1, fixture.sdkManager.cleanedUsers.size)
         assertTrue(logoutReported.get())
         assertFalse(fixture.sdkManager.isLoggingOut)
@@ -1017,7 +1017,7 @@ class SalesforceSDKManagerTests {
                 null,
             )
         }
-        verify(exactly = 0) { OAuth2.revokeRefreshToken(any(), any(), any(), any()) }
+        verify(exactly = 0) { OAuth2.revokeRefreshToken(any(), any(), any(), any(), any()) }
         assertEquals(listOf(fixture.user), fixture.sdkManager.cleanedUsers)
         assertTrue(logoutReported.get())
         assertFalse(fixture.sdkManager.isLoggingOut)
@@ -1037,6 +1037,7 @@ class SalesforceSDKManagerTests {
                 URI("https://login.example.com"),
                 "refresh-token-user",
                 USER_LOGOUT,
+                fixture.user,
             )
         }
     }
@@ -1074,7 +1075,7 @@ class SalesforceSDKManagerTests {
             fixture.accountManager.removeAccountExplicitly(fixture.account)
         }
         verify(exactly = 0) {
-            OAuth2.revokeRefreshToken(any(), any(), any(), any())
+            OAuth2.revokeRefreshToken(any(), any(), any(), any(), any())
         }
         assertFalse(fixture.sdkManager.isLoggingOut(fixture.account))
     }
@@ -1107,6 +1108,7 @@ class SalesforceSDKManagerTests {
                 URI("https://login.example.com"),
                 "refresh-token-user",
                 USER_LOGOUT,
+                fixture.user,
             )
         }
         assertEquals(listOf(fixture.user), fixture.sdkManager.cleanedUsers)
@@ -2050,7 +2052,7 @@ class SalesforceSDKManagerTests {
         // OAuth2 also has a static initializer that must run before MockK retransformation.
         OAuth2.TIMESTAMP_FORMAT
         mockkStatic(OAuth2::class)
-        every { OAuth2.revokeRefreshToken(any(), any(), any(), any()) } answers {
+        every { OAuth2.revokeRefreshToken(any(), any(), any(), any(), any()) } answers {
             revocationCompleted.countDown()
         }
         mockkStatic(CookieManager::class)

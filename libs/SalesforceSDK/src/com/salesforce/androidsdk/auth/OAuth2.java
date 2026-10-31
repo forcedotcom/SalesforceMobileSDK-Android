@@ -593,7 +593,15 @@ public class OAuth2 {
      * @param reason The reason the refresh token is being revoked.
      */
     public static void revokeRefreshToken(HttpAccess httpAccessor, URI loginServer, String refreshToken, LogoutReason reason) {
-        final Request request = buildRevokeRefreshTokenRequest(loginServer, refreshToken, reason);
+        revokeRefreshToken(httpAccessor, loginServer, refreshToken, reason, null);
+    }
+
+    /** Internal revoke path for callers that already know the request-owning account. */
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    public static void revokeRefreshToken(HttpAccess httpAccessor, URI loginServer, String refreshToken,
+                                          LogoutReason reason, @Nullable UserAccount userAccount) {
+        final Request request = buildRevokeRefreshTokenRequest(loginServer, refreshToken, reason)
+                .newBuilder().tag(UserAccount.class, userAccount).build();
         try {
             httpAccessor.getOkHttpClient().newCall(request).execute();
         } catch (IOException e) {
@@ -663,12 +671,26 @@ public class OAuth2 {
      * @throws IOException See {@link IOException}.
      */
     public static IdServiceResponse callIdentityService(HttpAccess httpAccessor,
+                                                         String identityServiceIdUrl,
+                                                         String authToken,
+                                                         @Nullable String tokenType,
+                                                         @Nullable String credentialsIdentifier)
+            throws IOException {
+        return callIdentityService(httpAccessor, identityServiceIdUrl, authToken, tokenType,
+                credentialsIdentifier, null);
+    }
+
+    /** Internal identity path for callers that already know the request-owning account. */
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    public static IdServiceResponse callIdentityService(HttpAccess httpAccessor,
                                                         String identityServiceIdUrl,
                                                         String authToken,
                                                         @Nullable String tokenType,
-                                                        @Nullable String credentialsIdentifier)
+                                                        @Nullable String credentialsIdentifier,
+                                                        @Nullable UserAccount userAccount)
             throws IOException {
         final Request.Builder builder = new Request.Builder().url(identityServiceIdUrl).get();
+        builder.tag(UserAccount.class, userAccount);
         addAuthorizationHeader(builder, authToken, tokenType);
         DPoPRequestDecorator.INSTANCE.attachProof(builder, credentialsIdentifier, tokenType, authToken);
         final Request request = builder.build();

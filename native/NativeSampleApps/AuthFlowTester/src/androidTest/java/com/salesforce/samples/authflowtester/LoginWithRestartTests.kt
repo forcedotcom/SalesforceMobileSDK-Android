@@ -209,11 +209,11 @@ class LoginWithRestartTests : AuthFlowTest() {
 
         // Verify and switch to user A (ECA_OPAQUE — no JWT)
         switchToUserAndValidateUser(user, isJwt = false)
-        app.validateApiRequest()
+        validateApiRequestAndSentUserAgent(accountFor(user))
 
         // Verify and switch to user B (ECA_JWT — issues JWT)
         switchToUserAndValidateUser(otherUser, isJwt = true)
-        app.validateApiRequest()
+        validateApiRequestAndSentUserAgent(accountFor(otherUser))
     }
 
 }
