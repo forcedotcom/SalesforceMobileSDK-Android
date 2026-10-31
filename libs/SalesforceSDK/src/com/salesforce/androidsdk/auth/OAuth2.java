@@ -518,7 +518,7 @@ public class OAuth2 {
     public static TokenEndpointResponse refreshAuthToken(HttpAccess httpAccessor, URI loginServer,
                                                          String clientId, String refreshToken,
                                                          Map<String,String> addlParams,
-                                                          @Nullable String credentialsIdentifier)
+                                                         @Nullable String credentialsIdentifier)
             throws OAuthFailedException, IOException {
         return refreshAuthToken(httpAccessor, loginServer, clientId, refreshToken, addlParams,
                 credentialsIdentifier, null);

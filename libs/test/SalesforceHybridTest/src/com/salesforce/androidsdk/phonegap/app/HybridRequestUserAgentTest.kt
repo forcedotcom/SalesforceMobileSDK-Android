@@ -16,18 +16,25 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.config.BootConfig
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import okhttp3.Interceptor
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.lang.reflect.Proxy
 
 @RunWith(AndroidJUnit4::class)
 class HybridRequestUserAgentTest {
+    @After
+    fun tearDown() = unmockkAll()
+
     @Test
     fun test_givenIdentityTaggedRequest_whenHybridIsLocal_thenUserAgentContainsLocalQualifier() =
         assertIdentityUserAgent(local = true, qualifier = "HybridLocal")
@@ -38,33 +45,23 @@ class HybridRequestUserAgentTest {
 
     private fun assertIdentityUserAgent(local: Boolean, qualifier: String) {
         val context = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext
-        val config = BootConfig.getBootConfig(context)
-        val localField = BootConfig::class.java.getDeclaredField("isLocal").apply { isAccessible = true }
-        val originalLocal = localField.getBoolean(config)
-        try {
-            localField.setBoolean(config, local)
-            val request = Request.Builder().url("https://example.invalid/services/data/")
-                .tag(HttpAccess.RequestUserIdentity::class.java, HttpAccess.RequestUserIdentity("org", "user"))
-                .build()
-            val chain = Proxy.newProxyInstance(
-                Interceptor.Chain::class.java.classLoader,
-                arrayOf(Interceptor.Chain::class.java),
-            ) { _, method, args ->
-                when (method.name) {
-                    "request" -> request
-                    "proceed" -> {
-                        val decorated = args!![0] as Request
-                        assertTrue(decorated.header("User-Agent")!!.contains(" $qualifier uid_"))
-                        Response.Builder().request(decorated).protocol(Protocol.HTTP_1_1).code(200)
-                            .message("OK").body("".toResponseBody()).build()
-                    }
-                    else -> error("Unexpected Interceptor.Chain method: ${method.name}")
-                }
-            } as Interceptor.Chain
-
-            HttpAccess.UserAgentInterceptor().intercept(chain).close()
-        } finally {
-            localField.setBoolean(config, originalLocal)
+        mockkStatic(BootConfig::class)
+        every { BootConfig.getBootConfig(any()) } returns mockk {
+            every { isLocal() } returns local
         }
+        val request = Request.Builder().url("https://example.invalid/services/data/")
+            .tag(HttpAccess.RequestUserIdentity::class.java, HttpAccess.RequestUserIdentity("org", "user"))
+            .build()
+        val chain = mockk<Interceptor.Chain> {
+            every { this@mockk.request() } returns request
+            every { proceed(any()) } answers {
+                val decorated = args[0] as Request
+                assertTrue(decorated.header("User-Agent")!!.contains(" $qualifier uid_"))
+                Response.Builder().request(decorated).protocol(Protocol.HTTP_1_1).code(200)
+                    .message("OK").body("".toResponseBody()).build()
+            }
+        }
+
+        HttpAccess.UserAgentInterceptor().intercept(chain).close()
     }
 }
