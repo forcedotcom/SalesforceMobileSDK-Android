@@ -45,6 +45,7 @@ class HybridRequestUserAgentTest {
 
     private fun assertIdentityUserAgent(local: Boolean, qualifier: String) {
         val context = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext
+        Class.forName(BootConfig::class.java.name, true, BootConfig::class.java.classLoader)
         mockkStatic(BootConfig::class)
         every { BootConfig.getBootConfig(any()) } returns mockk {
             every { isLocal() } returns local
