@@ -268,10 +268,7 @@ public class RestClient {
             okHttpClientBuilder = httpAccessor.createNewClientBuilder();
             if (!cacheKey.equals("unauthenticated")) {
                 okHttpClientBuilder.addInterceptor(getOAuthRefreshInterceptor());
-                final UserAccount user = SalesforceSDKManager.getInstance()
-                        .getUserAccountManager()
-                        .getUserFromOrgAndUserId(clientInfo.orgId, clientInfo.userId);
-                okHttpClientBuilder.addNetworkInterceptor(new HttpAccess.UserAgentInterceptor(user));
+                okHttpClientBuilder.addNetworkInterceptor(new HttpAccess.UserAgentInterceptor(clientInfo.getRequestIdentity()));
             }
 
             OK_CLIENT_BUILDERS.put(getCacheKey(), okHttpClientBuilder);
@@ -410,13 +407,15 @@ public class RestClient {
      * @return The HTTP request
      */
     public Request buildRequest(RestRequest restRequest) {
-        final URI uri = oAuthRefreshInterceptor.clientInfo.resolveUrl(restRequest);
+        final ClientInfo requestClientInfo = getClientInfo();
+        final URI uri = requestClientInfo.resolveUrl(restRequest);
         if (uri == null) return null;
         final HttpUrl url = HttpUrl.get(uri);
         if (url == null) return null;
         final Request.Builder builder = new Request.Builder()
                 .url(url)
                 .method(restRequest.getMethod().toString(), restRequest.getRequestBody());
+        builder.tag(HttpAccess.RequestUserIdentity.class, requestClientInfo.getRequestIdentity());
 
         // Adding additional headers
         final Map<String, String> additionalHttpHeaders = restRequest.getAdditionalHttpHeaders();
@@ -508,6 +507,12 @@ public class RestClient {
      */
     public static class ClientInfo {
 
+        // Keep the request owner as the stable org/user pair from ClientInfo rather than a
+        // synthetic UserAccount. UserAccountBuilder registers SDK features as a side effect,
+        // while the User-Agent can look up the live feature set directly from this identity.
+        // This also keeps a retained RestClient bound to its owner across account switches,
+        // Login As, and account removal.
+        private HttpAccess.RequestUserIdentity requestIdentity;
         public final URI instanceUrl;
         public final URI loginUrl;
         public final URI identityUrl;
@@ -589,6 +594,16 @@ public class RestClient {
             this.contentDomain = contentDomain;
             this.contentSid = contentSid;
             this.csrfToken = csrfToken;
+        }
+
+        private synchronized HttpAccess.RequestUserIdentity getRequestIdentity() {
+            if (requestIdentity == null && orgId != null && !orgId.trim().isEmpty()
+                    && userId != null && !userId.trim().isEmpty()) {
+                // RequestUserIdentity is deliberately credential-free: the interceptor uses its
+                // org/user key to calculate the User-Agent without resolving an account.
+                requestIdentity = new HttpAccess.RequestUserIdentity(orgId, userId);
+            }
+            return requestIdentity;
         }
 
         /**

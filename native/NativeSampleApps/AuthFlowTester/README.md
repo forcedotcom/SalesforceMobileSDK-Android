@@ -2,6 +2,43 @@
 
 A native Android sample app for the Salesforce Mobile SDK that serves as the primary vehicle for **UI automation testing** of authentication flows. The app displays OAuth credentials, token details, and user information after login, enabling end-to-end validation of the SDK's authentication infrastructure.
 
+## Request User-Agent evidence (UI tests only)
+
+Launching with `IS_UI_TESTING=true` enables the final-header capture in the SDK HTTP
+network interceptor. **User Credentials → Other → Request User Agents** shows the
+newest 200 observations as `<path> · <userKey> · <userAgent>`. The existing **Last
+Token Request User Agent** and **Captured Token Request Count** rows remain unchanged.
+The section and its JSON export field are absent outside UI-test mode or when empty.
+
+The `Other` export includes a `Request User Agents` array. Each object contains only
+`path` (URL path), `userKey` (`orgId/userId` or `unknown`), `userAgent` (the final wire
+header), and `seq` (a monotonically increasing integer). Capture excludes hosts,
+queries, fragments, bodies, authorization headers, tokens, and DPoP proofs. This
+privacy constraint applies to the new request evidence, not the existing credentials
+export, which intentionally contains credentials and must still be handled securely.
+
+Ownership comes only from the request's account tag, never the mutable current user.
+Initial token exchange and pre-account identity traffic remain `unknown`. Capture
+resets on UI-test Activity launch, including same-process relaunch. Logout removes
+that owner's entries and rejects late completions; a subsequent login re-enables the
+owner. Unknown observations remain available for diagnostics.
+
+`AuthFlowTesterPageObject.getCapturedRequestUserAgents()` reads typed entries from
+the credentials UI; `getRequestUserAgentHighWaterSequence()` provides an operation
+boundary. `AuthFlowTest.assertSentUserAgent(path, user, since)` searches for an exact
+path/account/runtime-computed User-Agent tuple with `seq > since`, independently of
+list order, and includes the captured entries in failure diagnostics. Shared login,
+refresh, switch, and restart helpers validate a user-owned REST request. The first RTR
+token request may precede registration of `RT`; its REST replay is checked against
+the post-rotation User-Agent, while later token refreshes are checked exactly too.
+The retained-client multi-user test proves A's token refresh and REST replay are
+attributed to A while B remains current.
+
+`RequestUserAgentPresentationTests` exercises export schema, test-only visibility,
+and row semantics without org credentials. Login suites require `ui_test_config.json`
+and reachable test orgs. Section semantics are `request_user_agents`; row semantics
+are `request_user_agent_<seq>`.
+
 ## UI Test Coverage
 
 Tests are executed by GitHub Actions via `.github/workflows/reusable-ui-workflow.yaml` and run in [Firebase Test Lab](https://firebase.google.com/docs/test-lab) across all supported API levels using the AndroidX Test Orchestrator.

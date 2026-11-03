@@ -294,7 +294,11 @@ internal class NativeLoginManager(
                                     transaction.ensureActiveAndCurrent()
                                     try {
                                         OAuth2.callIdentityService(HttpAccess.DEFAULT, url, credentials.authToken,
-                                            credentials.tokenType, credentials.credentialsIdentifier)
+                                            credentials.tokenType, credentials.credentialsIdentifier,
+                                            if (credentials.orgId != null && credentials.userId != null) {
+                                                SalesforceSDKManager.getInstance().userAccountManager
+                                                    .getUserFromOrgAndUserId(credentials.orgId, credentials.userId)
+                                            } else null)
                                     } finally {
                                         transaction.ensureActiveAndCurrent()
                                     }

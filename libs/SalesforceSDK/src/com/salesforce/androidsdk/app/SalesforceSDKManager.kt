@@ -59,6 +59,7 @@ import android.webkit.CookieManager
 import android.webkit.URLUtil.isHttpsUrl
 import android.widget.Toast
 import androidx.annotation.CallSuper
+import androidx.annotation.RestrictTo
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.Companion.PRIVATE
 import androidx.annotation.VisibleForTesting.Companion.PROTECTED
@@ -1352,6 +1353,7 @@ open class SalesforceSDKManager protected constructor(
                         URI(loginServer),
                         refreshToken,
                         logoutReason,
+                        userAccount,
                     )
                 }.onFailure { error ->
                     w(TAG, "Revoking token failed", error)
@@ -1554,6 +1556,22 @@ open class SalesforceSDKManager protected constructor(
     open fun getUserAgent(qualifier: String, user: UserAccount?) : String {
         val resolvedUser = user ?: userAccountManager.currentUser
         val userKey = resolvedUser?.let { "${it.orgId}/${it.userId}" }
+        return buildUserAgent(qualifier, userKey)
+    }
+
+    /**
+     * Returns a per-user agent string for a credential-free request identity.
+     *
+     * This is for internal request attribution when constructing a [UserAccount] would have
+     * side effects such as registering SDK features.
+     */
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    open fun getUserAgentForIdentity(qualifier: String, orgId: String?, userId: String?): String {
+        val userKey = if (orgId.isNullOrBlank() || userId.isNullOrBlank()) null else "$orgId/$userId"
+        return buildUserAgent(qualifier, userKey)
+    }
+
+    private fun buildUserAgent(qualifier: String, userKey: String?): String {
         val userFeatures = userKey?.let { perUserFeatures[it] } ?: emptySet<String>()
         val allFeatures = ConcurrentSkipListSet<String>(CASE_INSENSITIVE_ORDER).apply {
             addAll(features.filterNotNull())

@@ -34,6 +34,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.junit4.ComposeTestRule
@@ -41,6 +42,11 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
@@ -75,8 +81,12 @@ import com.salesforce.samples.authflowtester.SCROLL_CONTAINER_CONTENT_DESC
 import com.salesforce.samples.authflowtester.TOKEN_ENDPOINT_USER_AGENT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.TOKEN_ENDPOINT_REQUEST_COUNT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.USER_AGENT_CONTENT_DESC
+import com.salesforce.samples.authflowtester.REQUEST_USER_AGENTS_CONTENT_DESC
+import com.salesforce.samples.authflowtester.REQUEST_USER_AGENT_CONTENT_DESC_PREFIX
+import com.salesforce.samples.authflowtester.CapturedRequestUserAgent
 import com.salesforce.samples.authflowtester.ConcurrentRequestType
 import com.salesforce.samples.authflowtester.components.ACCESS_TOKEN
+import com.salesforce.samples.authflowtester.components.REQUEST_USER_AGENT_HIGH_WATER_CONTENT_DESC
 import com.salesforce.samples.authflowtester.components.CLIENT_ID
 import com.salesforce.samples.authflowtester.components.CONTENT_DOMAIN
 import com.salesforce.samples.authflowtester.components.CONTENT_SID
@@ -686,6 +696,36 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         return getText(USER_AGENT_CONTENT_DESC)
     }
 
+    fun getCapturedRequestUserAgents(): List<CapturedRequestUserAgent> {
+        expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
+        val section = composeTestRule.onAllNodesWithContentDescription(
+            REQUEST_USER_AGENTS_CONTENT_DESC, useUnmergedTree = true,
+        ).fetchSemanticsNodes()
+        if (section.isEmpty()) return emptyList()
+        composeTestRule.onNodeWithContentDescription(REQUEST_USER_AGENTS_CONTENT_DESC, useUnmergedTree = true)
+            .performScrollTo()
+        return composeTestRule.onAllNodes(
+            SemanticsMatcher("request user-agent row") { node ->
+                node.config.getOrElse(SemanticsProperties.ContentDescription) { emptyList() }
+                    .any { it.startsWith(REQUEST_USER_AGENT_CONTENT_DESC_PREFIX) }
+            },
+            useUnmergedTree = true,
+        ).fetchSemanticsNodes().map { node ->
+            val description = node.config[SemanticsProperties.ContentDescription].single()
+            val fields = node.config[SemanticsProperties.Text].single().text.split(" · ", limit = 3)
+            require(fields.size == 3) { "Malformed request observation: $fields" }
+            CapturedRequestUserAgent(
+                path = fields[0], userKey = fields[1], userAgent = fields[2],
+                seq = description.removePrefix(REQUEST_USER_AGENT_CONTENT_DESC_PREFIX).toLong(),
+            )
+        }
+    }
+
+    fun getRequestUserAgentHighWaterSequence(): Long {
+        expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
+        return getText(REQUEST_USER_AGENT_HIGH_WATER_CONTENT_DESC).toLong()
+    }
+
     /** Asserts the `ftr_` user-agent flags: every one of [present] is set and none of [absent] is. */
     fun validateUserAgentFlags(present: Set<String>, absent: Set<String> = emptySet()) {
         val userAgent = getUserAgent()
@@ -978,8 +1018,25 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
                     val visible = composeTestRule.onAllNodesWithContentDescription(targetNode)
                         .fetchSemanticsNodes().isNotEmpty()
                     if (!visible) {
-                        composeTestRule.onNodeWithContentDescription(CREDS_SECTION_CONTENT_DESC)
-                            .performClick()
+                        val otherTarget = targetNode == USER_AGENT_CONTENT_DESC ||
+                            targetNode == TOKEN_ENDPOINT_USER_AGENT_CONTENT_DESC ||
+                            targetNode == TOKEN_ENDPOINT_REQUEST_COUNT_CONTENT_DESC
+                        val otherExists = composeTestRule.onAllNodesWithText("Other")
+                            .fetchSemanticsNodes().isNotEmpty()
+                        if (otherTarget && otherExists) {
+                            // Do not toggle the outer card when only the inner section is closed.
+                            val collapsedOther = hasClickAction() and hasAnyDescendant(hasText("Other")) and
+                                hasAnyDescendant(hasContentDescription(getString(R.string.expand)))
+                            val nodes = composeTestRule.onAllNodes(collapsedOther, useUnmergedTree = true)
+                                .fetchSemanticsNodes()
+                            if (nodes.isNotEmpty()) {
+                                composeTestRule.onNodeWithText("Other").performScrollTo()
+                                    .performSemanticsAction(SemanticsActions.OnClick)
+                            }
+                        } else {
+                            composeTestRule.onNodeWithContentDescription(CREDS_SECTION_CONTENT_DESC)
+                                .performClick()
+                        }
                         composeTestRule.waitForIdle()
                     }
                     visible

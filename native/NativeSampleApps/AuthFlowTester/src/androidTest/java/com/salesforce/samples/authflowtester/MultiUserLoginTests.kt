@@ -197,6 +197,13 @@ class MultiUserLoginTests: AuthFlowTest() {
         val originalBRefreshToken = requireNotNull(userB.refreshTokenForPersistence)
 
         revokeAccessToken(clientA, originalAAccessToken)
+        val refreshSince = app.getRequestUserAgentHighWaterSequence()
+        val replayResponse = clientA.sendSync(RestRequest.getCheapRequest(com.salesforce.androidsdk.rest.ApiVersionStrings.VERSION_NUMBER))
+        try {
+            assertTrue("Retained User A REST replay should succeed after refresh", replayResponse.isSuccess)
+        } finally {
+            replayResponse.consumeQuietly()
+        }
         val response = clientA.sendSync(RestRequest.getRequestForUserInfo())
         try {
             assertTrue("Retained User A request should succeed after refresh", response.isSuccess)
@@ -227,6 +234,8 @@ class MultiUserLoginTests: AuthFlowTest() {
             originalBRefreshToken == unchangedB.refreshTokenForPersistence,
         )
         assertTrue("User B should remain current", userB == userAccountManager.currentUser)
+        assertSentUserAgent("/services/oauth2/token", userA, refreshSince)
+        assertSentUserAgent(apiRequestPath(), userA, refreshSince)
 
         app.validateUser(
             knownLoginHostConfig = REGULAR_AUTH,
@@ -539,6 +548,7 @@ class MultiUserLoginTests: AuthFlowTest() {
             isBeacon = isBeacon,
             wasMigrated = wasMigrated,
         )
+        validateApiRequestAndSentUserAgent(accountFor(knownUserConfig, knownLoginHostConfig))
     }
 
     /** Revokes [accessToken] through [client] without consulting the application current user. */
