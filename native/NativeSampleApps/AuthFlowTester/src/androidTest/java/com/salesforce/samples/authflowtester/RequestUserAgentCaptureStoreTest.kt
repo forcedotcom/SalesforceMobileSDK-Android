@@ -34,6 +34,23 @@ import java.util.concurrent.Executors
 
 class RequestUserAgentCaptureStoreTest {
     @Test
+    fun test_givenBackgroundCapture_whenRecorded_thenPublishedStateIsAvailableBeforeReturn() {
+        val store = RequestUserAgentCaptureStore()
+
+        val executor = Executors.newSingleThreadExecutor()
+        try {
+            executor.submit {
+                store.record(TOKEN, "org/a", "agent", enabled = true)
+            }.get()
+        } finally {
+            executor.shutdown()
+        }
+
+        assertEquals(1L, store.highWaterSequence.value)
+        assertEquals("agent", store.capturedRequests.value.single().userAgent)
+    }
+
+    @Test
     fun test_givenTrailingSlashCommunityBase_whenCaptured_thenExactOAuthPathsAndTokenSummaryRemain() {
         val store = RequestUserAgentCaptureStore()
         val paths = listOf(

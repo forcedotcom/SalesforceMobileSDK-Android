@@ -27,6 +27,8 @@
 package com.salesforce.samples.authflowtester
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -37,6 +39,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Call
 import okhttp3.EventListener
 import okhttp3.Request
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicReference
 
 /** Records final SDK request User-Agents for UI-test assertions only. */
 class TokenRequestCapturingHttpAccess(context: Context) : HttpAccess(context, null) {
@@ -107,6 +111,7 @@ data class CapturedRequestUserAgent(
 
 internal class RequestUserAgentCaptureStore {
     private val lock = Any()
+    private val mainHandler = Handler(Looper.getMainLooper())
     private var sequence = 0L
     private val retiredOwners = mutableSetOf<String>()
     private var session = 0L
@@ -124,7 +129,18 @@ internal class RequestUserAgentCaptureStore {
     val lastTokenRequestUserAgent = lastTokenRequestUserAgentState.asStateFlow()
     private val capturedTokenRequestCountState = MutableStateFlow(0)
     val capturedTokenRequestCount = capturedTokenRequestCountState.asStateFlow()
+    private var storedRequests = emptyList<CapturedRequestUserAgent>()
+    private var storedTokenRequestCount = 0
     private var lastTokenRequest: CapturedRequestUserAgent? = null
+    private var publicationVersion = 0L
+    private var publishedVersion = 0L
+    private data class Snapshot(
+        val version: Long,
+        val sequence: Long,
+        val requests: List<CapturedRequestUserAgent>,
+        val lastTokenRequestUserAgent: String?,
+        val tokenRequestCount: Int,
+    )
 
     fun record(
         path: String?, userKey: String?, userAgent: String?, enabled: Boolean,
@@ -135,33 +151,35 @@ internal class RequestUserAgentCaptureStore {
             Log.d(TAG, "Ignoring request capture outside contract: $path")
             return
         }
-        synchronized(lock) {
+        val snapshot = synchronized(lock) {
             val owner = userKey?.takeIf { it.isNotBlank() } ?: UNKNOWN_OWNER
             if (ticket.session != session || ticket.owner != owner ||
                 ticket.generation != (ownerGenerations[owner] ?: 0L) || owner in retiredOwners
             ) return
             val entry = CapturedRequestUserAgent(path, owner, userAgent, ++sequence)
-            highWaterSequenceState.value = sequence
-            capturedRequestsState.value = (capturedRequestsState.value + entry).takeLast(CAPACITY)
+            storedRequests = (storedRequests + entry).takeLast(CAPACITY)
             if (path.endsWith(TOKEN_ENDPOINT_PATH)) {
                 // Eviction must not reset the lifetime count used by existing RTR/DPoP tests.
                 lastTokenRequest = entry
-                lastTokenRequestUserAgentState.value = entry.userAgent
-                capturedTokenRequestCountState.value += 1
+                storedTokenRequestCount += 1
             }
+            snapshot()
         }
+        publish(snapshot)
     }
 
-    fun reset() = synchronized(lock) {
-        session += 1
-        ownerGenerations.clear()
-        sequence = 0L
-        highWaterSequenceState.value = 0L
-        retiredOwners.clear()
-        capturedRequestsState.value = emptyList()
-        lastTokenRequest = null
-        lastTokenRequestUserAgentState.value = null
-        capturedTokenRequestCountState.value = 0
+    fun reset() {
+        val snapshot = synchronized(lock) {
+            session += 1
+            ownerGenerations.clear()
+            sequence = 0L
+            retiredOwners.clear()
+            storedRequests = emptyList()
+            lastTokenRequest = null
+            storedTokenRequestCount = 0
+            snapshot()
+        }
+        publish(snapshot)
     }
 
     fun userLoggedIn(userKey: String) = synchronized(lock) {
@@ -172,16 +190,56 @@ internal class RequestUserAgentCaptureStore {
         Unit
     }
 
-    fun retireUser(userKey: String) = synchronized(lock) {
-        if (userKey.isBlank() || userKey == UNKNOWN_OWNER) return@synchronized
-        retiredOwners.add(userKey)
-        ownerGenerations[userKey] = (ownerGenerations[userKey] ?: 0L) + 1
-        capturedRequestsState.value = capturedRequestsState.value.filterNot { it.userKey == userKey }
-        if (lastTokenRequest?.userKey == userKey) {
-            lastTokenRequest = capturedRequestsState.value.lastOrNull { it.path.endsWith(TOKEN_ENDPOINT_PATH) }
-            lastTokenRequestUserAgentState.value = lastTokenRequest?.userAgent
+    fun retireUser(userKey: String) {
+        val snapshot = synchronized(lock) {
+            if (userKey.isBlank() || userKey == UNKNOWN_OWNER) return
+            retiredOwners.add(userKey)
+            ownerGenerations[userKey] = (ownerGenerations[userKey] ?: 0L) + 1
+            storedRequests = storedRequests.filterNot { it.userKey == userKey }
+            if (lastTokenRequest?.userKey == userKey) {
+                lastTokenRequest = storedRequests.lastOrNull { it.path.endsWith(TOKEN_ENDPOINT_PATH) }
+            }
+            snapshot()
         }
+        publish(snapshot)
     }
+
+    /** Compose observes these flows, so publish from its required main thread. */
+    private fun publish(snapshot: Snapshot) {
+        val update = update@{
+            if (snapshot.version <= publishedVersion) return@update
+            publishedVersion = snapshot.version
+            highWaterSequenceState.value = snapshot.sequence
+            capturedRequestsState.value = snapshot.requests
+            lastTokenRequestUserAgentState.value = snapshot.lastTokenRequestUserAgent
+            capturedTokenRequestCountState.value = snapshot.tokenRequestCount
+        }
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            update()
+            return
+        }
+        val failure = AtomicReference<Throwable>()
+        val completed = CountDownLatch(1)
+        check(mainHandler.post {
+            try {
+                update()
+            } catch (t: Throwable) {
+                failure.set(t)
+            } finally {
+                completed.countDown()
+            }
+        }) { "Unable to publish request capture state" }
+        completed.await()
+        failure.get()?.let { throw it }
+    }
+
+    private fun snapshot() = Snapshot(
+        ++publicationVersion,
+        sequence,
+        storedRequests,
+        lastTokenRequest?.userAgent,
+        storedTokenRequestCount,
+    )
 
     companion object {
         private const val TAG = "RequestUserAgentCapture"
