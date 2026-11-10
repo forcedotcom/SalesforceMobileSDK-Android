@@ -158,19 +158,38 @@ object DPoPRequestDecorator {
     ) {
         requireCompleteDPoPCredentials(credentialsIdentifier, tokenType)
         if (!DPoPKeyManager.shouldAttachDPoP(credentialsIdentifier, tokenType)) return
+
+        // The key was bound at login. Load it WITHOUT minting on a miss — a DPoP-bound
+        // credential whose key is gone must fail CLOSED (no proof, no send) rather than signing with
+        // a freshly minted key the server never bound. This runs BEFORE the proof-building try below.
+        // A genuine absence (null) is terminal for this request; a keystore READ error is wrapped as
+        // IOException so it stays within OkHttp's request-failure contract (an uncaught keystore
+        // exception could otherwise escape the Java interceptor, which only declares IOException).
+        val alias = DPoPKeyManager.aliasForCredentialsIdentifier(credentialsIdentifier!!)
+        val keyPair = try {
+            DPoPKeyManager.loadKeyPair(alias)
+        } catch (e: Exception) {
+            throw IOException("DPoP key lookup failed", e)
+        } ?: throw MissingDPoPKeyException()
+
         try {
             val request = builder.build()
             val url = request.url.toString()
             val method = request.method
             val htu = DPoPURLHelper.canonicalize(url)
             val host = request.url.host
-            val alias = DPoPKeyManager.aliasForCredentialsIdentifier(credentialsIdentifier!!)
-            val keyPair = DPoPKeyManager.generateOrLoadKeyPair(alias)
             val nonce = DPoPNonceCache.get(credentialsIdentifier, host)
             val proof = DPoPProofBuilder.buildProof(method, htu, keyPair, nonce, authToken)
             builder.header(DPOP_HEADER, proof)
         } catch (e: Exception) {
-            SalesforceSDKLogger.e(TAG, "Failed to attach DPoP proof", e)
+            // FAIL CLOSED. Signing can still fail here even though a (possibly stale,
+            // cached) key handle was resolved — e.g. the backing keystore entry was evicted without
+            // going through deleteKeyPair. Never fall through and let the request be sent with an
+            // Authorization header but no proof. Evict the stale handle so a subsequent attempt
+            // reloads from the keystore and converges on the correct state, then surface the failure.
+            DPoPKeyManager.evictFromCache(alias)
+            SalesforceSDKLogger.e(TAG, "Failed to attach DPoP proof; failing closed", e)
+            throw MissingDPoPKeyException()
         }
     }
 
@@ -185,5 +204,14 @@ object DPoPRequestDecorator {
 
     private class IncompleteDPoPCredentialsException : IOException(
         "DPoP credentials require a non-blank credentials identifier"
+    )
+
+    /**
+     * Thrown when a DPoP-bound credential's key pair is missing at proof time. Fails
+     * the request closed (as an [IOException] so OkHttp reports it through normal request failure)
+     * instead of minting a non-bound key; the caller then routes to re-authentication.
+     */
+    private class MissingDPoPKeyException : IOException(
+        "DPoP-bound key is unavailable; re-authentication required"
     )
 }

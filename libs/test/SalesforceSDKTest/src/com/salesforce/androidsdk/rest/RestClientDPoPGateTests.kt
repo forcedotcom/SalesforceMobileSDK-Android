@@ -74,6 +74,15 @@ class RestClientDPoPGateTests {
         return id
     }
 
+    /**
+     * Mints the DPoP key that login would have bound for [id]. The outbound/refresh paths are
+     * load-only and no longer mint on first use, so a DPoP-bound credential must already have its
+     * key present for a proof to be attached.
+     */
+    private fun seedKeyPair(id: String) {
+        DPoPKeyManager.generateOrLoadKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(id))
+    }
+
     private fun captureAuthenticatedRequest(
         interceptor: RestClient.OAuthRefreshInterceptor,
         path: String = "/services/data/v65.0/query",
@@ -102,6 +111,7 @@ class RestClientDPoPGateTests {
     @Test
     fun test_givenDPoPBoundCredential_whenIntercept_thenAttachesProofAndDPoPScheme() {
         val id = trackId("sc2_dpop_bound")
+        seedKeyPair(id) // Login binds the key; outbound path is load-only.
         val interceptor = RestClient.OAuthRefreshInterceptor(
             null,
             "__ACCESS_TOKEN__",
@@ -328,6 +338,7 @@ class RestClientDPoPGateTests {
     @Test
     fun test_givenRefreshChangesPolicyAndUiSid_whenReplay_thenHeadersSwitchAtomically() {
         val id = trackId("refresh_ui_sid")
+        seedKeyPair(id) // First attempt signs a DPoP proof; key must already be bound.
         val sdkManager = SalesforceSDKManager.getInstance()
         val originalPolicy = sdkManager.shouldUseUiSidBearerForPath
         try {

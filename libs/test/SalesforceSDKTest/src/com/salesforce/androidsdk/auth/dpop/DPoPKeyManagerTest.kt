@@ -37,7 +37,9 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -257,6 +259,81 @@ class DPoPKeyManagerTest {
         assertFalse(DPoPKeyManager.shouldAttachDPoP(id, null))
         assertFalse(DPoPKeyManager.shouldAttachDPoP(id, "Bearer"))
         assertTrue(DPoPKeyManager.shouldAttachDPoP(id, "DPoP"))
+    }
+
+    // --- load-only lookup must never mint a key on a miss ---
+
+    @Test
+    fun test_loadKeyPair_absentAlias_returnsNullAndDoesNotMint() {
+        val alias = "dpop_test_loadonly_absent_${UUID.randomUUID()}"
+        aliasesToCleanUp.add(alias)
+        // No key exists for this alias.
+        assertFalse(DPoPKeyManager.hasKeyPair(alias))
+        // Load-only lookup must report absent...
+        assertNull(DPoPKeyManager.loadKeyPair(alias))
+        // ...and must NOT have minted one as a side effect (the bug).
+        assertFalse(DPoPKeyManager.hasKeyPair(alias))
+    }
+
+    @Test
+    fun test_loadKeyPair_presentAlias_returnsBoundKeyWithoutMinting() {
+        val alias = trackedAlias("loadonly_present_${UUID.randomUUID()}")
+        val bound = DPoPKeyManager.generateOrLoadKeyPair(alias)
+        val loaded = DPoPKeyManager.loadKeyPair(alias)
+        assertNotNull("Expected the bound key to load", loaded)
+        assertEquals(
+            bound.public.encoded.toList(),
+            loaded!!.public.encoded.toList()
+        )
+    }
+
+    @Test
+    fun test_loadKeyPair_afterDeletion_returnsNullAndDoesNotRegenerate() {
+        val alias = trackedAlias("loadonly_deleted_${UUID.randomUUID()}")
+        DPoPKeyManager.generateOrLoadKeyPair(alias)
+        assertTrue(DPoPKeyManager.deleteKeyPair(alias))
+        assertNull(DPoPKeyManager.loadKeyPair(alias))
+        assertFalse(DPoPKeyManager.hasKeyPair(alias))
+    }
+
+    @Test
+    fun test_loadKeyPair_emptyAlias_returnsNull() {
+        assertNull(DPoPKeyManager.loadKeyPair(""))
+    }
+
+    @Test
+    fun test_loadKeyPair_coldCache_readsFromKeyStoreWithoutMinting() {
+        val alias = trackedAlias("loadonly_coldcache_${UUID.randomUUID()}")
+        val bound = DPoPKeyManager.generateOrLoadKeyPair(alias)
+        // Drop the in-memory handle so loadKeyPair must hit the AndroidKeyStore, not the cache.
+        DPoPKeyManager.clearInMemoryCache()
+
+        val loaded = DPoPKeyManager.loadKeyPair(alias)
+
+        assertNotNull("Cold-cache load must read the bound key from the keystore", loaded)
+        assertEquals(
+            "Cold-cache load must return the SAME bound key, not a minted one",
+            bound.public.encoded.toList(),
+            loaded!!.public.encoded.toList()
+        )
+    }
+
+    @Test
+    fun test_evictFromCache_dropsHandleButKeepsKeyStoreEntry() {
+        val alias = trackedAlias("evict_${UUID.randomUUID()}")
+        val bound = DPoPKeyManager.generateOrLoadKeyPair(alias)
+
+        // Evict only the cached handle — the AndroidKeyStore entry must survive.
+        DPoPKeyManager.evictFromCache(alias)
+        assertTrue("Keystore entry must remain after cache eviction", DPoPKeyManager.hasKeyPair(alias))
+
+        // A subsequent load re-reads the same key from the keystore.
+        val reloaded = DPoPKeyManager.loadKeyPair(alias)
+        assertNotNull(reloaded)
+        assertEquals(
+            bound.public.encoded.toList(),
+            reloaded!!.public.encoded.toList()
+        )
     }
 
     @Test

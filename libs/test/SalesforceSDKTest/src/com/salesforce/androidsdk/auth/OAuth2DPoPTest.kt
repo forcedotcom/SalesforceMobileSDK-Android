@@ -116,6 +116,83 @@ class OAuth2DPoPTest {
         )
     }
 
+    /**
+     * A DPoP-bound credential whose bound key is missing must fail fast with an invalid_grant-class
+     * error and must NOT (a) mint a replacement key or (b) send a refresh carrying a self-minted
+     * proof. The invalid_grant routing then drives a clean re-auth.
+     */
+    @Test
+    fun test_refreshAuthToken_dpopBoundMissingKey_failsFastInvalidGrantAndSendsNothing() {
+        SalesforceSDKManager.getInstance().useDPoP = true
+        // Credential is DPoP-bound (tokenType="DPoP") but NO key exists for its alias.
+        assertFalse("Precondition: no bound key", DPoPKeyManager.hasKeyPair(alias))
+        // Enqueue a success response as a safety net — if the (buggy) code reached the network,
+        // the test would wrongly pass the "no exception" bar; the allRequests() check catches that.
+        httpAccess.enqueueTokenSuccess()
+
+        val thrown = assertThrows(OAuth2.OAuthFailedException::class.java) {
+            OAuth2.refreshAuthToken(
+                httpAccess,
+                URI.create("https://example-token.test/"),
+                "test-client-id",
+                "test-refresh-token",
+                null,
+                credentialsIdentifier,
+                "DPoP"
+            )
+        }
+
+        assertEquals(
+            "Missing bound key must surface as invalid_grant",
+            OAuthErrorCode.INVALID_GRANT,
+            thrown.tokenErrorResponse.errorCode
+        )
+        assertTrue(
+            "No refresh request may be sent when the bound key is missing (no mint-and-send)",
+            httpAccess.allRequests().isEmpty()
+        )
+        assertFalse(
+            "A missing bound key must NOT be silently minted on the refresh path",
+            DPoPKeyManager.hasKeyPair(alias)
+        )
+    }
+
+    /**
+     * Fail-closed regression for a STALE CACHED key handle: the key was bound and cached, then its
+     * AndroidKeyStore entry was evicted out-of-band (not via deleteKeyPair). loadKeyPair still
+     * returns the cached handle, so signing — not the null check — is what fails. The refresh must
+     * NOT fall through and send the refresh token unsigned; it must throw and evict the stale handle.
+     */
+    @Test
+    fun test_refreshAuthToken_dpopBoundStaleCachedKey_failsClosedAndSendsNothing() {
+        SalesforceSDKManager.getInstance().useDPoP = true
+        // Bind + cache a key, then delete only the keystore entry so the cache keeps a dead handle.
+        DPoPKeyManager.generateOrLoadKeyPair(alias)
+        deleteKeyStoreEntryOnly(alias)
+        httpAccess.enqueueTokenSuccess() // safety net — must remain unconsumed
+
+        assertThrows(IOException::class.java) {
+            OAuth2.refreshAuthToken(
+                httpAccess,
+                URI.create("https://example-token.test/"),
+                "test-client-id",
+                "test-refresh-token",
+                null,
+                credentialsIdentifier,
+                "DPoP"
+            )
+        }
+
+        assertTrue(
+            "A refresh that cannot be signed must NOT be sent (no unsigned refresh-token send)",
+            httpAccess.allRequests().isEmpty()
+        )
+        assertFalse(
+            "The stale key handle must be evicted from the cache after a signing failure",
+            DPoPKeyManager.hasKeyPair(alias)
+        )
+    }
+
     /** Bearer credential must never carry DPoP on refresh, regardless of flag. */
     @Test
     fun test_refreshAuthToken_bearerCredential_flagOffOrOn_neverAttachesProof() {
@@ -232,9 +309,10 @@ class OAuth2DPoPTest {
             assertEquals("Expected exactly two token endpoint requests", 2, requests.size)
             assertNotNull("Initial request should carry a DPoP proof", requests[0].header("DPoP"))
             assertNotNull("Retry request should carry a DPoP proof", requests[1].header("DPoP"))
-            // The retry proof is minted after the nonce is harvested, so it must differ from the first.
+            // The retry proof is rebuilt after the nonce is harvested (same bound key, new nonce/jti),
+            // so it must differ from the first. The key is reused, not re-minted.
             assertTrue(
-                "Retry proof header should be re-minted (i.e. differ from the initial one)",
+                "Retry proof header should be rebuilt (i.e. differ from the initial one)",
                 requests[0].header("DPoP") != requests[1].header("DPoP")
             )
             assertSame(
@@ -498,6 +576,18 @@ class OAuth2DPoPTest {
         .username("$suffix-user@example.test")
         .accountName("$suffix-user")
         .build()
+
+    /**
+     * Deletes the AndroidKeyStore entry for [keyAlias] directly, WITHOUT clearing DPoPKeyManager's
+     * in-memory cache (unlike DPoPKeyManager.deleteKeyPair). Simulates an out-of-band keystore
+     * eviction (device restore, keystore reset) that leaves a dead handle cached in-process.
+     */
+    private fun deleteKeyStoreEntryOnly(keyAlias: String) {
+        val keyStore = java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        if (keyStore.containsAlias(keyAlias)) {
+            keyStore.deleteEntry(keyAlias)
+        }
+    }
 
     private fun dpopPayload(request: Request): org.json.JSONObject {
         val proof = checkNotNull(request.header("DPoP"))
