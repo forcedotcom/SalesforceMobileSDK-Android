@@ -845,8 +845,10 @@ internal class NativeLoginManager(
             transaction.ensureActiveAndCurrent()
             val keyPair = DPoPKeyManager.generateOrLoadKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(identifier))
             transaction.ensureActiveAndCurrent()
+            val thumbprint = DPoPProofBuilder.jwkThumbprint(keyPair.public as ECPublicKey)
+            SalesforceSDKLogger.i(TAG, "DPoP binding at native /authorize: scope=$identifier jkt=$thumbprint")
             path.toHttpUrl().newBuilder()
-                .addQueryParameter("dpop_jkt", DPoPProofBuilder.jwkThumbprint(keyPair.public as ECPublicKey))
+                .addQueryParameter("dpop_jkt", thumbprint)
                 .build().toString()
         }
     }

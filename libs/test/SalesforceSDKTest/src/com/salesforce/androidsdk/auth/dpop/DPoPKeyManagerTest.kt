@@ -41,17 +41,20 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.security.KeyPair
 import java.security.KeyStore
 import java.security.KeyStoreException
+import java.security.UnrecoverableKeyException
 import java.security.interfaces.ECPublicKey
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import android.security.keystore.KeyPermanentlyInvalidatedException
 
 @RunWith(AndroidJUnit4::class)
 class DPoPKeyManagerTest {
@@ -302,6 +305,58 @@ class DPoPKeyManagerTest {
     }
 
     @Test
+    fun test_loadKeyPair_unrecoverableKeyWithoutProvenCauseRemainsRetryable() {
+        assertAmbiguousLookupFailureRemainsRetryable(UnrecoverableKeyException("key is unrecoverable"))
+    }
+
+    @Test
+    fun test_loadKeyPair_unrecoverableKeyWrappingNonLossKeyStoreFailureRemainsRetryable() {
+        val alias = "dpop_test_loadonly_transient_${UUID.randomUUID()}"
+        val keyStore = mockk<KeyStore>()
+        val transientFailure = mockk<android.security.KeyStoreException>()
+        every { transientFailure.numericErrorCode } returns android.security.KeyStoreException.ERROR_INTERNAL_SYSTEM_ERROR
+        val failure = UnrecoverableKeyException("temporary backend failure").apply {
+            initCause(transientFailure)
+        }
+        mockkStatic(KeyStore::class)
+        try {
+            every { KeyStore.getInstance("AndroidKeyStore") } returns keyStore
+            every { keyStore.load(null) } returns Unit
+            every { keyStore.getKey(alias, null) } throws failure
+
+            assertSame(failure, assertThrows(Exception::class.java) {
+                DPoPKeyManager.loadKeyPair(alias)
+            })
+        } finally {
+            unmockkStatic(KeyStore::class)
+        }
+    }
+
+    @Test
+    fun test_loadKeyPair_permanentlyInvalidatedKeyTreatsBoundKeyAsAbsent() {
+        assertKnownPermanentLookupFailureIsAbsent(KeyPermanentlyInvalidatedException())
+    }
+
+    @Test
+    fun test_loadKeyPair_privateKeyWithoutCertificateRemainsRetryable() {
+        val alias = "dpop_test_loadonly_no_certificate_${UUID.randomUUID()}"
+        val keyStore = mockk<KeyStore>()
+        mockkStatic(KeyStore::class)
+        try {
+            every { KeyStore.getInstance("AndroidKeyStore") } returns keyStore
+            every { keyStore.load(null) } returns Unit
+            every { keyStore.getKey(alias, null) } returns mockk()
+            every { keyStore.getCertificate(alias) } returns null
+
+            assertThrows(java.io.IOException::class.java) {
+                DPoPKeyManager.loadKeyPair(alias)
+            }
+        } finally {
+            unmockkStatic(KeyStore::class)
+        }
+    }
+
+    @Test
     fun test_loadKeyPair_coldCache_readsFromKeyStoreWithoutMinting() {
         val alias = trackedAlias("loadonly_coldcache_${UUID.randomUUID()}")
         val bound = DPoPKeyManager.generateOrLoadKeyPair(alias)
@@ -347,6 +402,38 @@ class DPoPKeyManagerTest {
         assertFalse(DPoPKeyManager.isDPoPTokenType(""))
         assertFalse(DPoPKeyManager.isDPoPTokenType("Bearer"))
         assertFalse(DPoPKeyManager.isDPoPTokenType("bearer"))
+    }
+
+    private fun assertKnownPermanentLookupFailureIsAbsent(failure: Exception) {
+        val alias = "dpop_test_loadonly_permanent_${UUID.randomUUID()}"
+        val keyStore = mockk<KeyStore>()
+        mockkStatic(KeyStore::class)
+        try {
+            every { KeyStore.getInstance("AndroidKeyStore") } returns keyStore
+            every { keyStore.load(null) } returns Unit
+            every { keyStore.getKey(alias, null) } throws failure
+
+            assertNull(DPoPKeyManager.loadKeyPair(alias))
+        } finally {
+            unmockkStatic(KeyStore::class)
+        }
+    }
+
+    private fun assertAmbiguousLookupFailureRemainsRetryable(failure: Exception) {
+        val alias = "dpop_test_loadonly_ambiguous_${UUID.randomUUID()}"
+        val keyStore = mockk<KeyStore>()
+        mockkStatic(KeyStore::class)
+        try {
+            every { KeyStore.getInstance("AndroidKeyStore") } returns keyStore
+            every { keyStore.load(null) } returns Unit
+            every { keyStore.getKey(alias, null) } throws failure
+
+            assertSame(failure, assertThrows(Exception::class.java) {
+                DPoPKeyManager.loadKeyPair(alias)
+            })
+        } finally {
+            unmockkStatic(KeyStore::class)
+        }
     }
 
     @Test

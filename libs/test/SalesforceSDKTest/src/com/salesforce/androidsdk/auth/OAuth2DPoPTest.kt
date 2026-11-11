@@ -35,7 +35,13 @@ import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
 import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
+import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder
+import io.mockk.every
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
+import io.mockk.verify
 import okhttp3.Interceptor
+import okhttp3.FormBody
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
@@ -57,6 +63,7 @@ import java.io.IOException
 import java.net.URI
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
+import android.security.keystore.KeyPermanentlyInvalidatedException
 
 /**
  * Tests that OAuth2 attaches a DPoP proof header on the refresh, nonce-retry, and
@@ -157,6 +164,90 @@ class OAuth2DPoPTest {
         )
     }
 
+    @Test
+    fun test_refreshAuthToken_nullTokenTypeKeyDisappearsAfterGate_failsFastWithoutMinting() {
+        mockkObject(DPoPKeyManager)
+        try {
+            every { DPoPKeyManager.shouldAttachDPoP(credentialsIdentifier, null) } returns true
+            every { DPoPKeyManager.aliasForCredentialsIdentifier(credentialsIdentifier) } returns alias
+            every { DPoPKeyManager.loadKeyPair(alias) } returns null
+            every { DPoPKeyManager.generateOrLoadKeyPair(any()) } throws AssertionError("refresh must not mint")
+
+            val thrown = assertThrows(OAuth2.OAuthFailedException::class.java) {
+                OAuth2.refreshAuthToken(
+                    httpAccess,
+                    URI.create("https://example-token.test/"),
+                    "test-client-id",
+                    "test-refresh-token",
+                    null,
+                    credentialsIdentifier,
+                    null,
+                )
+            }
+
+            assertEquals(OAuthErrorCode.INVALID_GRANT, thrown.tokenErrorResponse.errorCode)
+            assertTrue(httpAccess.allRequests().isEmpty())
+            verify(exactly = 0) { DPoPKeyManager.generateOrLoadKeyPair(any()) }
+        } finally {
+            unmockkObject(DPoPKeyManager)
+        }
+    }
+
+    @Test
+    fun test_makeTokenEndpointRequest_refreshGrantMissingKey_failsFastWithoutMinting() {
+        mockkObject(DPoPKeyManager)
+        try {
+            every { DPoPKeyManager.shouldAttachDPoP(credentialsIdentifier, "DPoP") } returns true
+            every { DPoPKeyManager.aliasForCredentialsIdentifier(credentialsIdentifier) } returns alias
+            every { DPoPKeyManager.loadKeyPair(alias) } returns null
+            every { DPoPKeyManager.generateOrLoadKeyPair(any()) } throws AssertionError("refresh must not mint")
+
+            val thrown = assertThrows(OAuth2.OAuthFailedException::class.java) {
+                OAuth2.makeTokenEndpointRequest(
+                    httpAccess,
+                    URI.create("https://example-token.test/"),
+                    FormBody.Builder().add("grant_type", "refresh_token"),
+                    SalesforceSDKManager.getInstance(),
+                    credentialsIdentifier,
+                    "DPoP",
+                )
+            }
+
+            assertEquals(OAuthErrorCode.INVALID_GRANT, thrown.tokenErrorResponse.errorCode)
+            assertTrue(httpAccess.allRequests().isEmpty())
+            verify(exactly = 0) { DPoPKeyManager.generateOrLoadKeyPair(any()) }
+        } finally {
+            unmockkObject(DPoPKeyManager)
+        }
+    }
+
+    @Test
+    fun test_refreshAuthToken_permanentlyInvalidatedWhileSigning_failsFastInvalidGrant() {
+        DPoPKeyManager.generateOrLoadKeyPair(alias)
+        mockkObject(DPoPProofBuilder)
+        try {
+            every { DPoPProofBuilder.buildProof(any(), any(), any(), any(), any()) } throws
+                KeyPermanentlyInvalidatedException()
+
+            val thrown = assertThrows(OAuth2.OAuthFailedException::class.java) {
+                OAuth2.refreshAuthToken(
+                    httpAccess,
+                    URI.create("https://example-token.test/"),
+                    "test-client-id",
+                    "test-refresh-token",
+                    null,
+                    credentialsIdentifier,
+                    "DPoP",
+                )
+            }
+
+            assertEquals(OAuthErrorCode.INVALID_GRANT, thrown.tokenErrorResponse.errorCode)
+            assertTrue(httpAccess.allRequests().isEmpty())
+        } finally {
+            unmockkObject(DPoPProofBuilder)
+        }
+    }
+
     /**
      * Fail-closed regression for a STALE CACHED key handle: the key was bound and cached, then its
      * AndroidKeyStore entry was evicted out-of-band (not via deleteKeyPair). loadKeyPair still
@@ -171,7 +262,7 @@ class OAuth2DPoPTest {
         deleteKeyStoreEntryOnly(alias)
         httpAccess.enqueueTokenSuccess() // safety net — must remain unconsumed
 
-        assertThrows(IOException::class.java) {
+        val thrown = assertThrows(Exception::class.java) {
             OAuth2.refreshAuthToken(
                 httpAccess,
                 URI.create("https://example-token.test/"),
@@ -182,6 +273,10 @@ class OAuth2DPoPTest {
                 "DPoP"
             )
         }
+        assertTrue(
+            "Stale-key signing failure must be a closed refresh failure",
+            thrown is IOException || thrown is OAuth2.OAuthFailedException,
+        )
 
         assertTrue(
             "A refresh that cannot be signed must NOT be sent (no unsigned refresh-token send)",

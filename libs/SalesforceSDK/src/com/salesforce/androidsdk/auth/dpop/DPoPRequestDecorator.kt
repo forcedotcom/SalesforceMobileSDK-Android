@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.auth.dpop
 
+import androidx.annotation.RestrictTo
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2
@@ -50,6 +51,11 @@ object DPoPRequestDecorator {
     const val DPOP_HEADER = "DPoP"
     const val DPOP_NONCE_HEADER = "DPoP-Nonce"
     private const val NONCE_ERROR_VALUE = "use_dpop_nonce"
+
+    /** Returns true only for a confirmed missing DPoP key, never for a transient lookup or signing error. */
+    @JvmStatic
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    fun isMissingDPoPKeyError(error: IOException): Boolean = error is MissingDPoPKeyException
 
     /**
      * Stamps [Authorization] and, if the account is DPoP-bound, a [DPoP] proof header
@@ -79,6 +85,7 @@ object DPoPRequestDecorator {
      * Bearer access-token authentication is retained.
      */
     @JvmName("applyAuthHeaders")
+    @Throws(IOException::class)
     internal fun applyAuthHeaders(
         builder: Request.Builder,
         credentialsIdentifier: String?,
@@ -189,7 +196,10 @@ object DPoPRequestDecorator {
             // reloads from the keystore and converges on the correct state, then surface the failure.
             DPoPKeyManager.evictFromCache(alias)
             SalesforceSDKLogger.e(TAG, "Failed to attach DPoP proof; failing closed", e)
-            throw MissingDPoPKeyException()
+            if (DPoPKeyManager.isPermanentlyUnavailableKeyError(e)) {
+                throw MissingDPoPKeyException(e)
+            }
+            throw IOException("Failed to attach DPoP proof", e)
         }
     }
 
@@ -209,9 +219,12 @@ object DPoPRequestDecorator {
     /**
      * Thrown when a DPoP-bound credential's key pair is missing at proof time. Fails
      * the request closed (as an [IOException] so OkHttp reports it through normal request failure)
-     * instead of minting a non-bound key; the caller then routes to re-authentication.
+     * instead of minting a non-bound key. SDK-managed REST clients route this specific signal to
+     * their existing invalid-credentials handling; other callers receive it as an [IOException].
      */
-    private class MissingDPoPKeyException : IOException(
-        "DPoP-bound key is unavailable; re-authentication required"
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    class MissingDPoPKeyException(cause: Throwable? = null) : IOException(
+        "DPoP-bound key is unavailable; re-authentication required",
+        cause,
     )
 }

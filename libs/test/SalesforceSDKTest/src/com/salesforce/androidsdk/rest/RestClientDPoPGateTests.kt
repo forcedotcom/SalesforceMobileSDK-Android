@@ -30,10 +30,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
+import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.slot
 import io.mockk.verify
+import io.mockk.unmockkObject
 import okhttp3.Interceptor
 import okhttp3.Protocol
 import okhttp3.Request
@@ -49,6 +52,7 @@ import org.junit.runner.RunWith
 import java.io.IOException
 import java.net.URI
 import java.util.UUID
+import android.security.keystore.KeyPermanentlyInvalidatedException
 
 /**
  * Unit tests for RestClient's per-request DPoP gate at API-call time.
@@ -232,6 +236,106 @@ class RestClientDPoPGateTests {
             interceptor.intercept(chain)
         }
 
+        verify(exactly = 0) { chain.proceed(any()) }
+    }
+
+    @Test
+    fun test_givenMissingBoundKeyAndSdkProvider_whenIntercept_thenDispatchesTerminalReauthWithoutNetwork() {
+        val id = trackId("missing_key_reauth")
+        val provider = mockk<ClientManager.AccMgrAuthTokenProvider>(relaxed = true)
+        val interceptor = RestClient.OAuthRefreshInterceptor(
+            clientInfo(),
+            "__ACCESS_TOKEN__",
+            "DPoP",
+            id,
+            null,
+            provider,
+        )
+        val outbound = Request.Builder()
+            .url("https://instance.example.com/services/data/v65.0/query")
+            .get()
+            .build()
+        val chain = mockk<Interceptor.Chain>(relaxed = true) {
+            every { request() } returns outbound
+        }
+
+        assertThrows(IOException::class.java) {
+            interceptor.intercept(chain)
+        }
+
+        verify(exactly = 1) { provider.handleMissingDPoPBoundKey(id) }
+        verify(exactly = 0) { chain.proceed(any()) }
+    }
+
+    @Test
+    fun test_givenPermanentlyInvalidatedBoundKeyWhileSigning_whenIntercept_thenDispatchesTerminalReauthWithoutNetwork() {
+        val id = trackId("permanently_invalidated_reauth")
+        seedKeyPair(id)
+        val provider = mockk<ClientManager.AccMgrAuthTokenProvider>(relaxed = true)
+        val interceptor = RestClient.OAuthRefreshInterceptor(
+            clientInfo(),
+            "__ACCESS_TOKEN__",
+            "DPoP",
+            id,
+            null,
+            provider,
+        )
+        val outbound = Request.Builder()
+            .url("https://instance.example.com/services/data/v65.0/query")
+            .get()
+            .build()
+        val chain = mockk<Interceptor.Chain>(relaxed = true) {
+            every { request() } returns outbound
+        }
+        mockkObject(DPoPProofBuilder)
+        try {
+            every { DPoPProofBuilder.buildProof(any(), any(), any(), any(), any()) } throws
+                KeyPermanentlyInvalidatedException()
+
+            assertThrows(IOException::class.java) {
+                interceptor.intercept(chain)
+            }
+        } finally {
+            unmockkObject(DPoPProofBuilder)
+        }
+
+        verify(exactly = 1) { provider.handleMissingDPoPBoundKey(id) }
+        verify(exactly = 0) { chain.proceed(any()) }
+    }
+
+    @Test
+    fun test_givenGenericProofFailure_whenIntercept_thenFailsClosedWithoutTerminalReauth() {
+        val id = trackId("generic_proof_failure")
+        seedKeyPair(id)
+        val provider = mockk<ClientManager.AccMgrAuthTokenProvider>(relaxed = true)
+        val interceptor = RestClient.OAuthRefreshInterceptor(
+            clientInfo(),
+            "__ACCESS_TOKEN__",
+            "DPoP",
+            id,
+            null,
+            provider,
+        )
+        val outbound = Request.Builder()
+            .url("https://instance.example.com/services/data/v65.0/query")
+            .get()
+            .build()
+        val chain = mockk<Interceptor.Chain>(relaxed = true) {
+            every { request() } returns outbound
+        }
+        mockkObject(DPoPProofBuilder)
+        try {
+            every { DPoPProofBuilder.buildProof(any(), any(), any(), any(), any()) } throws
+                IllegalStateException("proof builder failed")
+
+            assertThrows(IOException::class.java) {
+                interceptor.intercept(chain)
+            }
+        } finally {
+            unmockkObject(DPoPProofBuilder)
+        }
+
+        verify(exactly = 0) { provider.handleMissingDPoPBoundKey(any()) }
         verify(exactly = 0) { chain.proceed(any()) }
     }
 

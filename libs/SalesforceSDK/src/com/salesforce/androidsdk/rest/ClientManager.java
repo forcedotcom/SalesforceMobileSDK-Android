@@ -423,6 +423,50 @@ public class ClientManager {
         private String lastUiSid;
 
         /**
+         * Routes a confirmed missing DPoP key on a resource request through the same account-bound
+         * invalid-credentials cleanup as a terminal refresh error, without attempting a refresh.
+         */
+        void handleMissingDPoPBoundKey(@Nullable String credentialsIdentifier) {
+            final UserAccount user = clientManager.getValidatedUser(/* requireRefreshFields = */ false);
+            final Account matchingAccount = clientManager.getAccount();
+            if (user == null || matchingAccount == null
+                    || !DPoPKeyManager.INSTANCE.isDPoPTokenType(user.getTokenType())
+                    || !Objects.equals(credentialsIdentifier, user.getCredentialsIdentifier())) {
+                return;
+            }
+            final String refreshStateKey = refreshStateKeyFor(user);
+            final RefreshState state = acquireRefreshState(refreshStateKey);
+            if (state == null) {
+                return;
+            }
+            try {
+                synchronized (state.lock) {
+                    final UserAccount liveUser = clientManager.getValidatedUser(
+                            /* requireRefreshFields = */ false);
+                    if (state.cleanupRequested || liveUser == null
+                            || !DPoPKeyManager.INSTANCE.isDPoPTokenType(liveUser.getTokenType())
+                            || !Objects.equals(credentialsIdentifier, liveUser.getCredentialsIdentifier())) {
+                        return;
+                    }
+                    if (Looper.myLooper() == null) {
+                        Looper.prepare();
+                    }
+                    final boolean showLoginPage = clientManager.getBoundAccountCount() == 1;
+                    SalesforceSDKManager.getInstance().logout(
+                            matchingAccount, null, showLoginPage, REFRESH_TOKEN_EXPIRED);
+                    final Intent broadcastIntent = new Intent(ACCESS_TOKEN_REVOKE_INTENT);
+                    broadcastIntent.putExtra(EXTRA_TOKEN_ERROR, OAuthErrorCode.INVALID_GRANT.getError());
+                    broadcastIntent.putExtra(EXTRA_TOKEN_ERROR_DESCRIPTION,
+                            "DPoP-bound key is unavailable; re-authentication required");
+                    broadcastIntent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
+                    SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(broadcastIntent);
+                }
+            } finally {
+                releaseRefreshState(refreshStateKey, state);
+            }
+        }
+
+        /**
          * Constructs a provider whose account identity comes exclusively from its bound manager.
          */
         public AccMgrAuthTokenProvider(@NonNull ClientManager clientManager) {

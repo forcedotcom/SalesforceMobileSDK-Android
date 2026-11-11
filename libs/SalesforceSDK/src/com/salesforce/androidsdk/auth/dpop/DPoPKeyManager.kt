@@ -28,8 +28,13 @@ package com.salesforce.androidsdk.auth.dpop
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.security.keystore.KeyPermanentlyInvalidatedException
+import android.security.KeyStoreException
 import androidx.annotation.RestrictTo
+import androidx.annotation.RequiresApi
+import android.os.Build
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
+import java.security.InvalidKeyException
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.KeyStore
@@ -116,11 +121,50 @@ object DPoPKeyManager {
     }
 
     private fun loadKeyPairFromKeyStore(alias: String): KeyPair? {
-        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
-        val existingKey = keyStore.getKey(alias, null) ?: return null
-        val privateKey = existingKey as PrivateKey
-        val publicKey = keyStore.getCertificate(alias).publicKey as ECPublicKey
-        return KeyPair(publicKey, privateKey)
+        try {
+            val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
+            val existingKey = keyStore.getKey(alias, null) ?: return null
+            val certificate = keyStore.getCertificate(alias)
+                // AndroidKeyStore can swallow a metadata-read failure and return null here.
+                // It does not prove a permanently incomplete entry, so preserve retryability.
+                ?: throw java.io.IOException("DPoP key certificate lookup failed")
+            return KeyPair(certificate.publicKey as ECPublicKey, existingKey as PrivateKey)
+        } catch (e: Exception) {
+            if (isPermanentlyUnavailableKeyError(e)) {
+                // Biometric/lock-screen changes can permanently invalidate a key; retrying cannot restore it.
+                return null
+            }
+            throw e
+        }
+    }
+
+    /** Returns true only for Android KeyStore failures that prove the bound key can never be used. */
+    @JvmStatic
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    fun isPermanentlyUnavailableKeyError(error: Throwable): Boolean {
+        var current: Throwable? = error
+        while (current != null) {
+            if (current is KeyPermanentlyInvalidatedException) return true
+            if (current is KeyStoreException) {
+                // AndroidKeyStore can wrap backend failures in this exception. Any error without a
+                // proven loss code stays retryable.
+                return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                    Api33KeyStoreErrorClassifier.isPermanentlyUnavailable(current)
+            }
+            // AndroidKeyStore may wrap invalidation in InvalidKeyException during Signature.initSign.
+            if (current is InvalidKeyException && current.cause is KeyPermanentlyInvalidatedException) {
+                return true
+            }
+            current = current.cause
+        }
+        return false
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    private object Api33KeyStoreErrorClassifier {
+        fun isPermanentlyUnavailable(error: KeyStoreException): Boolean =
+            error.numericErrorCode == KeyStoreException.ERROR_KEY_DOES_NOT_EXIST ||
+                error.numericErrorCode == KeyStoreException.ERROR_KEY_CORRUPTED
     }
 
     private fun loadOrGenerateKeyPair(alias: String): KeyPair {
