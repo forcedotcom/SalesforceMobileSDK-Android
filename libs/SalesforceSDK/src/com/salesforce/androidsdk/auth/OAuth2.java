@@ -888,11 +888,11 @@ public class OAuth2 {
     private static TokenEndpointResponse makeTokenEndpointRequest(HttpAccess httpAccessor,
                                                                   URI loginServer,
                                                                   FormBody.Builder formBodyBuilder,
-                                                                   SalesforceSDKManager salesforceSdkManager,
-                                                                   @Nullable String credentialsIdentifier,
-                                                                   @Nullable String tokenType,
-                                                                   @Nullable UserAccount userAccount,
-                                                                   boolean isRefreshRequest)
+                                                                  SalesforceSDKManager salesforceSdkManager,
+                                                                  @Nullable String credentialsIdentifier,
+                                                                  @Nullable String tokenType,
+                                                                  @Nullable UserAccount userAccount,
+                                                                  boolean isRefreshRequest)
             throws OAuthFailedException, IOException {
 
         final StringBuilder sb = new StringBuilder(loginServer.toString());

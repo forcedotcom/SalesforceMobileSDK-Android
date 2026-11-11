@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.auth.dpop
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.security.keystore.KeyPermanentlyInvalidatedException
-import android.security.KeyStoreException
 import androidx.annotation.RestrictTo
 import androidx.annotation.RequiresApi
 import android.os.Build
@@ -46,6 +45,7 @@ import java.util.concurrent.ConcurrentHashMap
 object DPoPKeyManager {
 
     private const val ANDROID_KEYSTORE = "AndroidKeyStore"
+    private const val KEY_STORE_EXCEPTION_CLASS = "android.security.KeyStoreException"
 
     /**
      * RFC 9449 token type string. Canonical casing — compare via [isDPoPTokenType] since
@@ -145,11 +145,13 @@ object DPoPKeyManager {
         var current: Throwable? = error
         while (current != null) {
             if (current is KeyPermanentlyInvalidatedException) return true
-            if (current is KeyStoreException) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 // AndroidKeyStore can wrap backend failures in this exception. Any error without a
                 // proven loss code stays retryable.
-                return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                    Api33KeyStoreErrorClassifier.isPermanentlyUnavailable(current)
+                Api33KeyStoreErrorClassifier.isPermanentlyUnavailable(current)?.let { return it }
+            } else if (current.javaClass.name == KEY_STORE_EXCEPTION_CLASS) {
+                // Keep pre-33 KeyStore backend failures retryable without referencing the API-33 type.
+                return false
             }
             // AndroidKeyStore may wrap invalidation in InvalidKeyException during Signature.initSign.
             if (current is InvalidKeyException && current.cause is KeyPermanentlyInvalidatedException) {
@@ -162,9 +164,11 @@ object DPoPKeyManager {
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private object Api33KeyStoreErrorClassifier {
-        fun isPermanentlyUnavailable(error: KeyStoreException): Boolean =
-            error.numericErrorCode == KeyStoreException.ERROR_KEY_DOES_NOT_EXIST ||
-                error.numericErrorCode == KeyStoreException.ERROR_KEY_CORRUPTED
+        fun isPermanentlyUnavailable(error: Throwable): Boolean? {
+            if (error !is android.security.KeyStoreException) return null
+            return error.numericErrorCode == android.security.KeyStoreException.ERROR_KEY_DOES_NOT_EXIST ||
+                error.numericErrorCode == android.security.KeyStoreException.ERROR_KEY_CORRUPTED
+        }
     }
 
     private fun loadOrGenerateKeyPair(alias: String): KeyPair {
