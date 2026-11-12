@@ -150,6 +150,7 @@ object DPoPKeyManager {
                 // proven loss code stays retryable.
                 Api33KeyStoreErrorClassifier.isPermanentlyUnavailable(current)?.let { return it }
             } else if (current.javaClass.name == KEY_STORE_EXCEPTION_CLASS) {
+                // TODO: Remove this block when min API >= 33.
                 // Keep pre-33 KeyStore backend failures retryable without referencing the API-33 type.
                 return false
             }
