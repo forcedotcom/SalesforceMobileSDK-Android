@@ -2062,6 +2062,7 @@ open class SalesforceSDKManager protected constructor(
             val authConfig = listOf(
                 "Use Web Server Authentication" to "$_useWebServerAuthentication",
                 "Use Hybrid Authentication Token" to "$useHybridAuthentication",
+                "Use DPoP" to "$useDPoP",
                 "Force Advanced Authentication" to "$_forceAdvancedAuthentication",
                 "Use Ephemeral Session for Advanced Authentication" to "$useEphemeralSessionForAdvancedAuth",
                 "My Domain Browser Login Enabled" to "$isBrowserLoginEnabled",
