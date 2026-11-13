@@ -28,7 +28,12 @@ package com.salesforce.androidsdk.auth.dpop
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.security.keystore.KeyPermanentlyInvalidatedException
+import androidx.annotation.RestrictTo
+import androidx.annotation.RequiresApi
+import android.os.Build
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
+import java.security.InvalidKeyException
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.KeyStore
@@ -40,6 +45,7 @@ import java.util.concurrent.ConcurrentHashMap
 object DPoPKeyManager {
 
     private const val ANDROID_KEYSTORE = "AndroidKeyStore"
+    private const val KEY_STORE_EXCEPTION_CLASS = "android.security.KeyStoreException"
 
     /**
      * RFC 9449 token type string. Canonical casing — compare via [isDPoPTokenType] since
@@ -70,6 +76,12 @@ object DPoPKeyManager {
     private val keyPairCache = ConcurrentHashMap<String, KeyPair>()
     private val keyStoreLock = Any()
 
+    /**
+     * Mints a new key pair on a miss. Use ONLY on the binding paths (`/authorize`, native login)
+     * where a DPoP key is supposed to be created. On the refresh / resource-decoration paths the
+     * key is already bound at login, so use [loadKeyPair] instead — minting there would sign a
+     * proof with a thumbprint the server never bound.
+     */
     fun generateOrLoadKeyPair(alias: String): KeyPair {
         keyPairCache[alias]?.let { return it }
 
@@ -77,6 +89,86 @@ object DPoPKeyManager {
             keyPairCache[alias] ?: loadOrGenerateKeyPair(alias).also {
                 keyPairCache[alias] = it
             }
+        }
+    }
+
+    /**
+     * Load-only lookup: returns the key pair already bound for [alias], or `null` if no key is
+     * present. Unlike [generateOrLoadKeyPair] this NEVER mints a key on a miss — it is the
+     * side-effect-free primitive the refresh and request-decoration paths must use so a credential
+     * whose bound key has gone missing (device restore, keystore eviction) fails fast and routes to
+     * re-auth instead of silently signing with a non-bound key.
+     *
+     * A genuine absence (`getKey` returns null) yields `null`. A KeyStore access failure
+     * (device lock, keystore error) is rethrown so callers can distinguish "key is gone" from
+     * "could not read the keystore right now" and avoid turning a transient error into a logout.
+     *
+     * Not part of the public SDK surface — [RestrictTo] keeps it out of the public API (so it is
+     * safe to introduce in a patch release) while remaining callable from other SDK modules,
+     * including the Java OAuth2 refresh path. (Kotlin `internal` is not an option here: it is
+     * name-mangled in bytecode and cannot be called from the Java callers.)
+     */
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    fun loadKeyPair(alias: String): KeyPair? {
+        if (alias.isEmpty()) return null
+        keyPairCache[alias]?.let { return it }
+
+        return synchronized(keyStoreLock) {
+            keyPairCache[alias] ?: loadKeyPairFromKeyStore(alias)?.also {
+                keyPairCache[alias] = it
+            }
+        }
+    }
+
+    private fun loadKeyPairFromKeyStore(alias: String): KeyPair? {
+        try {
+            val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
+            val existingKey = keyStore.getKey(alias, null) ?: return null
+            val certificate = keyStore.getCertificate(alias)
+                // AndroidKeyStore can swallow a metadata-read failure and return null here.
+                // It does not prove a permanently incomplete entry, so preserve retryability.
+                ?: throw java.io.IOException("DPoP key certificate lookup failed")
+            return KeyPair(certificate.publicKey as ECPublicKey, existingKey as PrivateKey)
+        } catch (e: Exception) {
+            if (isPermanentlyUnavailableKeyError(e)) {
+                // Biometric/lock-screen changes can permanently invalidate a key; retrying cannot restore it.
+                return null
+            }
+            throw e
+        }
+    }
+
+    /** Returns true only for Android KeyStore failures that prove the bound key can never be used. */
+    @JvmStatic
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    fun isPermanentlyUnavailableKeyError(error: Throwable): Boolean {
+        var current: Throwable? = error
+        while (current != null) {
+            if (current is KeyPermanentlyInvalidatedException) return true
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                // AndroidKeyStore can wrap backend failures in this exception. Any error without a
+                // proven loss code stays retryable.
+                Api33KeyStoreErrorClassifier.isPermanentlyUnavailable(current)?.let { return it }
+            } else if (current.javaClass.name == KEY_STORE_EXCEPTION_CLASS) {
+                // TODO: Remove this block when min API >= 33.
+                // Keep pre-33 KeyStore backend failures retryable without referencing the API-33 type.
+                return false
+            }
+            // AndroidKeyStore may wrap invalidation in InvalidKeyException during Signature.initSign.
+            if (current is InvalidKeyException && current.cause is KeyPermanentlyInvalidatedException) {
+                return true
+            }
+            current = current.cause
+        }
+        return false
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    private object Api33KeyStoreErrorClassifier {
+        fun isPermanentlyUnavailable(error: Throwable): Boolean? {
+            if (error !is android.security.KeyStoreException) return null
+            return error.numericErrorCode == android.security.KeyStoreException.ERROR_KEY_DOES_NOT_EXIST ||
+                error.numericErrorCode == android.security.KeyStoreException.ERROR_KEY_CORRUPTED
         }
     }
 
@@ -128,6 +220,23 @@ object DPoPKeyManager {
     internal fun clearInMemoryCache() {
         synchronized(keyStoreLock) {
             keyPairCache.clear()
+        }
+    }
+
+    /**
+     * Drops the cached key handle for [alias] without deleting its AndroidKeyStore entry.
+     * Use when signing with a cached handle fails — e.g. the backing keystore entry
+     * was evicted out-of-band — so the next [loadKeyPair] re-reads from the keystore and converges
+     * on the correct state (reload the real key, or `null` → fail fast to re-auth) instead of
+     * repeatedly signing with a dead handle.
+     *
+     * Not part of the public SDK surface — see [loadKeyPair] for why [RestrictTo] (rather than
+     * `internal`) is used here.
+     */
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    fun evictFromCache(alias: String) {
+        synchronized(keyStoreLock) {
+            keyPairCache.remove(alias)
         }
     }
 

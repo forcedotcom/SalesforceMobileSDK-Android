@@ -69,7 +69,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.net.InetAddress
-import java.net.ProtocolException
+import java.io.IOException
 import java.net.ServerSocket
 import java.security.MessageDigest
 import java.util.UUID.randomUUID
@@ -263,12 +263,14 @@ class UserAccountDownloadProfilePhotoTest {
             every { DPoPProofBuilder.buildProof(any(), any(), any(), any(), any()) } throws
                 IllegalStateException("signing unavailable")
 
-            assertThrows(ProtocolException::class.java) {
+            val thrown = assertThrows(IOException::class.java) {
                 reattachAuthOnRedirect(
                     chain, PHOTO_URL, TOKEN, "DPoP", credentialsIdentifier,
                     requireFreshDPoPProof = true,
                 )
             }
+            assertEquals("Failed to attach DPoP proof", thrown.message)
+            assertEquals("signing unavailable", thrown.cause?.message)
             verify(exactly = 0) { chain.proceed(any()) }
         } finally {
             unmockkObject(DPoPProofBuilder)

@@ -68,6 +68,18 @@ class DPoPRequestDecoratorTest {
         DPoPKeyManager.generateOrLoadKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(scope))
     }
 
+    /**
+     * Deletes the AndroidKeyStore entry for [keyAlias] directly, WITHOUT clearing DPoPKeyManager's
+     * in-memory cache (unlike DPoPKeyManager.deleteKeyPair). Simulates an out-of-band keystore
+     * eviction that leaves a dead handle cached in-process.
+     */
+    private fun deleteKeyStoreEntryOnly(keyAlias: String) {
+        val keyStore = java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        if (keyStore.containsAlias(keyAlias)) {
+            keyStore.deleteEntry(keyAlias)
+        }
+    }
+
     private fun requestBuilder(): Request.Builder =
         Request.Builder()
             .url("https://test.salesforce.com/services/data")
@@ -179,6 +191,54 @@ class DPoPRequestDecoratorTest {
         }
 
         assertNull(builder.build().header("Authorization"))
+    }
+
+    @Test
+    fun applyAuthHeaders_dpopAccountWithMissingBoundKey_failsClosedAndDoesNotMint() {
+        // A DPoP-bound credential whose AndroidKeyStore key is gone (device restore, keystore
+        // eviction) must NOT mint a replacement key. It must fail closed so the caller routes to
+        // re-auth, and leave no proof header and no freshly minted key behind.
+        val alias = DPoPKeyManager.aliasForCredentialsIdentifier(testScope)
+        assertFalse("Precondition: no bound key for this scope", DPoPKeyManager.hasKeyPair(alias))
+        val builder = requestBuilder()
+
+        assertThrows(IOException::class.java) {
+            DPoPRequestDecorator.applyAuthHeaders(builder, userAccount(tokenType = "DPoP"))
+        }
+
+        assertNull(
+            "No DPoP proof must be attached when the bound key is missing",
+            builder.build().header(DPoPRequestDecorator.DPOP_HEADER),
+        )
+        assertFalse(
+            "A missing bound key must NOT be silently minted on the decorate path",
+            DPoPKeyManager.hasKeyPair(alias),
+        )
+    }
+
+    @Test
+    fun applyAuthHeaders_dpopAccountWithStaleCachedKey_failsClosedAndEvicts() {
+        // A key was bound and cached, then its keystore entry was evicted out-of-band. loadKeyPair
+        // returns the dead cached handle, so signing (not the null check) fails. The decorator must
+        // fail closed — no proof header, request not sendable — and evict the stale handle so a
+        // later attempt reloads from the keystore.
+        val alias = DPoPKeyManager.aliasForCredentialsIdentifier(testScope)
+        seedKeyPair(testScope)
+        deleteKeyStoreEntryOnly(alias) // cache keeps a dead handle
+        val builder = requestBuilder()
+
+        assertThrows(IOException::class.java) {
+            DPoPRequestDecorator.applyAuthHeaders(builder, userAccount(tokenType = "DPoP"))
+        }
+
+        assertNull(
+            "No DPoP proof must be attached when signing with a stale key fails",
+            builder.build().header(DPoPRequestDecorator.DPOP_HEADER),
+        )
+        assertFalse(
+            "The stale key handle must be evicted from the cache after a signing failure",
+            DPoPKeyManager.hasKeyPair(alias),
+        )
     }
 
     @Test

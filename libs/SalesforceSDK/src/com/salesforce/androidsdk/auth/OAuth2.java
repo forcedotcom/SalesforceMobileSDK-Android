@@ -53,6 +53,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyPair;
+import java.security.interfaces.ECPublicKey;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -581,7 +582,8 @@ public class OAuth2 {
             }
         }
         return makeTokenEndpointRequest(httpAccessor, loginServer, builder,
-                SalesforceSDKManager.getInstance(), credentialsIdentifier, tokenType, userAccount);
+                SalesforceSDKManager.getInstance(), credentialsIdentifier, tokenType, userAccount,
+                true /* isRefreshRequest */);
     }
 
     /**
@@ -826,7 +828,59 @@ public class OAuth2 {
                                                                  @Nullable String tokenType)
             throws OAuthFailedException, IOException {
         return makeTokenEndpointRequest(httpAccessor, loginServer, formBodyBuilder,
-                salesforceSdkManager, credentialsIdentifier, tokenType, null);
+                salesforceSdkManager, credentialsIdentifier, tokenType, null,
+                isRefreshTokenGrant(formBodyBuilder));
+    }
+
+    private static boolean isRefreshTokenGrant(FormBody.Builder formBodyBuilder) {
+        final FormBody formBody = formBodyBuilder.build();
+        for (int index = 0; index < formBody.size(); index++) {
+            if (GRANT_TYPE.equals(formBody.name(index))) {
+                final String grantType = formBody.value(index);
+                return REFRESH_TOKEN.equals(grantType) || HYBRID_REFRESH.equals(grantType);
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Resolves the DPoP key bound to {@code credentialsIdentifier} for a token-endpoint request,
+     * loading it WITHOUT minting a replacement on a miss.
+     *
+     * <p>Refresh requests are always load-only, including the null-tokenType transition window. The
+     * binding code-exchange path remains the only token-endpoint path permitted to create a key.
+     *
+     * @return the bound key pair to sign with.
+     * @throws OAuthFailedException if a DPoP-bound credential's key is confirmed missing (invalid_grant → re-auth).
+     * @throws IOException if the keystore cannot be read (transient; retryable, not a logout).
+     */
+    private static KeyPair resolveDPoPKeyForTokenRequest(@Nullable String credentialsIdentifier,
+                                                          boolean isRefreshRequest)
+            throws OAuthFailedException, IOException {
+        final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
+        if (!isRefreshRequest) {
+            // The authorization-code exchange is part of binding. It may create the key whose
+            // public thumbprint was sent with /authorize.
+            return DPoPKeyManager.INSTANCE.generateOrLoadKeyPair(alias);
+        }
+        final KeyPair keyPair;
+        try {
+            keyPair = DPoPKeyManager.INSTANCE.loadKeyPair(alias);
+        } catch (Exception e) {
+            // Keystore could not be read (device locked, keystore error). This is NOT proof the key
+            // is gone, so do NOT fail fast to logout — surface a retryable IOException instead.
+            SalesforceSDKLogger.w(TAG, "DPoP key lookup failed on refresh (transient); will retry", e);
+            throw new IOException("DPoP key lookup failed", e);
+        }
+        if (keyPair == null) {
+            SalesforceSDKLogger.w(TAG, "DPoP-bound key missing on refresh; failing fast to re-auth");
+            throw new OAuthFailedException(
+                    new TokenErrorResponse(
+                            OAuthErrorCode.INVALID_GRANT,
+                            "DPoP-bound key is unavailable; re-authentication required"),
+                    HttpURLConnection.HTTP_BAD_REQUEST);
+        }
+        return keyPair;
     }
 
     /** Canonical token-endpoint implementation with optional request-scoped user context. */
@@ -837,7 +891,8 @@ public class OAuth2 {
                                                                   SalesforceSDKManager salesforceSdkManager,
                                                                   @Nullable String credentialsIdentifier,
                                                                   @Nullable String tokenType,
-                                                                  @Nullable UserAccount userAccount)
+                                                                  @Nullable UserAccount userAccount,
+                                                                  boolean isRefreshRequest)
             throws OAuthFailedException, IOException {
 
         final StringBuilder sb = new StringBuilder(loginServer.toString());
@@ -866,16 +921,45 @@ public class OAuth2 {
         }
         final boolean attachDPoP = DPoPKeyManager.INSTANCE.shouldAttachDPoP(credentialsIdentifier, tokenType);
 
+        // For a DPoP-bound refresh, the key was minted at login (/authorize or native
+        // login). If it is now gone (device restore, keystore eviction) we must NOT mint a new one
+        // here — a fresh key signs a proof the server never bound, which it rejects. Fail fast with
+        // an invalid_grant-class error BEFORE the signing try (whose broad catch would otherwise
+        // swallow the throw and send an unsigned/mis-signed refresh), so the existing terminal
+        // routing logs out and re-authenticates cleanly.
+        final KeyPair boundKeyPair = attachDPoP
+                ? resolveDPoPKeyForTokenRequest(credentialsIdentifier, isRefreshRequest)
+                : null;
+
         if (attachDPoP) {
             try {
                 final String htu = DPoPURLHelper.INSTANCE.canonicalize(refreshPath);
-                final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
-                final KeyPair keyPair = DPoPKeyManager.INSTANCE.generateOrLoadKeyPair(alias);
                 final String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, tokenHost);
-                final String proof = DPoPProofBuilder.INSTANCE.buildProof("POST", htu, keyPair, nonce, null);
+                final String proof = DPoPProofBuilder.INSTANCE.buildProof("POST", htu, boundKeyPair, nonce, null);
                 requestBuilder.header(DPOP, proof);
+                // Non-PII diagnostic — the public jkt the refresh is signed with. Compare
+                // against the dpop_jkt logged at /authorize binding to spot a key mismatch in the
+                // field. Public thumbprint only — never key material, tokens, or PII.
+                if (boundKeyPair.getPublic() instanceof ECPublicKey) {
+                    SalesforceSDKLogger.i(TAG, "DPoP binding at "
+                            + (isRefreshRequest ? "refresh" : "code exchange")
+                            + ": scope=" + credentialsIdentifier + " jkt="
+                            + DPoPProofBuilder.INSTANCE.jwkThumbprint((ECPublicKey) boundKeyPair.getPublic()));
+                }
             } catch (Exception e) {
-                SalesforceSDKLogger.e(TAG, "Failed to attach DPoP header, proceeding without it", e);
+                // FAIL CLOSED. A DPoP-bound refresh must never be sent without a valid
+                // proof — doing so would transmit the refresh token on a request the server binds to
+                // DPoP, defeating proof-of-possession. This catch fires when signing fails even though
+                // a (possibly stale, cached) key handle was resolved, e.g. the backing AndroidKeyStore
+                // entry was evicted without going through deleteKeyPair. Evict the stale handle so the
+                // next attempt reloads from the keystore and converges on the missing-key re-auth path.
+                DPoPKeyManager.INSTANCE.evictFromCache(
+                        DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier));
+                SalesforceSDKLogger.w(TAG, "DPoP proof signing failed on refresh; failing closed", e);
+                if (DPoPKeyManager.isPermanentlyUnavailableKeyError(e)) {
+                    throw missingBoundDPoPKeyException();
+                }
+                throw new IOException("Failed to build DPoP proof for refresh", e);
             }
         }
 
@@ -892,17 +976,26 @@ public class OAuth2 {
         // Nonce challenge: server requires a nonce. Retry once with the harvested nonce.
         if (attachDPoP && isNonceChallenge(response)) {
             response.close();
+            final Request retryRequest;
             try {
                 final String htu = DPoPURLHelper.INSTANCE.canonicalize(refreshPath);
-                final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
-                final KeyPair keyPair = DPoPKeyManager.INSTANCE.generateOrLoadKeyPair(alias);
+                // Reuse the bound key already resolved above (same alias). No mint-on-miss here.
                 final String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, tokenHost);
-                final String proof = DPoPProofBuilder.INSTANCE.buildProof("POST", htu, keyPair, nonce, null);
-                final Request retryRequest = request.newBuilder().header(DPOP, proof).build();
-                response = httpAccessor.getOkHttpClient().newCall(retryRequest).execute();
+                final String proof = DPoPProofBuilder.INSTANCE.buildProof("POST", htu, boundKeyPair, nonce, null);
+                retryRequest = request.newBuilder().header(DPOP, proof).build();
             } catch (Exception e) {
-                SalesforceSDKLogger.e(TAG, "Failed to attach DPoP header on nonce retry", e);
+                // FAIL CLOSED on the nonce retry too. The challenged response is already
+                // closed; sending the retry without a valid proof would again transmit the refresh
+                // token unsigned. Evict the stale key handle and surface the failure.
+                DPoPKeyManager.INSTANCE.evictFromCache(
+                        DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier));
+                SalesforceSDKLogger.w(TAG, "DPoP proof signing failed on nonce retry; failing closed", e);
+                if (DPoPKeyManager.isPermanentlyUnavailableKeyError(e)) {
+                    throw missingBoundDPoPKeyException();
+                }
+                throw new IOException("Failed to build DPoP proof for refresh nonce retry", e);
             }
+            response = httpAccessor.getOkHttpClient().newCall(retryRequest).execute();
         }
 
         if (response.isSuccessful()) {
@@ -912,6 +1005,14 @@ public class OAuth2 {
         } else {
             throw new OAuthFailedException(new TokenErrorResponse(response), response.code());
         }
+    }
+
+    private static OAuthFailedException missingBoundDPoPKeyException() {
+        return new OAuthFailedException(
+                new TokenErrorResponse(
+                        OAuthErrorCode.INVALID_GRANT,
+                        "DPoP-bound key is unavailable; re-authentication required"),
+                HttpURLConnection.HTTP_BAD_REQUEST);
     }
 
     private static boolean isNonceChallenge(Response response) {
@@ -1229,6 +1330,20 @@ public class OAuth2 {
                 SalesforceSDKLogger.w(TAG, "Could not parse token error response", e);
                 errorCode = OAuthErrorCode.UNKNOWN;
             }
+        }
+
+        /**
+         * Value-based constructor for errors the client synthesizes locally (not parsed from an
+         * HTTP response), such as a DPoP-bound refresh whose bound key is missing. Carries the
+         * same shape as a server error so existing error routing is unchanged.
+         *
+         * @param errorCode Typed error code.
+         * @param errorDescription Non-sensitive human-readable description (no tokens/PII/key material).
+         */
+        TokenErrorResponse(OAuthErrorCode errorCode, String errorDescription) {
+            this.errorCode = errorCode;
+            this.error = errorCode != null ? errorCode.getError() : null;
+            this.errorDescription = errorDescription;
         }
 
         @Override

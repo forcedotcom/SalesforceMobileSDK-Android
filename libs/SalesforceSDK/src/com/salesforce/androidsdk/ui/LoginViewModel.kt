@@ -73,6 +73,7 @@ import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryUrlPath
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
+import com.salesforce.androidsdk.util.SalesforceSDKLogger.i
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
@@ -792,6 +793,7 @@ open class LoginViewModel(
             val keyPair = DPoPKeyManager.generateOrLoadKeyPair(alias)
             val thumbprint = DPoPProofBuilder.jwkThumbprint(keyPair.public as ECPublicKey)
             params["dpop_jkt"] = thumbprint
+            i(TAG, "DPoP binding at /authorize: scope=$credId jkt=$thumbprint")
         }.onFailure { t ->
             android.util.Log.w(TAG, "Failed to compute dpop_jkt for /authorize; proceeding without it", t)
         }
