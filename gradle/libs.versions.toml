@@ -34,7 +34,7 @@ accompanist = "0.37.3"
 sqlcipher-android = "4.17.0"
 
 # Hybrid / React Native
-cordova-framework = "15.0.0"
+cordova-framework = "15.1.0"
 react-android = "0.81.5"
 
 # Analytics deps
