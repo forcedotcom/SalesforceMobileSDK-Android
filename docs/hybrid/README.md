@@ -4,6 +4,8 @@ The `libs/SalesforceHybrid/` library is the Android native bridge for Cordova-ba
 
 See [content and bridge trust](security.md) for the inherited file-origin,
 navigation and plugin security boundaries to review when upgrading an app.
+Use the [focused Cordova runtime checks](runtime-verification.md) to verify the
+WebView, bridge, Back handling and keyboard on an owned emulator.
 
 ## Package Breakdown
 
