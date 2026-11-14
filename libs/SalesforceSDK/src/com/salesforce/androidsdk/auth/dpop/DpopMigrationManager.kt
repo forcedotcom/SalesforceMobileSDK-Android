@@ -92,7 +92,7 @@ object DpopMigrationManager {
 
     /**
      * Seam over [upgradeToDPoP] so tests can drive the SDK callbacks directly.
-     * Not part of the public API.
+     * Strictly a testing seam: production code must never assign it. Not part of the public API.
      */
     @VisibleForTesting
     internal var upgrader: (

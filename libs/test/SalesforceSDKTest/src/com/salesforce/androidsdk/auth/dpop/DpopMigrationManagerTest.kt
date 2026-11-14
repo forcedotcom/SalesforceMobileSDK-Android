@@ -57,11 +57,14 @@ class DpopMigrationManagerTest {
     )
 
     private val upgrades = CopyOnWriteArrayList<FakeUpgrade>()
-    private val bearerUser = user("00D1", "005A", "Bearer")
-    private val dpopUser = user("00D1", "005B", "DPoP")
+    // Token type of [bearerUser]; tests flip it to "DPoP" to mimic the SDK's credential update on success.
+    private var bearerTokenType = "Bearer"
+    private val bearerUser = user("00D1", "005A") { bearerTokenType }
+    private val dpopUser = user("00D1", "005B") { "DPoP" }
 
     @Before
     fun setUp() {
+        bearerTokenType = "Bearer"
         DpopMigrationManager.resetForTesting()
         DpopMigrationManager.upgrader = { _, onSuccess, onFailure ->
             upgrades.add(FakeUpgrade(onSuccess, onFailure))
@@ -92,9 +95,11 @@ class DpopMigrationManagerTest {
         assertTrue(DpopMigrationManager.isMigrationNeeded(bearerUser))
         val result = async { DpopMigrationManager.migrateIfNeeded(bearerUser) }
         awaitUpgrades(1)
+        bearerTokenType = "DPoP"
         thread { upgrades[0].onSuccess(bearerUser) }.join()
         assertEquals(Outcome.Migrated, withTimeout(WAIT_MS) { result.await() })
-        assertFalse(DpopMigrationManager.isMigrationNeeded(dpopUser))
+        // No longer in flight, and the credential is DPoP-bound now.
+        assertFalse(DpopMigrationManager.isMigrationNeeded(bearerUser))
     }
 
     @Test
@@ -127,10 +132,11 @@ class DpopMigrationManagerTest {
             done.countDown()
         }
         assertTrue(done.await(WAIT_MS, TimeUnit.MILLISECONDS))
+        bearerTokenType = "DPoP"
         thread { upgrades[0].onSuccess(bearerUser) }.join()
         flushMainThread()
         assertEquals(listOf<Outcome>(Outcome.Failed(DpopMigrationManager.REASON_TIMED_OUT)), outcomes)
-        assertFalse(DpopMigrationManager.isMigrationNeeded(dpopUser))
+        assertFalse(DpopMigrationManager.isMigrationNeeded(bearerUser))
     }
 
     @Test
@@ -193,7 +199,7 @@ class DpopMigrationManagerTest {
 
     @Test
     fun test_givenDifferentUsers_whenMigrate_thenIndependentUpgrades() = runBlocking {
-        val other = user("00D1", "005C", "Bearer")
+        val other = user("00D1", "005C") { "Bearer" }
         val a = startOnMain(bearerUser)
         val b = startOnMain(other)
         assertEquals(2, upgrades.size)
@@ -204,10 +210,10 @@ class DpopMigrationManagerTest {
 
     // region Helpers
 
-    private fun user(orgId: String, userId: String, tokenType: String) = mockk<UserAccount> {
+    private fun user(orgId: String, userId: String, tokenType: () -> String) = mockk<UserAccount> {
         every { this@mockk.orgId } returns orgId
         every { this@mockk.userId } returns userId
-        every { this@mockk.tokenType } returns tokenType
+        every { this@mockk.tokenType } answers { tokenType() }
     }
 
     /** Waits (without sleeping) until the manager has asked the SDK for [count] upgrades. */
