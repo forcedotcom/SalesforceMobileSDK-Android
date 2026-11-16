@@ -61,6 +61,8 @@ class DpopMigrationManagerTest {
     private var bearerTokenType = "Bearer"
     private val bearerUser = user("00D1", "005A") { bearerTokenType }
     private val dpopUser = user("00D1", "005B") { "DPoP" }
+    // What the SDK hands to onSuccess after a successful upgrade.
+    private val migratedUser = user("00D1", "005A") { "DPoP" }
 
     @Before
     fun setUp() {
@@ -96,10 +98,19 @@ class DpopMigrationManagerTest {
         val result = async { DpopMigrationManager.migrateIfNeeded(bearerUser) }
         awaitUpgrades(1)
         bearerTokenType = "DPoP"
-        thread { upgrades[0].onSuccess(bearerUser) }.join()
+        thread { upgrades[0].onSuccess(migratedUser) }.join()
         assertEquals(Outcome.Migrated, withTimeout(WAIT_MS) { result.await() })
         // No longer in flight, and the credential is DPoP-bound now.
         assertFalse(DpopMigrationManager.isMigrationNeeded(bearerUser))
+    }
+
+    @Test
+    fun test_givenUpgradeCompletesWithBearerToken_whenMigrate_thenFailedNotDPoPBound() = runBlocking {
+        val result = async { DpopMigrationManager.migrateIfNeeded(bearerUser) }
+        awaitUpgrades(1)
+        thread { upgrades[0].onSuccess(user("00D1", "005A") { "Bearer" }) }.join()
+        assertEquals(Outcome.Failed(DpopMigrationManager.REASON_NOT_DPOP_BOUND), withTimeout(WAIT_MS) { result.await() })
+        assertTrue(DpopMigrationManager.isMigrationNeeded(bearerUser))
     }
 
     @Test
@@ -112,7 +123,7 @@ class DpopMigrationManagerTest {
         assertTrue(DpopMigrationManager.isMigrationNeeded(bearerUser))
         val second = async { DpopMigrationManager.migrateIfNeeded(bearerUser) }
         awaitUpgrades(2)
-        thread { upgrades[1].onSuccess(bearerUser) }.join()
+        thread { upgrades[1].onSuccess(migratedUser) }.join()
         assertEquals(Outcome.Migrated, withTimeout(WAIT_MS) { second.await() })
     }
 
@@ -133,7 +144,7 @@ class DpopMigrationManagerTest {
         }
         assertTrue(done.await(WAIT_MS, TimeUnit.MILLISECONDS))
         bearerTokenType = "DPoP"
-        thread { upgrades[0].onSuccess(bearerUser) }.join()
+        thread { upgrades[0].onSuccess(migratedUser) }.join()
         flushMainThread()
         assertEquals(listOf<Outcome>(Outcome.Failed(DpopMigrationManager.REASON_TIMED_OUT)), outcomes)
         assertFalse(DpopMigrationManager.isMigrationNeeded(bearerUser))
@@ -153,7 +164,7 @@ class DpopMigrationManagerTest {
         assertFalse(retry.isCompleted)
 
         // Stale success means the user really is DPoP-bound now: the retry completes as Migrated.
-        thread { upgrades[0].onSuccess(bearerUser) }.join()
+        thread { upgrades[0].onSuccess(migratedUser) }.join()
         assertEquals(Outcome.Migrated, withTimeout(WAIT_MS) { retry.await() })
     }
 
@@ -162,7 +173,7 @@ class DpopMigrationManagerTest {
         val callers = List(5) { startOnMain(bearerUser) }
         assertEquals(1, upgrades.size)
         assertTrue(DpopMigrationManager.isMigrationNeeded(bearerUser))
-        thread { upgrades[0].onSuccess(bearerUser) }.join()
+        thread { upgrades[0].onSuccess(migratedUser) }.join()
         val results = withTimeout(WAIT_MS) { callers.awaitAll() }
         assertEquals(List(5) { Outcome.Migrated }, results)
         assertEquals(1, upgrades.size)
@@ -179,7 +190,7 @@ class DpopMigrationManagerTest {
             }
         }.join()
         awaitUpgradesBlocking(1)
-        thread { upgrades[0].onSuccess(bearerUser) }.join()
+        thread { upgrades[0].onSuccess(migratedUser) }.join()
         assertTrue(done.await(WAIT_MS, TimeUnit.MILLISECONDS))
         flushMainThread()
         assertEquals(listOf<Looper?>(Looper.getMainLooper()), threads)
@@ -192,7 +203,7 @@ class DpopMigrationManagerTest {
         assertTrue(DpopMigrationManager.isMigrationNeeded(bearerUser))
         val second = startOnMain(bearerUser)
         assertEquals(1, upgrades.size)
-        thread { upgrades[0].onSuccess(bearerUser) }.join()
+        thread { upgrades[0].onSuccess(migratedUser) }.join()
         assertEquals(Outcome.Migrated, withTimeout(WAIT_MS) { first.await() })
         assertEquals(Outcome.Migrated, withTimeout(WAIT_MS) { second.await() })
     }
@@ -203,7 +214,7 @@ class DpopMigrationManagerTest {
         val a = startOnMain(bearerUser)
         val b = startOnMain(other)
         assertEquals(2, upgrades.size)
-        thread { upgrades[0].onSuccess(bearerUser); upgrades[1].onSuccess(other) }.join()
+        thread { upgrades[0].onSuccess(migratedUser); upgrades[1].onSuccess(user("00D1", "005C") { "DPoP" }) }.join()
         assertEquals(Outcome.Migrated, withTimeout(WAIT_MS) { a.await() })
         assertEquals(Outcome.Migrated, withTimeout(WAIT_MS) { b.await() })
     }

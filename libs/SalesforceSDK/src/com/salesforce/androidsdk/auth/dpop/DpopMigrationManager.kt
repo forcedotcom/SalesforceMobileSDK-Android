@@ -54,6 +54,8 @@ import kotlinx.coroutines.withContext
  *   a background thread).
  * - Concurrent calls for the same user share a single upgrade. This matters because an activity's
  *   `onResume` fires again when `TokenMigrationActivity` finishes.
+ * - [Outcome.Migrated] is reported only if the upgraded account's token type is DPoP; otherwise
+ *   [Outcome.Failed] with [REASON_NOT_DPOP_BOUND].
  * - If the SDK never reports back (for example the user backs out of `TokenMigrationActivity`),
  *   all waiting callers get [Outcome.Failed] once the timeout elapses and the next call may start
  *   a new upgrade. A late success from the timed-out upgrade is still honored: it completes any
@@ -72,6 +74,9 @@ object DpopMigrationManager {
     private const val TAG = "DPoPMigration"
     private const val REASON_NO_USER = "no user"
     private const val REASON_ALREADY_DPOP = "already DPoP"
+
+    /** Reason carried by [Outcome.Failed] when the upgrade completed without a DPoP-bound token. */
+    const val REASON_NOT_DPOP_BOUND = "not DPoP-bound"
 
     /** The result of a migration request. */
     sealed class Outcome {
@@ -210,17 +215,25 @@ object DpopMigrationManager {
         // The SDK calls back off the main thread: hop to main before touching state.
         upgrader(
             user,
-            {
+            { migratedUser ->
                 runOnMain {
+                    // DPoP key creation can soft-fail, completing with a Bearer token: only
+                    // report Migrated when the resulting credentials are actually DPoP-bound.
+                    val outcome = if (DPoPKeyManager.isDPoPTokenType(migratedUser.tokenType)) {
+                        Outcome.Migrated
+                    } else {
+                        SalesforceSDKLogger.w(TAG, "upgrade completed without a DPoP-bound token")
+                        Outcome.Failed(REASON_NOT_DPOP_BOUND)
+                    }
                     if (attempt.finished) {
                         // Late success: callers already got Failed. A newer attempt for the same
                         // user is now moot since the user is DPoP-bound, so complete it too.
                         SalesforceSDKLogger.i(TAG, "late success after timeout")
                         synchronized(inFlight) { inFlight[key] }
-                            ?.let { finish(key, it, Outcome.Migrated) }
+                            ?.let { finish(key, it, outcome) }
                     } else {
                         SalesforceSDKLogger.i(TAG, "success")
-                        finish(key, attempt, Outcome.Migrated)
+                        finish(key, attempt, outcome)
                     }
                 }
             },
