@@ -38,8 +38,12 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiObject
+import androidx.test.uiautomator.UiObjectNotFoundException
 import androidx.test.uiautomator.UiSelector
+import androidx.test.uiautomator.Until
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.ui.components.LoginViewTestTags
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
@@ -54,6 +58,7 @@ import com.salesforce.samples.authflowtester.testUtility.testConfig
  * These are not dependent on server-side rendering.
  */
 private const val QUICK_CHECK_TIMEOUT_MS = 500L
+private const val GBOARD_PACKAGE = "com.google.android.inputmethod.latin"
 
 /**
  * Ceiling for clearing Chrome's First Run Experience, which on a cold profile (every FTL device) is
@@ -218,8 +223,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
             ?: device.findObject(UiSelector().className("android.widget.EditText").instance(0))
                 .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
         if (usernameField != null) {
-            usernameField.click()
-            usernameField.setText(name)
+            clickAndSetText(usernameField, name)
             lastFocusedCredentialField = CredentialField.USERNAME
             return
         }
@@ -231,6 +235,38 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
             throw AssertionError("Username field not found in Custom Tab")
         }
         lastFocusedCredentialField = CredentialField.USERNAME
+    }
+
+    /**
+     * Clicks [field] and sets its text. Tapping a text field can make Gboard show its "Try out your
+     * stylus" handwriting-education sheet (observed on emulators that report stylus support),
+     * which covers the page and removes the field from the accessibility tree so [UiObject.setText]
+     * throws. When that happens, dismiss the sheet and retry once.
+     */
+    private fun clickAndSetText(field: UiObject, text: String) {
+        field.click()
+        try {
+            field.setText(text)
+        } catch (e: UiObjectNotFoundException) {
+            if (!dismissStylusHandwritingSheet()) throw e
+            field.click()
+            field.setText(text)
+        }
+    }
+
+    /**
+     * Taps Cancel on Gboard's stylus handwriting-education sheet. Returns whether it was showing.
+     * The sheet lives in its own window, which a [UiSelector] (active window only) cannot see, so
+     * it is located with a [BySelector], which searches every window.
+     */
+    private fun dismissStylusHandwritingSheet(): Boolean {
+        val cancelButton = device.wait(
+            Until.findObject(By.res("android:id/closeButton").pkg(GBOARD_PACKAGE)),
+            TIMEOUT_MS,
+        ) ?: return false
+        cancelButton.click()
+        device.wait(Until.gone(By.res("android:id/closeButton").pkg(GBOARD_PACKAGE)), TIMEOUT_MS)
+        return true
     }
 
     override fun setPassword(password: String) {
@@ -246,8 +282,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
             ?: device.findObject(UiSelector().className("android.widget.EditText").instance(0))
                 .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
         if (passwordField != null) {
-            passwordField.click()
-            passwordField.setText(password)
+            clickAndSetText(passwordField, password)
             lastFocusedCredentialField = CredentialField.PASSWORD
             return
         }
