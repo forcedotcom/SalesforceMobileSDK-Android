@@ -41,7 +41,7 @@ SalesforceHybrid
 
 ### Android Build Details
 - **Minimum SDK**: 31 (Android 12)
-- **Compile SDK**: 36 (Android 15.0)
+- **Compile SDK**: 36.1 for biometric-dependent libraries; 36 for SalesforceAnalytics
 - **Target SDK**: Follows compileSdk
 - **Build system**: Gradle 9.4.1 with Kotlin DSL (`.gradle.kts` files)
 - **AGP (Android Gradle Plugin)**: 9.1.1
