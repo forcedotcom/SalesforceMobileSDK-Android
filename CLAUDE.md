@@ -44,7 +44,7 @@ SalesforceHybrid
 - **Compile SDK**: 36.1 for biometric-dependent libraries; 36 for SalesforceAnalytics
 - **Target SDK**: Follows compileSdk
 - **Build system**: Gradle 9.4.1 with Kotlin DSL (`.gradle.kts` files)
-- **AGP (Android Gradle Plugin)**: 9.1.1
+- **AGP (Android Gradle Plugin)**: 9.2.1
 - **Setup**: Run `./install.sh` after cloning to pull submodule dependencies
 - **Dependency management**: Maven Central for dependencies, libraries published to Maven Central
 - **Encryption**: SmartStore depends on SQLCipher for Android (`net.zetetic:sqlcipher-android:4.10.0`)
