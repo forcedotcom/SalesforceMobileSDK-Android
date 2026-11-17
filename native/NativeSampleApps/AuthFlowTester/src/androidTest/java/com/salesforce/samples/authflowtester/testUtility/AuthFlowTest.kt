@@ -29,14 +29,15 @@ package com.salesforce.samples.authflowtester.testUtility
 import android.Manifest
 import android.content.Intent
 import android.os.Build
-import android.view.accessibility.AccessibilityEvent
 import androidx.annotation.VisibleForTesting
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
+import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.Until
 import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.rest.ApiVersionStrings
@@ -69,7 +70,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.TimeoutException
 
 /**
  * Total polling window after submitting credentials we expect to be
@@ -81,6 +81,7 @@ import java.util.concurrent.TimeoutException
 private const val LOGIN_FAILURE_SETTLE_MS: Long = 5_000
 private const val DPOP_BINDING_ERROR = "missing required dpop_jkt for code binding"
 private const val DPOP_BINDING_ERROR_TIMEOUT_MS: Long = 60_000
+private const val CHROME_PACKAGE = "com.android.chrome"
 
 private const val POLL_INTERVAL_MS: Long = 500
 
@@ -955,28 +956,21 @@ abstract class AuthFlowTest {
                 }
             }
         }
+        submitCredentials.run()
         if (expectDPoPBindingError) {
-            // Toasts are not in the view hierarchy; their text arrives as a notification-state
-            // accessibility event. executeAndWaitForEvent sees events from the start of the
-            // submission without replacing UiAutomator's own accessibility listener.
-            try {
-                InstrumentationRegistry.getInstrumentation().uiAutomation.executeAndWaitForEvent(
-                    submitCredentials,
-                    { event ->
-                        event.eventType == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED &&
-                            event.text.any { it.contains(DPOP_BINDING_ERROR) }
-                    },
+            // The server rejects the unbound /authorize request itself and renders the error
+            // (query-string encoded) as page content in the Custom Tab rather than redirecting
+            // back to the app, so the SDK never sees it and no toast is shown.
+            val encodedError = DPOP_BINDING_ERROR.replace(" ", "%20")
+            assert(
+                UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).wait(
+                    Until.hasObject(By.pkg(CHROME_PACKAGE).textContains(encodedError)),
                     DPOP_BINDING_ERROR_TIMEOUT_MS,
                 )
-            } catch (e: TimeoutException) {
-                throw AssertionError(
-                    "Expected the SDK to show the DPoP binding error ($DPOP_BINDING_ERROR) after a " +
-                        "rejected unbound login",
-                    e,
-                )
+            ) {
+                "Expected the Custom Tab to show the DPoP binding error ($encodedError) after a " +
+                    "rejected unbound login"
             }
-        } else {
-            submitCredentials.run()
         }
 
         val deadline = System.currentTimeMillis() + LOGIN_FAILURE_SETTLE_MS
