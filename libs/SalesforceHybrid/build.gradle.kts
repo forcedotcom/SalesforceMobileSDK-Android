@@ -35,7 +35,7 @@ android { // TODO: This cannot be resolved until newDSL=true
 
     //noinspection GradleDependency
     compileSdk = 36
-    compileSdkMinor = 1 // Required by the biometric dependency.
+    compileSdkMinor = 1
 
     defaultConfig {
         minSdk = 31
