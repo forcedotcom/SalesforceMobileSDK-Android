@@ -1,0 +1,1 @@
+This file exists only to verify the active pull_request_target Actions policy permits a trusted maintainer PR.
