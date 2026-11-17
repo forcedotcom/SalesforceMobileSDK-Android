@@ -1,3 +1,0 @@
-# Actions Policy Evaluation Test
-
-This file exists only to trigger pull request CI while evaluating the Actions policy for `pull_request_target`.
