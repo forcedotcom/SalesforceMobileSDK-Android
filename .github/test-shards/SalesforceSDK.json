@@ -14,7 +14,7 @@
     },
     {
       "name": "ui",
-      "comment": "Compose-rendering tests must NOT share a shard with classes that call mockk<...>(relaxed = true) on Activity-derived types (LoginActivity, FragmentActivity, etc.). mockk's Android dispatcher bytecode-instruments those class hierarchies for the JVM process lifetime, which slows ContextThemeWrapper.getResources() to seconds per call — hanging Compose rendering. The current polluters are LoginActivityTest, NativeLoginManagerTest, and SalesforceSDKManagerTests, all kept in the `remaining` shard.",
+      "comment": "Compose-rendering tests must NOT share a shard with classes that call mockk<...>(relaxed = true) on Activity-derived types (LoginActivity, FragmentActivity, etc.). mockk's Android dispatcher bytecode-instruments those class hierarchies for the JVM process lifetime, which slows ContextThemeWrapper.getResources() to seconds per call — hanging Compose rendering. NativeLoginManagerTest is isolated in the `activity-mocks` shard.",
       "targets": [
         "class com.salesforce.androidsdk.ui.LoginViewActivityTest",
         "class com.salesforce.androidsdk.ui.PickerBottomSheetTest",
@@ -28,7 +28,8 @@
         "class com.salesforce.androidsdk.ui.TokenMigrationActivityTest",
         "class com.salesforce.androidsdk.ui.TokenMigrationViewActivityTest",
         "class com.salesforce.androidsdk.ui.ScreenLockActivityScenarioTest",
-        "class com.salesforce.androidsdk.ui.ScreenLockViewTest"
+        "class com.salesforce.androidsdk.ui.ScreenLockViewTest",
+        "class com.salesforce.androidsdk.ui.LoginOptionsAuthenticationModeTest"
       ]
     },
     {
@@ -52,6 +53,13 @@
         "class com.salesforce.androidsdk.rest.files.RenditionTypeTest",
         "class com.salesforce.androidsdk.rest.files.ConnectUriBuilderTest",
         "class com.salesforce.androidsdk.rest.files.FileRequestsTest"
+      ]
+    },
+    {
+      "name": "activity-mocks",
+      "comment": "NativeLoginManagerTest mocks FragmentActivity. Keep it separate from Compose-rendering tests to avoid MockK process-lifetime instrumentation slowing resource lookup.",
+      "targets": [
+        "class com.salesforce.androidsdk.auth.NativeLoginManagerTest"
       ]
     },
     {
@@ -86,7 +94,9 @@
         "notClass com.salesforce.androidsdk.ui.TokenMigrationViewActivityTest",
         "notClass com.salesforce.androidsdk.ui.TokenMigrationWebViewTest",
         "notClass com.salesforce.androidsdk.ui.ScreenLockActivityScenarioTest",
-        "notClass com.salesforce.androidsdk.ui.ScreenLockViewTest"
+        "notClass com.salesforce.androidsdk.ui.ScreenLockViewTest",
+        "notClass com.salesforce.androidsdk.ui.LoginOptionsAuthenticationModeTest",
+        "notClass com.salesforce.androidsdk.auth.NativeLoginManagerTest"
       ]
     }
   ]
