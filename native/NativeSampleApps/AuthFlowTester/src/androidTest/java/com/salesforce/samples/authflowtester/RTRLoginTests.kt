@@ -100,7 +100,9 @@ class RTRLoginTests : AuthFlowTest() {
         assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = true)
 
         restartApp()
+        val refreshSince = app.getRequestUserAgentHighWaterSequence()
         assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = true)
+        assertSentUserAgent("/services/oauth2/token", accountFor(user), refreshSince)
         app.validateLastTokenRequestUserAgent(
             FEATURE_RTR,
             FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,

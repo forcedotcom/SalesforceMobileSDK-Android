@@ -30,10 +30,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
+import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.slot
 import io.mockk.verify
+import io.mockk.unmockkObject
 import okhttp3.Interceptor
 import okhttp3.Protocol
 import okhttp3.Request
@@ -49,6 +52,7 @@ import org.junit.runner.RunWith
 import java.io.IOException
 import java.net.URI
 import java.util.UUID
+import android.security.keystore.KeyPermanentlyInvalidatedException
 
 /**
  * Unit tests for RestClient's per-request DPoP gate at API-call time.
@@ -72,6 +76,15 @@ class RestClientDPoPGateTests {
         val id = "restclient_${name}_${UUID.randomUUID()}"
         aliasesToCleanUp.add(DPoPKeyManager.aliasForCredentialsIdentifier(id))
         return id
+    }
+
+    /**
+     * Mints the DPoP key that login would have bound for [id]. The outbound/refresh paths are
+     * load-only and no longer mint on first use, so a DPoP-bound credential must already have its
+     * key present for a proof to be attached.
+     */
+    private fun seedKeyPair(id: String) {
+        DPoPKeyManager.generateOrLoadKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(id))
     }
 
     private fun captureAuthenticatedRequest(
@@ -102,6 +115,7 @@ class RestClientDPoPGateTests {
     @Test
     fun test_givenDPoPBoundCredential_whenIntercept_thenAttachesProofAndDPoPScheme() {
         val id = trackId("sc2_dpop_bound")
+        seedKeyPair(id) // Login binds the key; outbound path is load-only.
         val interceptor = RestClient.OAuthRefreshInterceptor(
             null,
             "__ACCESS_TOKEN__",
@@ -226,6 +240,106 @@ class RestClientDPoPGateTests {
     }
 
     @Test
+    fun test_givenMissingBoundKeyAndSdkProvider_whenIntercept_thenDispatchesTerminalReauthWithoutNetwork() {
+        val id = trackId("missing_key_reauth")
+        val provider = mockk<ClientManager.AccMgrAuthTokenProvider>(relaxed = true)
+        val interceptor = RestClient.OAuthRefreshInterceptor(
+            clientInfo(),
+            "__ACCESS_TOKEN__",
+            "DPoP",
+            id,
+            null,
+            provider,
+        )
+        val outbound = Request.Builder()
+            .url("https://instance.example.com/services/data/v65.0/query")
+            .get()
+            .build()
+        val chain = mockk<Interceptor.Chain>(relaxed = true) {
+            every { request() } returns outbound
+        }
+
+        assertThrows(IOException::class.java) {
+            interceptor.intercept(chain)
+        }
+
+        verify(exactly = 1) { provider.handleMissingDPoPBoundKey(id) }
+        verify(exactly = 0) { chain.proceed(any()) }
+    }
+
+    @Test
+    fun test_givenPermanentlyInvalidatedBoundKeyWhileSigning_whenIntercept_thenDispatchesTerminalReauthWithoutNetwork() {
+        val id = trackId("permanently_invalidated_reauth")
+        seedKeyPair(id)
+        val provider = mockk<ClientManager.AccMgrAuthTokenProvider>(relaxed = true)
+        val interceptor = RestClient.OAuthRefreshInterceptor(
+            clientInfo(),
+            "__ACCESS_TOKEN__",
+            "DPoP",
+            id,
+            null,
+            provider,
+        )
+        val outbound = Request.Builder()
+            .url("https://instance.example.com/services/data/v65.0/query")
+            .get()
+            .build()
+        val chain = mockk<Interceptor.Chain>(relaxed = true) {
+            every { request() } returns outbound
+        }
+        mockkObject(DPoPProofBuilder)
+        try {
+            every { DPoPProofBuilder.buildProof(any(), any(), any(), any(), any()) } throws
+                KeyPermanentlyInvalidatedException()
+
+            assertThrows(IOException::class.java) {
+                interceptor.intercept(chain)
+            }
+        } finally {
+            unmockkObject(DPoPProofBuilder)
+        }
+
+        verify(exactly = 1) { provider.handleMissingDPoPBoundKey(id) }
+        verify(exactly = 0) { chain.proceed(any()) }
+    }
+
+    @Test
+    fun test_givenGenericProofFailure_whenIntercept_thenFailsClosedWithoutTerminalReauth() {
+        val id = trackId("generic_proof_failure")
+        seedKeyPair(id)
+        val provider = mockk<ClientManager.AccMgrAuthTokenProvider>(relaxed = true)
+        val interceptor = RestClient.OAuthRefreshInterceptor(
+            clientInfo(),
+            "__ACCESS_TOKEN__",
+            "DPoP",
+            id,
+            null,
+            provider,
+        )
+        val outbound = Request.Builder()
+            .url("https://instance.example.com/services/data/v65.0/query")
+            .get()
+            .build()
+        val chain = mockk<Interceptor.Chain>(relaxed = true) {
+            every { request() } returns outbound
+        }
+        mockkObject(DPoPProofBuilder)
+        try {
+            every { DPoPProofBuilder.buildProof(any(), any(), any(), any(), any()) } throws
+                IllegalStateException("proof builder failed")
+
+            assertThrows(IOException::class.java) {
+                interceptor.intercept(chain)
+            }
+        } finally {
+            unmockkObject(DPoPProofBuilder)
+        }
+
+        verify(exactly = 0) { provider.handleMissingDPoPBoundKey(any()) }
+        verify(exactly = 0) { chain.proceed(any()) }
+    }
+
+    @Test
     fun test_givenIncompleteDPoPAndUiSidPolicy_whenIntercept_thenFailsBeforeNetwork() {
         val sdkManager = SalesforceSDKManager.getInstance()
         val originalPolicy = sdkManager.shouldUseUiSidBearerForPath
@@ -328,6 +442,7 @@ class RestClientDPoPGateTests {
     @Test
     fun test_givenRefreshChangesPolicyAndUiSid_whenReplay_thenHeadersSwitchAtomically() {
         val id = trackId("refresh_ui_sid")
+        seedKeyPair(id) // First attempt signs a DPoP proof; key must already be bound.
         val sdkManager = SalesforceSDKManager.getInstance()
         val originalPolicy = sdkManager.shouldUseUiSidBearerForPath
         try {

@@ -124,9 +124,13 @@ data class DevSupportInfo(
                 rows.add("DPoP Nonce" to (nonce?.ifEmpty { "None" } ?: "None"))
                 val thumbprint = credId?.let {
                     runCatching {
+                        // Load-only: displaying dev info must never MINT a DPoP key as a side
+                        // effect. Show "Unavailable" when no bound key exists.
                         val alias = DPoPKeyManager.aliasForCredentialsIdentifier(it)
-                        val keyPair = DPoPKeyManager.generateOrLoadKeyPair(alias)
-                        DPoPProofBuilder.jwkThumbprint(keyPair.public as ECPublicKey)
+                        val keyPair = DPoPKeyManager.loadKeyPair(alias)
+                        keyPair?.let { kp ->
+                            DPoPProofBuilder.jwkThumbprint(kp.public as ECPublicKey)
+                        } ?: "Unavailable"
                     }.getOrElse { "Unavailable" }
                 } ?: "Unavailable"
                 rows.add("DPoP Key Thumbprint" to thumbprint)

@@ -329,6 +329,32 @@ class ClientManagerMockTest {
         assertEquals(ACCESS_TOKEN_REVOKE_INTENT, broadcastIntentSlot.captured.action)
     }
 
+    @Test
+    fun testHandleMissingDPoPBoundKey_LogsOutBoundAccountAndBroadcastsInvalidGrant() {
+        val broadcastIntentSlot = slot<Intent>()
+        val mockAccount = mockk<Account>(relaxed = true)
+        val mockUser = mockk<UserAccount>(relaxed = true) {
+            every { authToken } returns OLD_ACCESS_TOKEN
+            every { refreshToken } returns REFRESH_TOKEN
+            every { loginServer } returns "https://login.salesforce.com"
+            every { tokenType } returns "DPoP"
+            every { credentialsIdentifier } returns "dpop-credentials-id"
+        }
+        val clientManager = boundClientManager(mockAccount, arrayOf(mockAccount))
+        every { mockUserAccountManager.currentUser } returns mockUser
+        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
+        val provider = ClientManager.AccMgrAuthTokenProvider(clientManager)
+
+        provider.handleMissingDPoPBoundKey("dpop-credentials-id")
+
+        verify(exactly = 1) {
+            mockSDKManager.logout(mockAccount, any(), true, REFRESH_TOKEN_EXPIRED)
+            mockAppContext.sendBroadcast(capture(broadcastIntentSlot))
+        }
+        assertEquals(ACCESS_TOKEN_REVOKE_INTENT, broadcastIntentSlot.captured.action)
+        assertEquals("invalid_grant", broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
+    }
+
     /*
         Server-side Refresh Token Rotation (RTR): when the token endpoint returns
         a rotated refresh_token, the provider must update its cached refresh

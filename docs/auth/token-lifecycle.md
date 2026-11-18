@@ -29,7 +29,8 @@ After the user completes web authentication (embedded WebView or system browser)
 2. `makeTokenEndpointRequest()` uses `DPoPKeyManager.shouldAttachDPoP(credentialsIdentifier,
    tokenType)`. For initial code exchange, `tokenType` is null and the gate checks for the
    identifier's existing key material (created when authorize requested DPoP):
-   - Looks up (or generates) the EC keypair via `DPoPKeyManager.generateOrLoadKeyPair()`.
+    - The binding code-exchange path may generate the EC keypair. Refresh and resource paths use
+      load-only lookup and never mint a replacement key.
    - Proactively reads any cached nonce via `DPoPNonceCache.get(credentialsIdentifier, tokenHost)` — null on first ever login.
    - Builds a DPoP proof JWT via `DPoPProofBuilder.buildProof()` and attaches it as the `DPoP` header.
 3. Sends the request via `makeTokenEndpointRequest()` (shared with refresh).
@@ -245,6 +246,14 @@ HTTP 400 `use_dpop_nonce` challenge includes `DPoP-Nonce`, then rebuilds and ret
 request once. This inline retry requires the failed request to carry a `DPoP` proof, so a request
 sent as `Bearer <uiSid>` never enters DPoP nonce handling. A 401 remains the access-token-refresh
 path.
+
+For a DPoP-bound credential, a confirmed missing or permanently invalidated Android Keystore entry is
+terminal: the SDK sends no resource or refresh request, does not mint a replacement key, and the
+account-bound REST provider routes the account through the existing invalid-credentials logout/re-auth
+flow. A KeyStore read failure that does not prove key loss remains retryable. Android
+also fails closed when another refresh-proof construction error occurs. This is intentionally stricter
+than the current iOS token helper, which fails closed for bound-key failures but logs and proceeds
+without a proof for other proof-construction errors.
 
 ---
 

@@ -6,6 +6,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.accounts.UserAccountBuilder
+import com.salesforce.androidsdk.accounts.UserAccountTest
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountManagerTest.cleanupAccounts
 import com.salesforce.androidsdk.accounts.UserAccountManagerTest.createTestAccountInAccountManager
@@ -233,7 +235,13 @@ class PushMessagingTest {
         every { restClient.sendSync(any()) } returns restResponse
 
         // Setup
-        createTestAccountInAccountManager(userAccountManager)
+        userAccountManager?.createAccount(
+            UserAccountBuilder.getInstance()
+                .populateFromUserAccount(UserAccountTest.createTestAccount())
+                .tokenType("Bearer")
+                .build()
+        )
+        assertEquals("Bearer", salesforceSdkManager.userAccountManager.currentUser.tokenType)
 
         setNotificationTypes(
             userAccount = salesforceSdkManager.userAccountManager.currentUser,

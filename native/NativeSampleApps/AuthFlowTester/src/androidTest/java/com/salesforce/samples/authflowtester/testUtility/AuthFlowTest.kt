@@ -29,20 +29,25 @@ package com.salesforce.samples.authflowtester.testUtility
 import android.Manifest
 import android.content.Intent
 import android.os.Build
-import android.view.accessibility.AccessibilityEvent
 import androidx.annotation.VisibleForTesting
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
+import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.Until
 import com.salesforce.androidsdk.app.Features
+import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.rest.ApiVersionStrings
+import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.ui.AuthenticationMode
 import com.salesforce.androidsdk.ui.components.LoginViewTestTags
 import com.salesforce.samples.authflowtester.AuthFlowTesterActivity
+import com.salesforce.samples.authflowtester.TokenRequestCapturingHttpAccess
 import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
 import com.salesforce.samples.authflowtester.components.ConcurrentRequestTestHooks
 import com.salesforce.samples.authflowtester.pageObjects.AuthorizationPageObject
@@ -65,7 +70,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.TimeoutException
 
 /**
  * Total polling window after submitting credentials we expect to be
@@ -77,6 +81,7 @@ import java.util.concurrent.TimeoutException
 private const val LOGIN_FAILURE_SETTLE_MS: Long = 5_000
 private const val DPOP_BINDING_ERROR = "missing required dpop_jkt for code binding"
 private const val DPOP_BINDING_ERROR_TIMEOUT_MS: Long = 60_000
+private const val CHROME_PACKAGE = "com.android.chrome"
 
 private const val POLL_INTERVAL_MS: Long = 500
 
@@ -192,14 +197,18 @@ abstract class AuthFlowTest {
      * (`Authorization: DPoP ...`) but carry no `DPoP` proof header. Such a request, e.g. an
      * unproofed profile photo download, makes the server revoke the token. Wraps the client via
      * `newBuilder()` so the connection pool and the SDK's interceptors are preserved; this
-     * interceptor is added last so it sees the final headers.
+     * network interceptor runs after all application interceptors, including the authentication
+     * interceptor that RestClient appends after obtaining this builder.
      */
-    private class DPoPProofAuditHttpAccess(
+    internal class DPoPProofAuditHttpAccess(
         private val delegate: HttpAccess,
         private val violations: MutableList<String>,
     ) : HttpAccess(null, delegate.userAgent) {
-        override fun getOkHttpClient() = delegate.okHttpClient.newBuilder()
-            .addInterceptor { chain ->
+        override fun createNewClientBuilder() = auditedBuilder(delegate.createNewClientBuilder())
+        override fun getOkHttpClient() = auditedBuilder(delegate.okHttpClient.newBuilder()).build()
+
+        private fun auditedBuilder(builder: okhttp3.OkHttpClient.Builder) =
+            builder.addNetworkInterceptor { chain ->
                 val request = chain.request()
                 val scheme = request.header("Authorization")?.substringBefore(' ')
                 if (scheme.equals("DPoP", ignoreCase = true) && request.header("DPoP") == null) {
@@ -207,7 +216,6 @@ abstract class AuthFlowTest {
                 }
                 chain.proceed(request)
             }
-            .build()
 
         override fun hasNetwork() = delegate.hasNetwork()
     }
@@ -463,6 +471,7 @@ abstract class AuthFlowTest {
             // SDK regenerates the OAuth URL and re-launches the Custom Tab on LoginActivity.onResume.
         }
 
+        val loginCaptureSince = TokenRequestCapturingHttpAccess.highWaterSequence.value
         if (useWelcomeDiscovery) {
             // Drive the flow through the SDK's server picker via Welcome Discovery URL.
             // The SDK's switchDefaultOrSalesforceWelcomeDiscoveryLogin path consumes the
@@ -544,7 +553,8 @@ abstract class AuthFlowTest {
             assertUsername = assertUsername,
         )
         app.validateOAuthValues(knownAppConfig, scopeSelection, useHybridAuthToken = useHybridAuthToken, isDpop = useDPoP, knownLoginHostConfig = knownLoginHostConfig)
-        app.validateApiRequest()
+        assertUnaffiliatedIdentityUserAgent(loginCaptureSince)
+        validateApiRequestAndSentUserAgent(accountFor(knownUserConfig, knownLoginHostConfig))
     }
 
     /**
@@ -629,6 +639,7 @@ abstract class AuthFlowTest {
             isBeacon = appConfig.isBeacon,
             expectedRtMarker = expectedRtMarker(username),
         )
+        validateApiRequestAndSentUserAgent(accountFor(knownUserConfig, knownLoginHostConfig))
     }
 
     /**
@@ -737,7 +748,7 @@ abstract class AuthFlowTest {
         )
         this.app.validateUserAgentFlags(present = setOf(Features.FEATURE_NATIVE_LOGIN))
         this.app.validateNativeOAuthValues(app, useDPoP)
-        if (validateApi) this.app.validateApiRequest()
+        if (validateApi) validateApiRequestAndSentUserAgent(accountForUsername(setup.user.username))
     }
 
     /**
@@ -945,28 +956,21 @@ abstract class AuthFlowTest {
                 }
             }
         }
+        submitCredentials.run()
         if (expectDPoPBindingError) {
-            // Toasts are not in the view hierarchy; their text arrives as a notification-state
-            // accessibility event. executeAndWaitForEvent sees events from the start of the
-            // submission without replacing UiAutomator's own accessibility listener.
-            try {
-                InstrumentationRegistry.getInstrumentation().uiAutomation.executeAndWaitForEvent(
-                    submitCredentials,
-                    { event ->
-                        event.eventType == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED &&
-                            event.text.any { it.contains(DPOP_BINDING_ERROR) }
-                    },
+            // The server rejects the unbound /authorize request itself and renders the error
+            // (query-string encoded) as page content in the Custom Tab rather than redirecting
+            // back to the app, so the SDK never sees it and no toast is shown.
+            val encodedError = DPOP_BINDING_ERROR.replace(" ", "%20")
+            assert(
+                UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).wait(
+                    Until.hasObject(By.pkg(CHROME_PACKAGE).textContains(encodedError)),
                     DPOP_BINDING_ERROR_TIMEOUT_MS,
                 )
-            } catch (e: TimeoutException) {
-                throw AssertionError(
-                    "Expected the SDK to show the DPoP binding error ($DPOP_BINDING_ERROR) after a " +
-                        "rejected unbound login",
-                    e,
-                )
+            ) {
+                "Expected the Custom Tab to show the DPoP binding error ($encodedError) after a " +
+                    "rejected unbound login"
             }
-        } else {
-            submitCredentials.run()
         }
 
         val deadline = System.currentTimeMillis() + LOGIN_FAILURE_SETTLE_MS
@@ -1152,8 +1156,18 @@ abstract class AuthFlowTest {
         assertRefreshUserAgent: Boolean = true,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
+        val owner = requireNotNull(SalesforceSDKManager.getInstance().userAccountManager.currentUser)
+        val hadRtMarker = owner.lastTokenRotationTime?.isNotBlank() == true
+        val revokeSince = app.getRequestUserAgentHighWaterSequence()
         app.revokeAccessToken()
+        assertSentUserAgent("/services/oauth2/revoke", owner, revokeSince)
+        val refreshSince = app.getRequestUserAgentHighWaterSequence()
         app.validateApiRequest()
+        assertSentUserAgent(apiRequestPath(), owner, refreshSince)
+        // The first rotation registers RT only after the outgoing token request has been sent.
+        if (!expectsRefreshTokenRotation || hadRtMarker) {
+            assertSentUserAgent("/services/oauth2/token", owner, refreshSince)
+        }
         val (postAccessToken, postRefreshToken) = app.getTokens()
 
         assert(preAccessToken != postAccessToken) { "Access token should have been refreshed" }
@@ -1237,5 +1251,59 @@ abstract class AuthFlowTest {
             isJwt = isJwt,
             expectedRtMarker = expectedRtMarker(username),
         )
+        validateApiRequestAndSentUserAgent(accountFor(knownUserConfig, knownLoginHostConfig))
     }
+
+    protected fun accountFor(
+        knownUserConfig: KnownUserConfig,
+        knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
+    ): UserAccount = accountForUsername(usernameFor(knownLoginHostConfig, knownUserConfig))
+
+    private fun accountForUsername(username: String): UserAccount =
+        SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers
+            ?.singleOrNull { it.username == username }
+            ?: throw AssertionError("No authenticated account for the specified user")
+
+    protected fun apiRequestPath(): String = RestRequest.getCheapRequest(ApiVersionStrings.VERSION_NUMBER).path
+
+    protected fun validateApiRequestAndSentUserAgent(user: UserAccount) {
+        val since = app.getRequestUserAgentHighWaterSequence()
+        app.validateApiRequest()
+        assertSentUserAgent(apiRequestPath(), user, since)
+    }
+
+    /** Asserts exact owner, resolved endpoint path, sequence boundary, and final User-Agent. */
+    fun assertSentUserAgent(path: String, user: UserAccount, since: Long) {
+        val account = accountForUsername(user.username)
+        val client = requireNotNull(com.salesforce.androidsdk.rest.ClientManager(
+            InstrumentationRegistry.getInstrumentation().targetContext, account,
+        ).peekRestClient())
+        val expectedPath = if (path == "/services/oauth2/token") {
+            RequestEndpointPaths.token(account)
+        } else {
+            RequestEndpointPaths.rest(client.clientInfo, path)
+        }
+        val key = "${account.orgId}/${account.userId}"
+        val expected = SalesforceSDKManager.getInstance().getUserAgent("", account)
+        val entries = app.getCapturedRequestUserAgents()
+        assertTrue(
+            "No exact request User-Agent match for path=$expectedPath owner=$key seq>$since expected=$expected; captured=$entries",
+            entries.any { it.seq > since && it.path == expectedPath && it.userKey == key && it.userAgent == expected },
+        )
+    }
+
+    private fun assertUnaffiliatedIdentityUserAgent(since: Long) {
+        val expectedPrefix = SalesforceSDKManager.getInstance().getUserAgent(
+            "", SalesforceSDKManager.getInstance().userAccountManager.currentUser,
+        ).substringBefore(" ftr_")
+        val entries = app.getCapturedRequestUserAgents()
+        assertTrue(
+            "No unaffiliated identity request User-Agent match after seq=$since prefix=$expectedPrefix; captured=$entries",
+            entries.any {
+                it.seq > since && it.path.startsWith("/id/") && it.userKey == "unknown" &&
+                    it.userAgent.substringBefore(" ftr_") == expectedPrefix
+            },
+        )
+    }
+
 }

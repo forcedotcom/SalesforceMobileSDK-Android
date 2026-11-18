@@ -30,6 +30,7 @@ import android.app.Activity;
 import android.content.Context;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RestrictTo;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.config.BootConfig;
@@ -155,13 +156,20 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
 	@NonNull
 	@Override
 	public final String getUserAgent(@NonNull String qualifier, @androidx.annotation.Nullable UserAccount user) {
-		final BootConfig config = BootConfig.getBootConfig(context);
-		if (config.isLocal()) {
-			qualifier = qualifier + "Local";
-		} else {
-			qualifier = qualifier + "Remote";
-		}
-		return super.getUserAgent(qualifier, user);
+		return super.getUserAgent(getHybridQualifier(qualifier), user);
+	}
+
+	/** Preserves the hybrid qualifier for credential-free RestClient request attribution. */
+	@Override
+	@RestrictTo(RestrictTo.Scope.LIBRARY)
+	public final String getUserAgentForIdentity(@NonNull String qualifier,
+			@androidx.annotation.Nullable String orgId, @androidx.annotation.Nullable String userId) {
+		return super.getUserAgentForIdentity(getHybridQualifier(qualifier), orgId, userId);
+	}
+
+	@NonNull
+	private String getHybridQualifier(@NonNull String qualifier) {
+		return qualifier + (BootConfig.getBootConfig(context).isLocal() ? "Local" : "Remote");
 	}
 
     @NonNull

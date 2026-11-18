@@ -78,6 +78,7 @@ class LoginOptionsActivityTest {
 
     private var originalUseWebServer: Boolean = false
     private var originalUseHybridToken: Boolean = false
+    private var originalUseDPoP: Boolean = true
     private var originalForceAdvancedAuth: Boolean = true
     private var originalUseEphemeralSessionForAdvancedAuth: Boolean = true
     private var originalCustomTabBrowser: String? = null
@@ -97,6 +98,7 @@ class LoginOptionsActivityTest {
         // Save original values
         originalUseWebServer = SalesforceSDKManager.getInstance().useWebServerAuthentication
         originalUseHybridToken = SalesforceSDKManager.getInstance().useHybridAuthentication
+        originalUseDPoP = SalesforceSDKManager.getInstance().useDPoP
         originalForceAdvancedAuth = SalesforceSDKManager.getInstance().forceAdvancedAuthentication
         originalUseEphemeralSessionForAdvancedAuth =
             SalesforceSDKManager.getInstance().useEphemeralSessionForAdvancedAuth
@@ -138,6 +140,7 @@ class LoginOptionsActivityTest {
         // Restore original values
         SalesforceSDKManager.getInstance().useWebServerAuthentication = originalUseWebServer
         SalesforceSDKManager.getInstance().useHybridAuthentication = originalUseHybridToken
+        SalesforceSDKManager.getInstance().useDPoP = originalUseDPoP
         SalesforceSDKManager.getInstance().forceAdvancedAuthentication = originalForceAdvancedAuth
         SalesforceSDKManager.getInstance().useEphemeralSessionForAdvancedAuth =
             originalUseEphemeralSessionForAdvancedAuth
@@ -386,6 +389,18 @@ class LoginOptionsActivityTest {
         SalesforceSDKManager.getInstance().forceAdvancedAuthentication = false
         val authConfigOff = SalesforceSDKManager.getInstance().devSupportInfo.authConfigSection?.second
         assertEquals("false", authConfigOff?.find { it.first == "Force Advanced Authentication" }?.second)
+    }
+
+    @Test
+    fun devSupportInfo_IncludesUseDPoP_WithCurrentValue() {
+        // The dev-support info surfaces the global DPoP flag and its value.
+        SalesforceSDKManager.getInstance().useDPoP = true
+        val authConfigOn = SalesforceSDKManager.getInstance().devSupportInfo.authConfigSection?.second
+        assertEquals("true", authConfigOn?.find { it.first == "Use DPoP" }?.second)
+
+        SalesforceSDKManager.getInstance().useDPoP = false
+        val authConfigOff = SalesforceSDKManager.getInstance().devSupportInfo.authConfigSection?.second
+        assertEquals("false", authConfigOff?.find { it.first == "Use DPoP" }?.second)
     }
 
     @Test

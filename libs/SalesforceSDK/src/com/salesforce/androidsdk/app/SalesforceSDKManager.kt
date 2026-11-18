@@ -59,6 +59,7 @@ import android.webkit.CookieManager
 import android.webkit.URLUtil.isHttpsUrl
 import android.widget.Toast
 import androidx.annotation.CallSuper
+import androidx.annotation.RestrictTo
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.Companion.PRIVATE
 import androidx.annotation.VisibleForTesting.Companion.PROTECTED
@@ -1352,6 +1353,7 @@ open class SalesforceSDKManager protected constructor(
                         URI(loginServer),
                         refreshToken,
                         logoutReason,
+                        userAccount,
                     )
                 }.onFailure { error ->
                     w(TAG, "Revoking token failed", error)
@@ -1554,6 +1556,22 @@ open class SalesforceSDKManager protected constructor(
     open fun getUserAgent(qualifier: String, user: UserAccount?) : String {
         val resolvedUser = user ?: userAccountManager.currentUser
         val userKey = resolvedUser?.let { "${it.orgId}/${it.userId}" }
+        return buildUserAgent(qualifier, userKey)
+    }
+
+    /**
+     * Returns a per-user agent string for a credential-free request identity.
+     *
+     * This is for internal request attribution when constructing a [UserAccount] would have
+     * side effects such as registering SDK features.
+     */
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    open fun getUserAgentForIdentity(qualifier: String, orgId: String?, userId: String?): String {
+        val userKey = if (orgId.isNullOrBlank() || userId.isNullOrBlank()) null else "$orgId/$userId"
+        return buildUserAgent(qualifier, userKey)
+    }
+
+    private fun buildUserAgent(qualifier: String, userKey: String?): String {
         val userFeatures = userKey?.let { perUserFeatures[it] } ?: emptySet<String>()
         val allFeatures = ConcurrentSkipListSet<String>(CASE_INSENSITIVE_ORDER).apply {
             addAll(features.filterNotNull())
@@ -2044,6 +2062,7 @@ open class SalesforceSDKManager protected constructor(
             val authConfig = listOf(
                 "Use Web Server Authentication" to "$_useWebServerAuthentication",
                 "Use Hybrid Authentication Token" to "$useHybridAuthentication",
+                "Use DPoP" to "$useDPoP",
                 "Force Advanced Authentication" to "$_forceAdvancedAuthentication",
                 "Use Ephemeral Session for Advanced Authentication" to "$useEphemeralSessionForAdvancedAuth",
                 "My Domain Browser Login Enabled" to "$isBrowserLoginEnabled",
@@ -2272,7 +2291,7 @@ open class SalesforceSDKManager protected constructor(
         protected var INSTANCE: SalesforceSDKManager? = null
 
         /** The current version of this SDK */
-        const val SDK_VERSION = "14.0.1-rc.0"
+        const val SDK_VERSION = "14.0.1.dev"
 
         /**
          * An intent action meant for instances of Salesforce SDK manager

@@ -268,10 +268,7 @@ public class RestClient {
             okHttpClientBuilder = httpAccessor.createNewClientBuilder();
             if (!cacheKey.equals("unauthenticated")) {
                 okHttpClientBuilder.addInterceptor(getOAuthRefreshInterceptor());
-                final UserAccount user = SalesforceSDKManager.getInstance()
-                        .getUserAccountManager()
-                        .getUserFromOrgAndUserId(clientInfo.orgId, clientInfo.userId);
-                okHttpClientBuilder.addNetworkInterceptor(new HttpAccess.UserAgentInterceptor(user));
+                okHttpClientBuilder.addNetworkInterceptor(new HttpAccess.UserAgentInterceptor(clientInfo.getRequestIdentity()));
             }
 
             OK_CLIENT_BUILDERS.put(getCacheKey(), okHttpClientBuilder);
@@ -410,13 +407,15 @@ public class RestClient {
      * @return The HTTP request
      */
     public Request buildRequest(RestRequest restRequest) {
-        final URI uri = oAuthRefreshInterceptor.clientInfo.resolveUrl(restRequest);
+        final ClientInfo requestClientInfo = getClientInfo();
+        final URI uri = requestClientInfo.resolveUrl(restRequest);
         if (uri == null) return null;
         final HttpUrl url = HttpUrl.get(uri);
         if (url == null) return null;
         final Request.Builder builder = new Request.Builder()
                 .url(url)
                 .method(restRequest.getMethod().toString(), restRequest.getRequestBody());
+        builder.tag(HttpAccess.RequestUserIdentity.class, requestClientInfo.getRequestIdentity());
 
         // Adding additional headers
         final Map<String, String> additionalHttpHeaders = restRequest.getAdditionalHttpHeaders();
@@ -508,6 +507,12 @@ public class RestClient {
      */
     public static class ClientInfo {
 
+        // Keep the request owner as the stable org/user pair from ClientInfo rather than a
+        // synthetic UserAccount. UserAccountBuilder registers SDK features as a side effect,
+        // while the User-Agent can look up the live feature set directly from this identity.
+        // This also keeps a retained RestClient bound to its owner across account switches,
+        // Login As, and account removal.
+        private HttpAccess.RequestUserIdentity requestIdentity;
         public final URI instanceUrl;
         public final URI loginUrl;
         public final URI identityUrl;
@@ -589,6 +594,16 @@ public class RestClient {
             this.contentDomain = contentDomain;
             this.contentSid = contentSid;
             this.csrfToken = csrfToken;
+        }
+
+        private synchronized HttpAccess.RequestUserIdentity getRequestIdentity() {
+            if (requestIdentity == null && orgId != null && !orgId.trim().isEmpty()
+                    && userId != null && !userId.trim().isEmpty()) {
+                // RequestUserIdentity is deliberately credential-free: the interceptor uses its
+                // org/user key to calculate the User-Agent without resolving an account.
+                requestIdentity = new HttpAccess.RequestUserIdentity(orgId, userId);
+            }
+            return requestIdentity;
         }
 
         /**
@@ -881,67 +896,78 @@ public class RestClient {
 
         @Override
         public Response intercept(Chain chain) throws IOException {
-            Request request = chain.request();
-            request = buildAuthenticatedRequest(request);
-            Response response = chain.proceed(request);
-
-            // Cold nonce cache (e.g. after process restart): resource server may return
-            // HTTP 400 use_dpop_nonce. Harvest once and rebuild the proof. Do not treat
-            // 401 as a nonce retry — that remains the token-refresh path.
-            if (credentialsIdentifier != null && !credentialsIdentifier.isEmpty()
-                    && request.header("DPoP") != null
-                    && response.code() == HttpURLConnection.HTTP_BAD_REQUEST
-                    && DPoPRequestDecorator.INSTANCE.isNonceChallenge(response)) {
-                DPoPRequestDecorator.INSTANCE.harvestNonce(response, credentialsIdentifier, request.url().host());
-                response.close();
+            try {
+                Request request = chain.request();
                 request = buildAuthenticatedRequest(request);
-                response = chain.proceed(request);
-            }
+                Response response = chain.proceed(request);
 
-            /*
-             * Standard access token expiry returns 401 as the error code.
-             */
-            if (shouldRefresh(response)) {
-                SalesforceSDKLogger.d(TAG, "shouldRefresh() returned true");
+                // Cold nonce cache (e.g. after process restart): resource server may return
+                // HTTP 400 use_dpop_nonce. Harvest once and rebuild the proof. Do not treat
+                // 401 as a nonce retry — that remains the token-refresh path.
+                if (credentialsIdentifier != null && !credentialsIdentifier.isEmpty()
+                        && request.header("DPoP") != null
+                        && response.code() == HttpURLConnection.HTTP_BAD_REQUEST
+                        && DPoPRequestDecorator.INSTANCE.isNonceChallenge(response)) {
+                    DPoPRequestDecorator.INSTANCE.harvestNonce(response, credentialsIdentifier, request.url().host());
+                    response.close();
+                    request = buildAuthenticatedRequest(request);
+                    response = chain.proceed(request);
+                }
 
-                final URI curInstanceUrl = clientInfo.getInstanceUrl();
-                if (curInstanceUrl != null) {
-                    final HttpUrl currentInstanceUrl = HttpUrl.get(curInstanceUrl);
-                    if (currentInstanceUrl != null) {
+                /*
+                 * Standard access token expiry returns 401 as the error code.
+                 */
+                if (shouldRefresh(response)) {
+                    SalesforceSDKLogger.d(TAG, "shouldRefresh() returned true");
 
-                        // Checks if the host of the request is the same as instance URL.
-                        boolean isHostInstanceUrl = currentInstanceUrl.host().equals(request.url().host());
-                        refreshAccessToken();
-                        if (getAuthToken() != null) {
-                            request = buildAuthenticatedRequest(request);
+                    final URI curInstanceUrl = clientInfo.getInstanceUrl();
+                    if (curInstanceUrl != null) {
+                        final HttpUrl currentInstanceUrl = HttpUrl.get(curInstanceUrl);
+                        if (currentInstanceUrl != null) {
 
-                            /*
-                             * During instance migration, the instance URL could change. Hence, the host
-                             * needs to be adjusted to replace the old instance URL with the new instance
-                             * URL before replaying this request. However, this adjustment should be applied
-                             * only if the host of the request was the old instance URL. This avoids
-                             * accidental manipulation of the host for requests where the caller has
-                             * passed in their own fully formed host URL that is not instance URL.
-                             *
-                             * We also need to cover the case where the host changes during refresh
-                             * because the replayed request will fail.
-                             */
-                            final URI refreshInstanceUrl = clientInfo.getInstanceUrl();
-                            boolean refreshUpdatedUrl = refreshInstanceUrl != null &&
-                                    !refreshInstanceUrl.getHost().equals(request.url().host());
-                            if (isHostInstanceUrl && refreshUpdatedUrl) {
-                                final HttpUrl updatedInstanceUrl = HttpUrl.get(refreshInstanceUrl);
-                                if (updatedInstanceUrl != null) {
-                                    request = adjustHostInRequest(request, updatedInstanceUrl.host());
+                            // Checks if the host of the request is the same as instance URL.
+                            boolean isHostInstanceUrl = currentInstanceUrl.host().equals(request.url().host());
+                            refreshAccessToken();
+                            if (getAuthToken() != null) {
+                                request = buildAuthenticatedRequest(request);
+
+                                /*
+                                 * During instance migration, the instance URL could change. Hence, the host
+                                 * needs to be adjusted to replace the old instance URL with the new instance
+                                 * URL before replaying this request. However, this adjustment should be applied
+                                 * only if the host of the request was the old instance URL. This avoids
+                                 * accidental manipulation of the host for requests where the caller has
+                                 * passed in their own fully formed host URL that is not instance URL.
+                                 *
+                                 * We also need to cover the case where the host changes during refresh
+                                 * because the replayed request will fail.
+                                 */
+                                final URI refreshInstanceUrl = clientInfo.getInstanceUrl();
+                                boolean refreshUpdatedUrl = refreshInstanceUrl != null &&
+                                        !refreshInstanceUrl.getHost().equals(request.url().host());
+                                if (isHostInstanceUrl && refreshUpdatedUrl) {
+                                    final HttpUrl updatedInstanceUrl = HttpUrl.get(refreshInstanceUrl);
+                                    if (updatedInstanceUrl != null) {
+                                        request = adjustHostInRequest(request, updatedInstanceUrl.host());
+                                    }
                                 }
+                                response.close();
+                                response = chain.proceed(request);
                             }
-                            response.close();
-                            response = chain.proceed(request);
                         }
                     }
                 }
+                return response;
+            } catch (IOException e) {
+                // buildAuthenticatedRequest is synchronized to keep its credential snapshot atomic.
+                // Handle terminal cleanup only after it unwinds, before acquiring refresh-state locks.
+                if (DPoPRequestDecorator.isMissingDPoPKeyError(e)
+                        && authTokenProvider instanceof ClientManager.AccMgrAuthTokenProvider) {
+                    ((ClientManager.AccMgrAuthTokenProvider) authTokenProvider)
+                            .handleMissingDPoPBoundKey(credentialsIdentifier);
+                }
+                throw e;
             }
-            return response;
         }
 
         /**
@@ -966,7 +992,7 @@ public class RestClient {
          * @param request
          * @return
          */
-        private synchronized Request buildAuthenticatedRequest(Request request) {
+        private synchronized Request buildAuthenticatedRequest(Request request) throws IOException {
             Request.Builder builder = request.newBuilder();
             DPoPRequestDecorator.INSTANCE.applyAuthHeaders(
                     builder, credentialsIdentifier, tokenType, authToken, uiSid);

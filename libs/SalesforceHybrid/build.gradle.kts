@@ -1,7 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
 rootProject.ext["PUBLISH_GROUP_ID"] = "com.salesforce.mobilesdk"
-rootProject.ext["PUBLISH_VERSION"] = "14.0.1-rc.0"
+rootProject.ext["PUBLISH_VERSION"] = "14.0.1"
 rootProject.ext["PUBLISH_ARTIFACT_ID"] = "SalesforceHybrid"
 
 plugins {
@@ -23,6 +23,10 @@ dependencies {
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.mockk.android) {
+        exclude(group = "org.junit.jupiter")
+        exclude(group = "org.junit.platform")
+    }
 }
 
 android { // TODO: This cannot be resolved until newDSL=true

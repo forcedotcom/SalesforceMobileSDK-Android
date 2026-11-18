@@ -240,6 +240,7 @@ class IDPAuthCodeHelperTest {
                     URI(TEST_LOGIN_SERVER),
                     capture(revokedRefreshToken),
                     any(),
+                    any(),
                 )
             } answers {
                 revocationCompleted.countDown()
