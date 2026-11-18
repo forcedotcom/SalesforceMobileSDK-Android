@@ -139,12 +139,6 @@ jobs:
             --no-performance-metrics \
             --num-flaky-test-attempts=1 \
             --timeout="${FIREBASE_TIMEOUT}" || true
-      - name: Archive APK
-        if: ${{ matrix.group == 'login' && (success() || failure()) }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
-        with:
-          name: AuthFlowTester-debug-${{ github.run_number }}
-          path: native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk
 
   test-android:
     # Nightly runs: reports on the results of the nightly-shard jobs. PR runs: runs the tests itself.
@@ -634,12 +628,6 @@ jobs:
           include_empty_in_summary: false
           simplified_summary: true
           report_paths: 'firebase_results/**.xml'
-      - name: Archive APK
-        if: ${{ inputs.is_pr && (success() || failure()) }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
-        with:
-          name: AuthFlowTester-debug-${{ github.run_number }}
-          path: native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk
       - name: Archive Test Results
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         if: success() || failure()
