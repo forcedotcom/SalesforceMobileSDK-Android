@@ -46,7 +46,10 @@ class CordovaStatusBarCompatibilityTest {
     @get:Rule
     val notificationPermission: GrantPermissionRule = if (Build.VERSION.SDK_INT >= 33) {
         GrantPermissionRule.grant(Manifest.permission.POST_NOTIFICATIONS)
-    } else GrantPermissionRule.grant()
+    } else {
+        /* No runtime notification permission is needed below API 33. */
+        GrantPermissionRule.grant()
+    }
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
 
@@ -54,7 +57,7 @@ class CordovaStatusBarCompatibilityTest {
     fun test_givenPlatformStatusBar_whenFractionalAlpha_thenNativeColorIsRounded() = withActivity { activity ->
         change(activity, "window.statusbar.setBackgroundColor('rgba(255, 0, 153, 0.5)')")
         instrumentation.runOnMainSync {
-            val bar = requireNotNull(activity.window.decorView.findViewWithTag<View>("statusBarView"))
+            val bar = statusBar(activity)
             assertEquals(Color.argb(128, 255, 0, 153), (bar.background as ColorDrawable).color)
         }
     }
@@ -63,7 +66,7 @@ class CordovaStatusBarCompatibilityTest {
     fun test_givenPlatformStatusBar_whenOpaqueColor_thenNativeColorMatches() = withActivity { activity ->
         change(activity, "window.statusbar.setBackgroundColor('rgb(255, 0, 153)')")
         instrumentation.runOnMainSync {
-            val bar = requireNotNull(activity.window.decorView.findViewWithTag<View>("statusBarView"))
+            val bar = statusBar(activity)
             assertEquals(Color.rgb(255, 0, 153), (bar.background as ColorDrawable).color)
         }
     }
@@ -73,11 +76,15 @@ class CordovaStatusBarCompatibilityTest {
         listOf(false, true).forEach { visible ->
             change(activity, "window.statusbar.visible = $visible")
             instrumentation.runOnMainSync {
-                val bar = requireNotNull(activity.window.decorView.findViewWithTag<View>("statusBarView"))
+                val bar = statusBar(activity)
                 assertEquals(if (visible) View.VISIBLE else View.GONE, bar.visibility)
             }
         }
     }
+
+    /* Cordova's internal tag is a compatibility canary for future upgrades. */
+    private fun statusBar(activity: CordovaRuntimeTestActivity): View =
+        requireNotNull(activity.window.decorView.findViewWithTag<View>("statusBarView"))
 
     private fun change(activity: CordovaRuntimeTestActivity, script: String) {
         instrumentation.runOnMainSync {

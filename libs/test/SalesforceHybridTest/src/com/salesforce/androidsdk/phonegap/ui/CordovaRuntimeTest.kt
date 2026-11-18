@@ -26,30 +26,33 @@
 package com.salesforce.androidsdk.phonegap.ui
 
 import android.Manifest
-import android.os.Build
 import android.content.Intent
-import android.view.KeyEvent
-import android.view.InputDevice
-import android.os.SystemClock
+import android.os.Build
 import android.os.ParcelFileDescriptor
+import android.os.SystemClock
+import android.view.InputDevice
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.ViewTreeObserver
 import android.webkit.WebView
 import android.widget.FrameLayout
-import com.salesforce.androidsdk.app.SalesforceSDKManager
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
-import androidx.test.rule.GrantPermissionRule
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.rule.GrantPermissionRule
+import com.salesforce.androidsdk.app.SalesforceSDKManager
+import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
+import org.junit.AssumptionViolatedException
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -59,7 +62,10 @@ class CordovaRuntimeTest {
     @get:Rule
     val notificationPermission: GrantPermissionRule = if (Build.VERSION.SDK_INT >= 33) {
         GrantPermissionRule.grant(Manifest.permission.POST_NOTIFICATIONS)
-    } else GrantPermissionRule.grant()
+    } else {
+        /* No runtime notification permission is needed below API 33. */
+        GrantPermissionRule.grant()
+    }
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
 
@@ -133,10 +139,8 @@ class CordovaRuntimeTest {
         verifyKeyboard(fullscreen = true)
 
     private fun verifyKeyboard(fullscreen: Boolean = false, edgeToEdge: Boolean = false) {
-        val keyboardSetting = shell("settings get secure show_ime_with_hard_keyboard").trim()
-        require(keyboardSetting in setOf("null", "0", "1"))
-        try {
-            shell("settings put secure show_ime_with_hard_keyboard 1")
+        withSecureSetting("show_ime_with_hard_keyboard", "1",
+            setOf("null", "0", "1")) {
             withActivity(fullscreen, edgeToEdge) { _, activity ->
                 lateinit var webView: WebView
                 instrumentation.runOnMainSync {
@@ -169,7 +173,7 @@ class CordovaRuntimeTest {
                             source = InputDevice.SOURCE_TOUCHSCREEN
                         }
                         try {
-                            instrumentation.uiAutomation.injectInputEvent(event, true)
+                            injectTouch(event)
                         } finally {
                             event.recycle()
                         }
@@ -188,20 +192,56 @@ class CordovaRuntimeTest {
                     """.trimIndent()).getBoolean("value"))
                 }
                 awaitIme(activity, false) {
-                    shell("input keyevent KEYCODE_BACK")
+                    assumeTrue("Device must allow input shell commands",
+                        fixtureShell("input keyevent KEYCODE_BACK").isBlank())
                 }
                 assertFalse(activity.isFinishing)
                 assertEquals(SalesforceSDKManager.SDK_VERSION, javascript(activity, sdkVersion).getString("value"))
             }
-        } finally {
-            if (keyboardSetting == "null") shell("settings delete secure show_ime_with_hard_keyboard")
-            else shell("settings put secure show_ime_with_hard_keyboard $keyboardSetting")
         }
     }
 
     private fun shell(command: String): String = ParcelFileDescriptor.AutoCloseInputStream(
         instrumentation.uiAutomation.executeShellCommand(command)
     ).bufferedReader().use { it.readText() }
+
+    private fun fixtureShell(command: String): String = try {
+        shell(command)
+    } catch (exception: SecurityException) {
+        throw AssumptionViolatedException("Device must allow fixture shell commands", exception)
+    } catch (exception: IOException) {
+        throw AssumptionViolatedException("Fixture shell output must be readable", exception)
+    }
+
+    private fun withSecureSetting(name: String, value: String,
+        supportedValues: Set<String>, block: () -> Unit) {
+        val previous = fixtureShell("settings get secure $name").trim()
+        assumeTrue("Unsupported $name value for this fixture", previous in supportedValues)
+        try {
+            if (previous != value) {
+                fixtureShell("settings put secure $name $value")
+                assumeTrue("Device must allow changing $name",
+                    fixtureShell("settings get secure $name").trim() == value)
+            }
+            block()
+        } finally {
+            if (shell("settings get secure $name").trim() != previous) {
+                if (previous == "null") shell("settings delete secure $name")
+                else shell("settings put secure $name $previous")
+                assertEquals("Fixture must restore $name", previous,
+                    shell("settings get secure $name").trim())
+            }
+        }
+    }
+
+    private fun injectTouch(event: MotionEvent) {
+        val injected = try {
+            instrumentation.uiAutomation.injectInputEvent(event, true)
+        } catch (exception: SecurityException) {
+            throw AssumptionViolatedException("Device must allow touch injection", exception)
+        }
+        assumeTrue("Device must allow touch injection", injected)
+    }
 
     private fun awaitIme(activity: CordovaRuntimeTestActivity, visible: Boolean, action: () -> Unit) {
         val latch = CountDownLatch(1)
@@ -227,10 +267,8 @@ class CordovaRuntimeTest {
         block: (ActivityScenario<CordovaRuntimeTestActivity>, CordovaRuntimeTestActivity) -> Unit) {
         val intent = Intent(instrumentation.targetContext, CordovaRuntimeTestActivity::class.java)
             .putExtra("fullscreen", fullscreen).putExtra("edgeToEdge", edgeToEdge)
-        val tutorialSetting = shell("settings get secure immersive_mode_confirmations").trim()
-        require(tutorialSetting in setOf("null", "confirmed"))
-        try {
-            shell("settings put secure immersive_mode_confirmations confirmed")
+        withSecureSetting("immersive_mode_confirmations", "confirmed",
+            setOf("null", "confirmed")) {
             ActivityScenario.launch<CordovaRuntimeTestActivity>(intent).use { scenario ->
                 lateinit var activity: CordovaRuntimeTestActivity
                 scenario.onActivity { activity = it }
@@ -239,9 +277,6 @@ class CordovaRuntimeTest {
                 instrumentation.waitForIdleSync()
                 block(scenario, activity)
             }
-        } finally {
-            if (tutorialSetting == "null") shell("settings delete secure immersive_mode_confirmations")
-            else shell("settings put secure immersive_mode_confirmations $tutorialSetting")
         }
     }
 
