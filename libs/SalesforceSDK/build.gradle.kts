@@ -62,6 +62,7 @@ android { // TODO: This cannot be resolved until newDSL=true
     namespace = "com.salesforce.androidsdk"
     testNamespace = "com.salesforce.androidsdk.tests"
 
+    // MSDK 14 stays on compile SDK major 36; revisit for MSDK 15.
     //noinspection GradleDependency
     compileSdk = 36
     compileSdkMinor = 1
