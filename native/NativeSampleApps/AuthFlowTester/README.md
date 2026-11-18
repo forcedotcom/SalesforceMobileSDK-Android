@@ -44,7 +44,7 @@ are `request_user_agent_<seq>`.
 Tests are executed by GitHub Actions via `.github/workflows/reusable-ui-workflow.yaml` and run in [Firebase Test Lab](https://firebase.google.com/docs/test-lab) across all supported API levels using the AndroidX Test Orchestrator.
 
 - **PR runs** — a representative smoke subset on one API level; AuthFlowTester-changing PRs run the complete inventory in five sequential groups.
-- **Nightly runs** — all 138 logical test executions run on every supported API level in five sequential groups: login/catch-all, welcome discovery, community and native login, token lifecycle, and multi-user. Keeping the groups sequential prevents concurrent runs from competing for shared test credentials.
+- **Nightly runs** — all 138 logical test executions run on every supported API level in five sequential groups: login/catch-all, welcome discovery, community and native login, token lifecycle, and multi-user. Keeping the groups sequential prevents concurrent runs from competing for shared test credentials. Each group runs as its own job (`nightly-shard`, `max-parallel: 1`) so it gets its own 6-hour GitHub job limit; a final `test-android` job collects and validates the results of all groups.
 
 ### Test Suites
 
