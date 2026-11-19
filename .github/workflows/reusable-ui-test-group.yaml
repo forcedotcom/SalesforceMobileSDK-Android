@@ -19,6 +19,7 @@ permissions:
 
 jobs:
   test-group:
+    name: UI Tests (${{ inputs.test_groups }})
     runs-on: forcedotcom-ubuntu  # forks: use ubuntu-latest (org-scoped runner)
     timeout-minutes: 240
     env:
