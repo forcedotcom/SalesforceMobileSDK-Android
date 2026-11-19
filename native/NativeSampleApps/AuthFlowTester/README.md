@@ -44,7 +44,7 @@ are `request_user_agent_<seq>`.
 Tests are executed by GitHub Actions via `.github/workflows/reusable-ui-workflow.yaml` and run in [Firebase Test Lab](https://firebase.google.com/docs/test-lab) across all supported API levels using the AndroidX Test Orchestrator.
 
 - **PR runs** — a representative smoke subset on one API level; AuthFlowTester-changing PRs run the complete inventory in five sequential groups.
-- **Nightly runs** — all 138 logical test executions run on every supported API level in five sequential groups: login/catch-all, welcome discovery, community and native login, token lifecycle, and multi-user. Keeping the groups sequential prevents concurrent runs from competing for shared test credentials. Each group runs as its own job (`nightly-shard`, `max-parallel: 1`) so it gets its own 6-hour GitHub job limit; a final `test-android` job collects and validates the results of all groups.
+- **Nightly runs** — the complete test inventory runs on every supported API level. Regular-auth groups run in parallel against the shared ten-user pool; API-level selection spreads regular logins across configured users. Community and Native Login each run after the regular-auth phase because their multi-user coverage also consumes a regular-auth user. Each job builds its own APK because the test configuration is packaged as an asset; the final `test-android` job collects and validates the Firebase results.
 
 ### Test Suites
 
@@ -133,7 +133,7 @@ After a DPoP login (`testECAJwtDPoP_Hybrid`), the **Tokens** card shows **OAuth 
 (Token values and the device ID are redacted.)
 
 #### CommunityLoginTests
-Tests for login against a community (Experience Cloud) login host, using the `community_auth` login host and the existing ECAs (no dedicated community app config — the community in the AuthFlowTester test org is set up so the existing apps' consumer keys/redirect URIs work unchanged for the community user; see `CommunityLoginTests`' class doc for the app chosen per scenario). Follows up on the DPoP + community investigation (W-24342940): community sites route through an Experience Cloud front door rather than a plain My Domain host, so these tests confirm the existing login/DPoP/multi-user/restart/migration helpers behave the same way against that front door as they do against `regular_auth`. `community_auth` requires a dedicated Experience Cloud site and is not provisioned in every environment — every test skips cleanly (`Assume.assumeTrue`) when the host is absent from `ui_test_config.json`. The `community_auth` login host provisions only one user, so cross-host multi-user coverage pairs it with a `regular_auth` DPoP user instead of a second `community_auth` user. Each refresh-based test also asserts that the stored community URL equals the configured `community_auth` URL (host and path) and that every `/services/oauth2/token` request goes to that community host and path, including after an Activity relaunch.
+Tests for login against a community (Experience Cloud) login host, using the `community_auth` login host and the existing ECAs (no dedicated community app config — the community in the AuthFlowTester test org is set up so the existing apps' consumer keys/redirect URIs work unchanged for the community user; see `CommunityLoginTests`' class doc for the app chosen per scenario). Follows up on the DPoP + community investigation (W-24342940): community sites route through an Experience Cloud front door rather than a plain My Domain host, so these tests confirm the existing login/DPoP/multi-user/restart/migration helpers behave the same way against that front door as they do against `regular_auth`. `community_auth` requires a dedicated Experience Cloud site and is not provisioned in every environment — every test skips cleanly (`Assume.assumeTrue`) when the host is absent from `ui_test_config.json`. Community users rotate by API level; cross-host multi-user coverage pairs the selected community user with the API-selected `regular_auth` DPoP user. Each refresh-based test also asserts that the stored community URL equals the configured `community_auth` URL (host and path) and that every `/services/oauth2/token` request goes to that community host and path, including after an Activity relaunch.
 
 
 After a community login (`testCommunityJwt_Hybrid`), the **Community** card shows the community ID and URL stored for the user (redacted here):
@@ -159,7 +159,7 @@ After a community login (`testCommunityJwt_Hybrid`), the **Community** card show
 | `testCommunityDPoP_And_RegularAuthDPoP_MultiHost_UniqueTokensAndIsolatedNonces` | ECA JWT DPoP | Yes | Yes | Community user + `regular_auth` ECA JWT DPoP user; unique tokens/keys, independent revoke+refresh and nonce rotation per user/host |
 
 #### NativeLoginTests
-Covers Native Login (`NativeLoginManager`) against the community login host, with the SDK's debug Native Login form (`DebugNativeLoginActivity`: username, password, Cancel, Login Options and **Log In with Browser** fallback). Native Login talks to the community's headless login endpoints directly, so these tests use two headless ECAs: `eca_jwt_headless` accepts DPoP, and `eca_jwt_dpop_headless` requires it.
+Covers Native Login (`NativeLoginManager`) against the dedicated `native_login` host, with the SDK's debug Native Login form (`DebugNativeLoginActivity`: username, password, Cancel, Login Options and **Log In with Browser** fallback). Native Login talks to the configured headless login endpoints directly, so these tests use two headless ECAs: `eca_jwt_headless` accepts DPoP, and `eca_jwt_dpop_headless` requires it.
 
 Native Login is an SDK debug feature, not AuthFlowTester code: the **Authentication Mode** picker (Browser / Native) at the top of the SDK's Login Options screen (when developer support is enabled, which is the default in debug builds, and the app registers no Native Login activity of its own) selects it, with its own client settings (Client ID, Native Callback URL, Community Login URL, Use DPoP, Use Hybrid Authentication). In Native mode the browser-only options are hidden. The Native Login settings are stored apart from the browser settings. Tests select Native mode before the activity launches through `SalesforceSDKManager.debugLoginSettings` (see [Launch extras](#launch-extras)), or drive Login Options through `NativeLoginDebugTestTags`. They check the redacted OAuth trace shown by the form: stage, HTTP status, OAuth error, whether a DPoP proof was sent and whether a nonce was received; never tokens or passwords.
 
@@ -187,10 +187,10 @@ Native Login sessions carry the `NL` and `A5` markers in `ftr_` (plus `DP` for D
 | `testNativeLogin_SameUserDPoPToBearerReauth` | `eca_jwt_headless` | On, then Off | Same user logs in again with DPoP off; the session downgrades to Bearer |
 | `testNativeLogin_ActivityRecreation` | `eca_jwt_headless` | Off | The typed username survives Activity recreation and the form still logs in. The form keeps the password in memory only (retained across recreation, cleared on process death); the test checks only the username |
 | `testNativeLogin_MultiUser_Isolation` | `eca_jwt_headless` | Mixed | Native user and a second user keep separate tokens and DPoP state |
-| `UITestConfigNativeLoginTest.testNativeLoginConfigIsValid` | Both | - | Both apps, the `community_auth` host and its user resolve, and the two consumer keys differ |
+| `UITestConfigNativeLoginTest.testNativeLoginConfigIsValid` | Both | - | Both apps, the `native_login` host and its user resolve, and the two consumer keys differ |
 | `NativeLoginConfigRulesTest` | Placeholders | - | The skip and failure rules below, on in-memory configs |
 
-**Configuration.** The tests look up the apps `eca_jwt_headless` and `eca_jwt_dpop_headless` in `apps`, and the `community_auth` host in `loginHosts`, of `ui_test_config.json`; there is no separate Native Login block. The user is the host's first user. When neither app is present, every test skips (`Assume.assumeTrue`), so CI without them stays green. When only one app is present, or `community_auth` is missing or has no users while an app is present, the tests fail with a message naming what is missing. They also fail when either app has an empty `consumerKey` or a `redirectUri` that is not `https://`. The lookup is lazy, so a bad Native Login entry never affects the browser suites.
+**Configuration.** The tests look up the apps `eca_jwt_headless` and `eca_jwt_dpop_headless` in `apps`, and the `native_login` host in `loginHosts`, of `ui_test_config.json`; there is no separate Native Login block. The selected user rotates by API level across the host's configured users. When neither app is present, every test skips (`Assume.assumeTrue`), so CI without them stays green. When only one app is present, or `native_login` is missing or has no users while an app is present, the tests fail with a message naming what is missing. They also fail when either app has an empty `consumerKey` or a `redirectUri` that is not `https://`. The lookup is lazy, so a bad Native Login entry never affects the browser suites.
 
 | Native Login form | Login Options (Native) | Login Options (Browser) | `eca_jwt_dpop_headless` without DPoP |
 |---|---|---|---|
@@ -240,16 +240,11 @@ Beacon app login tests for lightweight authentication use cases, covering both o
 | `testBeaconJwt_AllScopes` | Beacon JWT | All |
 
 #### AdvancedAuthBeaconLoginTests
-Tests for Beacon app login flows using advanced authentication with Chrome Custom Tabs. This class runs the same tests as BeaconLoginTests but uses the advanced_auth login host. Requires intent filters in AndroidManifest.xml matching the beacon redirect URIs (`beaconadvancedopaque://success/done` and `beaconadvancedjwt://success/done`). Each test validates that the B4 marker (`forceAdvancedAuthentication`) is present in the `ftr_` user-agent segment.
+Temporary compatibility coverage for a server that requires Chrome Custom Tab login when the deprecated `forceAdvancedAuthentication` opt-out is disabled. Remove this suite with WebView login and the opt-out in SDK 15.0.
 
-| Test | App Config | Scopes | Login Host |
-|------|-----------|--------|------------|
-| `testBeaconOpaque_DefaultScopes` | Beacon Opaque | Default | Advanced Auth |
-| `testBeaconOpaque_SubsetScopes` | Beacon Opaque | Subset | Advanced Auth |
-| `testBeaconOpaque_AllScopes` | Beacon Opaque | All | Advanced Auth |
-| `testBeaconJwt_DefaultScopes` | Beacon JWT | Default | Advanced Auth |
-| `testBeaconJwt_SubsetScopes` | Beacon JWT | Subset | Advanced Auth |
-| `testBeaconJwt_AllScopes` | Beacon JWT | All | Advanced Auth |
+| Test | App Config | Login Host | Expected browser marker |
+|------|------------|------------|-------------------------|
+| `test_givenServerRequiresBrowserLogin_whenForceAdvancedAuthDisabled_thenUsesCustomTabWithB1` | Beacon Opaque | Advanced Auth | B1 (server auth configuration) |
 
 #### LoginForAdminTests
 Tests for the "Login for Admins" menu flow, which launches OAuth in a Chrome Custom Tab while the in-app WebView remains loaded. Intended for orgs requiring browser-based admin sign-in (client certificates, SSO) even when the app uses the in-app WebView. Always uses Web Server Flow + PKCE. The DPoP variant lives in `DPoPLoginTests`.
@@ -505,12 +500,12 @@ L3 takes priority over the resolved domain: even if Welcome Discovery resolves t
 ### Configuration
 
 - **App configs** (`KnownAppConfig`): `ECA_OPAQUE`, `ECA_JWT`, `ECA_OPAQUE_RTR`, `ECA_JWT_RTR`, `ECA_JWT_DPOP`, `ECA_JWT_DPOP_RTR`, `ECA_JWT_HEADLESS`, `ECA_JWT_DPOP_HEADLESS`, `BEACON_OPAQUE`, `BEACON_JWT`, `CA_OPAQUE`, `CA_JWT`
-- **Login hosts** (`KnownLoginHostConfig`): `REGULAR_AUTH` (in-app WebView), `ADVANCED_AUTH` (Chrome Custom Tab), `COMMUNITY_AUTH` (Experience Cloud community site; optional — see `CommunityLoginTests`)
+- **Login hosts** (`KnownLoginHostConfig`): `REGULAR_AUTH` (in-app WebView), `ADVANCED_AUTH` (Chrome Custom Tab), `COMMUNITY_AUTH` (Experience Cloud community site; optional — see `CommunityLoginTests`), `NATIVE_LOGIN` (headless Experience Cloud endpoint for `NativeLoginTests`)
 - **Login pool host** (`loginPoolHost`, top-level string in `ui_test_config.json`): the login pool server URL used by the `*_ViaLoginPoolServer` tests (`useLoginPoolHost = true`). Tests that need it fail with a clear error if it is missing.
 - **Scope options** (`ScopeSelection`): `EMPTY` (default/boot config scopes), `SUBSET` (all minus `sfap_api`), `ALL`
-- **Users** (`KnownUserConfig`): `FIRST` through `FIFTH`, assigned per API level
-- **Community login host** (`community_auth`): a `loginHosts` entry whose `url` is the community site (`https://<your-community>.my.site.com/<path>`) with a single user. It is optional: when it is absent every `CommunityLoginTests` test is skipped (`Assume.assumeTrue`), so CI without it stays green. No community app entry is needed; the tests reuse the existing apps.
-- **Native Login**: the optional `eca_jwt_headless` and `eca_jwt_dpop_headless` entries in `apps`, used with the `community_auth` host. Both need an `https://` redirect URI on the community. Credentials are not duplicated: the user is the host's first user. See `NativeLoginTests` for the skip and failure rules.
+- **Users** (`KnownUserConfig`): `FIRST` through `TENTH`, assigned per API level from each host's configured users
+- **Community login host** (`community_auth`): a `loginHosts` entry whose `url` is the community site (`https://<your-community>.my.site.com/<path>`). It is optional: when it is absent every `CommunityLoginTests` test is skipped (`Assume.assumeTrue`), so CI without it stays green. The selected community user rotates by API level. No community app entry is needed; the tests reuse the existing apps.
+- **Native Login**: the optional `eca_jwt_headless` and `eca_jwt_dpop_headless` entries in `apps`, used with the `native_login` host. Both need an `https://` redirect URI on the site. Credentials are not duplicated; the selected user rotates by API level. See `NativeLoginTests` for the skip and failure rules.
 
 > **Note:** A valid `shared/test/ui_test_config.json` file with login host URLs, user credentials, and app configurations is required. See `shared/test/ui_test_config.json.sample` for the expected format.
 

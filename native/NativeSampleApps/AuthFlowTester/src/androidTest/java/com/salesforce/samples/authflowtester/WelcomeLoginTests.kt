@@ -65,6 +65,7 @@ class WelcomeLoginTests : AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = BEACON_OPAQUE,
             knownLoginHostConfig = ADVANCED_AUTH,
+            knownUserConfig = userConfigForApiLevel(ADVANCED_AUTH),
             useWelcomeDiscovery = true,
         )
     }

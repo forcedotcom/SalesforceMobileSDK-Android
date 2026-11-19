@@ -24,6 +24,26 @@
         {
           "username": "testandroid5@authflowtesting.msdk.sdb38.com",
           "password": "yourPasswordHere"
+        },
+        {
+          "username": "testandroid6@authflowtesting.msdk.sdb38.com",
+          "password": "yourPasswordHere"
+        },
+        {
+          "username": "testandroid7@authflowtesting.msdk.sdb38.com",
+          "password": "yourPasswordHere"
+        },
+        {
+          "username": "testandroid8@authflowtesting.msdk.sdb38.com",
+          "password": "yourPasswordHere"
+        },
+        {
+          "username": "testandroid9@authflowtesting.msdk.sdb38.com",
+          "password": "yourPasswordHere"
+        },
+        {
+          "username": "testandroid10@authflowtesting.msdk.sdb38.com",
+          "password": "yourPasswordHere"
         }
       ]
     },
@@ -58,7 +78,33 @@
       "url": "https://<your-community>.my.site.com/<path>",
       "users": [
         {
-          "username": "testandroid@community.authflowtesting.msdk.sdb38.com",
+          "username": "tandroid@community.authflowtesting.msdk.sdb38.com",
+          "password": "yourPasswordHere"
+        },
+        {
+          "username": "tandroid2@community.authflowtesting.msdk.sdb38.com",
+          "password": "yourPasswordHere"
+        },
+        {
+          "username": "tandroid3@community.authflowtesting.msdk.sdb38.com",
+          "password": "yourPasswordHere"
+        }
+      ]
+    },
+    {
+      "name": "native_login",
+      "url": "https://<your-community>.my.site.com/<native-login-path>",
+      "users": [
+        {
+          "username": "testandroid1@native.authflowtesting.example.com",
+          "password": "yourPasswordHere"
+        },
+        {
+          "username": "testandroid2@native.authflowtesting.example.com",
+          "password": "yourPasswordHere"
+        },
+        {
+          "username": "testandroid3@native.authflowtesting.example.com",
           "password": "yourPasswordHere"
         }
       ]

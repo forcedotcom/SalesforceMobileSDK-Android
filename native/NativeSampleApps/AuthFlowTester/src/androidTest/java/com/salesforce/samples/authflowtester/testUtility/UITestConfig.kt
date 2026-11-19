@@ -45,12 +45,18 @@ enum class KnownUserConfig {
     THIRD,
     FORTH,
     FIFTH,
+    SIXTH,
+    SEVENTH,
+    EIGHTH,
+    NINTH,
+    TENTH,
 }
 
 enum class KnownLoginHostConfig {
     REGULAR_AUTH,
     ADVANCED_AUTH,
     COMMUNITY_AUTH,
+    NATIVE_LOGIN,
 }
 
 enum class KnownAppConfig {
@@ -96,12 +102,12 @@ data class UITestConfig(
 
     /**
      * Resolves the Native Login fixtures by name: the `eca_jwt_headless` and `eca_jwt_dpop_headless`
-     * apps and the first user of the `community_auth` login host.
+     * apps and the selected user of the `native_login` login host.
      *
      * @throws NativeLoginConfigException When either app, the host or its user is missing, an app
      * has an empty consumerKey or an app's redirectUri is not HTTPS.
      */
-    fun nativeLoginSetup(): NativeLoginSetup {
+    fun nativeLoginSetup(knownUserConfig: KnownUserConfig = KnownUserConfig.FIRST): NativeLoginSetup {
         val missingApps = NATIVE_LOGIN_APPS.filter { findApp(it) == null }.map { it.configName }
         if (missingApps.isNotEmpty()) {
             throw NativeLoginConfigException(
@@ -118,17 +124,65 @@ data class UITestConfig(
                 throw NativeLoginConfigException("App '${knownApp.configName}' in ui_test_config.json needs an https:// redirectUri.")
             }
         }
-        val hostName = KnownLoginHostConfig.COMMUNITY_AUTH.configName
+        val hostName = KnownLoginHostConfig.NATIVE_LOGIN.configName
         val host = loginHosts.find { it.name == hostName }
             ?: throw NativeLoginConfigException("Native Login tests need the '$hostName' login host in ui_test_config.json.")
-        val hostUser = host.users.firstOrNull()
-            ?: throw NativeLoginConfigException("The '$hostName' login host in ui_test_config.json has no users.")
+        if (host.users.isEmpty()) {
+            throw NativeLoginConfigException("The '$hostName' login host in ui_test_config.json has no users.")
+        }
+        val hostUser = host.users.getOrNull(knownUserConfig.ordinal)
+            ?: throw NativeLoginConfigException(
+                "The '$hostName' login host in ui_test_config.json needs user ${knownUserConfig.ordinal + 1}."
+            )
         return NativeLoginSetup(
             host = host,
             user = hostUser,
+            knownUserConfig = knownUserConfig,
             ecaJwtHeadless = getApp(KnownAppConfig.ECA_JWT_HEADLESS),
             ecaJwtDPoPHeadless = getApp(KnownAppConfig.ECA_JWT_DPOP_HEADLESS),
         )
+    }
+
+    fun userConfigForApiLevel(
+        knownLoginHostConfig: KnownLoginHostConfig,
+        apiLevel: Int,
+        minSdk: Int,
+    ): KnownUserConfig {
+        val hostName = knownLoginHostConfig.configName
+        val userCount = loginHosts.find { it.name == hostName }?.users?.size
+            ?: throw NativeLoginConfigException(
+                "The '$hostName' login host in ui_test_config.json is missing."
+            )
+        if (userCount == 0) {
+            throw NativeLoginConfigException(
+                "The '${knownLoginHostConfig.configName}' login host in ui_test_config.json has no users."
+            )
+        }
+        if (userCount > KnownUserConfig.entries.size) {
+            throw NativeLoginConfigException(
+                "The '${knownLoginHostConfig.configName}' login host has $userCount users but only " +
+                    "${KnownUserConfig.entries.size} user selectors are supported."
+            )
+        }
+        return KnownUserConfig.entries[Math.floorMod(apiLevel - minSdk, userCount)]
+    }
+
+    fun otherUserConfig(
+        knownLoginHostConfig: KnownLoginHostConfig,
+        primaryUserConfig: KnownUserConfig,
+    ): KnownUserConfig {
+        val users = getLoginHost(knownLoginHostConfig).users
+        if (users.size < 2) {
+            throw NativeLoginConfigException(
+                "The '${knownLoginHostConfig.configName}' login host in ui_test_config.json needs at least two users."
+            )
+        }
+        if (primaryUserConfig.ordinal >= users.size) {
+            throw NativeLoginConfigException(
+                "The '${knownLoginHostConfig.configName}' login host has no user ${primaryUserConfig.ordinal + 1}."
+            )
+        }
+        return KnownUserConfig.entries[(primaryUserConfig.ordinal + 1) % users.size]
     }
 
     private fun findApp(knownAppConfig: KnownAppConfig): AppConfig? =
@@ -168,6 +222,7 @@ data class UITestConfig(
 data class NativeLoginSetup(
     val host: LoginHost,
     val user: User,
+    val knownUserConfig: KnownUserConfig,
     /** Headless ECA that accepts, but does not require, DPoP. */
     val ecaJwtHeadless: AppConfig,
     /** Headless ECA that requires DPoP: authorize without `dpop_jkt` is rejected. */

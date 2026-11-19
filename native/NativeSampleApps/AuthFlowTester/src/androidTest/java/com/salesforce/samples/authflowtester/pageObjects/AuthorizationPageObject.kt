@@ -35,6 +35,7 @@ import androidx.test.uiautomator.UiSelector
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.COMMUNITY_AUTH
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.NATIVE_LOGIN
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
 import com.salesforce.androidsdk.R as sdkR
 
@@ -72,7 +73,7 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
             // ChromeCustomTabPageObject.login() always hands this function ADVANCED_AUTH
             // regardless of the actual host, so a real REGULAR_AUTH/COMMUNITY_AUTH value here
             // only ever arrives via the base LoginPageObject's in-app WebView path.
-            REGULAR_AUTH, COMMUNITY_AUTH -> tapAllowInWebView()
+            REGULAR_AUTH, COMMUNITY_AUTH, NATIVE_LOGIN -> tapAllowInWebView()
             ADVANCED_AUTH -> {
                 dismissSavePasswordDialog()
                 tapAllowInCustomTab()

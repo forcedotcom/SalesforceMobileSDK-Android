@@ -1,0 +1,89 @@
+on:
+  workflow_call:
+    inputs:
+      test_groups:
+        required: true
+        type: string
+    secrets:
+      MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL:
+        required: true
+      MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY:
+        required: true
+      UI_TEST_CONFIG:
+        required: true
+      GCLOUD_SERVICE_KEY:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  test-group:
+    runs-on: forcedotcom-ubuntu  # forks: use ubuntu-latest (org-scoped runner)
+    timeout-minutes: 240
+    env:
+      FULL_API_RANGE: "31 32 33 34 35 36 37"
+      PS16K_MIN_API_VERSION: "36"
+      RUN_NUMBER: ${{ github.run_number }}
+      TEST_GROUPS: ${{ inputs.test_groups }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.head_ref }}
+      - name: Install Dependencies
+        env:
+          MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
+          MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
+          UI_TEST_CONFIG: ${{ secrets.UI_TEST_CONFIG }}
+        run: |
+          umask 077
+          ./install.sh
+          printf '%s' "$UI_TEST_CONFIG" > ./shared/test/ui_test_config.json
+          jq -e '
+            [.loginHosts[] | select(.name == "regular_auth").users | length] == [10]
+          ' ./shared/test/ui_test_config.json > /dev/null || {
+            echo "UI_TEST_CONFIG must provide exactly 10 regular_auth users for UI tests." >&2
+            exit 1
+          }
+      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9  # v4.8.0
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd  # v4.0.4
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1  # v4.4.4
+        with:
+          # This is the actual Gradle version (not AGP), which can be found in the gradle-wrapper.properties file.
+          gradle-version: "8.14.3"
+          add-job-summary: on-failure
+      - name: Build App for Testing
+        id: build-app
+        run: |
+          mkdir -p build_logs
+          set -o pipefail
+          ./gradlew native:NativeSampleApps:AuthFlowTester:assembleDebug 2>&1 | tee "build_logs/assembleDebug-AuthFlowTester.log"
+      - name: Build UI Tests
+        id: build-ui-tests
+        run: |
+          mkdir -p build_logs
+          set -o pipefail
+          ./gradlew native:NativeSampleApps:AuthFlowTester:assembleAndroidTest 2>&1 | tee "build_logs/assembleAndroidTest-AuthFlowTester.log"
+      - name: Archive build logs on failure
+        if: failure() && (steps.build-app.outcome == 'failure' || steps.build-ui-tests.outcome == 'failure')
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: build-logs-authflowtester-ui-${{ inputs.test_groups }}
+          path: build_logs/
+          if-no-files-found: ignore
+          retention-days: 14
+      - uses: 'google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed'  # v2.1.13
+        with:
+          credentials_json: '${{ secrets.GCLOUD_SERVICE_KEY }}'
+      - uses: 'google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f'  # v2.2.1
+      - name: Run ${{ inputs.test_groups }} Tests
+        run: |
+          read -r -a groups <<< "$TEST_GROUPS"
+          bash .github/test-shards/run-authflowtester-firebase-tests.sh "${groups[@]}"
