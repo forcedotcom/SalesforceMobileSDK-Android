@@ -4,6 +4,9 @@ on:
       test_groups:
         required: true
         type: string
+      display_name:
+        required: true
+        type: string
     secrets:
       MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL:
         required: true
@@ -19,7 +22,7 @@ permissions:
 
 jobs:
   test-group:
-    name: UI Tests (${{ inputs.test_groups }})
+    name: ${{ inputs.display_name }}
     runs-on: forcedotcom-ubuntu  # forks: use ubuntu-latest (org-scoped runner)
     timeout-minutes: 240
     env:

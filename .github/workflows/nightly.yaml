@@ -12,7 +12,8 @@ permissions:
 # Run the native libraries first so that the native and Hybrid MobileSync tests
 # don't run simultaneously (to prevent flappers).
 jobs:
-  android-nightly:
+  unit-tests:
+    name: ${{ matrix.lib }}
     permissions:
       contents: read
       pull-requests: write
@@ -28,13 +29,14 @@ jobs:
       TEST_CREDENTIALS: ${{ secrets.TEST_CREDENTIALS }}
       GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-  android-nightly-Hybrid:
+  hybrid-unit-tests:
+    name: ${{ matrix.lib }}
     permissions:
       contents: read
       pull-requests: write
       checks: write
     if: success() || failure()
-    needs: [android-nightly]
+    needs: [unit-tests]
     strategy:
       fail-fast: false
       matrix:
@@ -46,7 +48,8 @@ jobs:
       TEST_CREDENTIALS: ${{ secrets.TEST_CREDENTIALS }}
       GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-  android-nightly-UI-Tests:
+  ui-tests:
+    name: UI Tests
     permissions:
       contents: read
       pull-requests: write
