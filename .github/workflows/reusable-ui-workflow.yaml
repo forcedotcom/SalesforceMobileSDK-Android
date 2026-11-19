@@ -48,20 +48,17 @@ jobs:
       test_groups: "welcome token-lifecycle"
     secrets: inherit
 
-  # Community's multi-host test also consumes regular_auth, so run after both regular-pool jobs.
+  # Community uses its full three-user host-local pool and runs independently of the regular jobs.
   nightly-community:
     if: ${{ !cancelled() && !inputs.is_pr }}
-    needs: [nightly-regular-login-multi-user, nightly-regular-welcome-token-lifecycle]
     uses: ./.github/workflows/reusable-ui-test-group.yaml
     with:
       test_groups: community
     secrets: inherit
 
-  # Native Login has a dedicated three-user pool but also logs in a regular_auth user in its
-  # multi-user test. Keep it after Community, which uses the same regular-auth host.
+  # Native Login uses its dedicated three-user pool and runs independently of the other producers.
   nightly-native-login:
     if: ${{ !cancelled() && !inputs.is_pr }}
-    needs: [nightly-community]
     uses: ./.github/workflows/reusable-ui-test-group.yaml
     with:
       test_groups: native-login
