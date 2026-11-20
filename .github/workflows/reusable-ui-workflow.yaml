@@ -38,7 +38,11 @@ jobs:
     with:
       test_groups: "login multi-user"
       display_name: "login + multi-user"
-    secrets: inherit
+    secrets:
+      MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
+      MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
+      UI_TEST_CONFIG: ${{ secrets.UI_TEST_CONFIG }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
 
   # Keep the short Welcome suite with the long token-lifecycle job. It runs concurrently with
   # login and multi-user coverage against the same full regular-auth pool.
@@ -48,7 +52,11 @@ jobs:
     with:
       test_groups: "welcome token-lifecycle"
       display_name: "welcome + token-lifecycle"
-    secrets: inherit
+    secrets:
+      MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
+      MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
+      UI_TEST_CONFIG: ${{ secrets.UI_TEST_CONFIG }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
 
   # Community uses its full three-user host-local pool and runs independently of the regular jobs.
   nightly-community:
@@ -57,7 +65,11 @@ jobs:
     with:
       test_groups: community
       display_name: community
-    secrets: inherit
+    secrets:
+      MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
+      MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
+      UI_TEST_CONFIG: ${{ secrets.UI_TEST_CONFIG }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
 
   # Native Login uses its dedicated three-user pool and runs independently of the other producers.
   nightly-native-login:
@@ -66,7 +78,11 @@ jobs:
     with:
       test_groups: native-login
       display_name: native-login
-    secrets: inherit
+    secrets:
+      MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
+      MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
+      UI_TEST_CONFIG: ${{ secrets.UI_TEST_CONFIG }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
 
   ui-test-report:
     name: UI Test Report
