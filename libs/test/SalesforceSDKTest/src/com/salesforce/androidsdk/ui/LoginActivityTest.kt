@@ -74,6 +74,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.unmockkObject
 import io.mockk.verify
@@ -1407,6 +1408,23 @@ class LoginActivityTest {
         every { activity.isCallbackSchemeRegistered(any()) } answers { callOriginal() }
 
         assertFalse(activity.isCallbackSchemeRegistered("unregistered://callback/path"))
+    }
+
+    @Test
+    fun test_givenMixedCaseScheme_whenIsCallbackSchemeRegistered_thenProbesWithLowercaseScheme() {
+        val pm = mockk<PackageManager>()
+        val probeIntent = slot<Intent>()
+        @Suppress("DEPRECATION")
+        every { pm.queryIntentActivities(capture(probeIntent), any<Int>()) } returns listOf(mockk())
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.packageManager } returns pm
+        every { activity.isCallbackSchemeRegistered(any()) } answers { callOriginal() }
+
+        assertTrue(activity.isCallbackSchemeRegistered("MixedCaseScheme://Success/Done"))
+        assertEquals("mixedcasescheme", probeIntent.captured.data?.scheme)
+        // Only the scheme is normalized.
+        assertEquals("Success", probeIntent.captured.data?.host)
+        assertEquals("/Done", probeIntent.captured.data?.path)
     }
 
     // endregion

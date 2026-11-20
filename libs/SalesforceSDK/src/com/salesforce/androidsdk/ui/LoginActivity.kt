@@ -1276,7 +1276,7 @@ open class LoginActivity : FragmentActivity() {
         val urlString = buildCustomTabAuthorizeUrl(loginUrl, completedViaAdminCustomTab)
 
         if (!callbackSchemeRegistered(viewModel.oAuthConfig.redirectUri)) {
-            val scheme = viewModel.oAuthConfig.redirectUri.toUri().scheme
+            val scheme = viewModel.oAuthConfig.redirectUri.toUri().scheme?.lowercase()
                 ?: viewModel.oAuthConfig.redirectUri
             e(TAG, "Advanced auth misconfiguration: redirect URI scheme '$scheme' has no " +
                     "matching intent-filter in this app's AndroidManifest.xml. " +
@@ -1362,11 +1362,16 @@ open class LoginActivity : FragmentActivity() {
      * Returns true if the app's manifest contains an intent-filter that handles [redirectUri],
      * false otherwise.  A missing registration causes the custom tab redirect to be silently
      * dropped by Android, leaving the user on a blank screen at the end of the advanced-auth flow.
+     *
+     * URI schemes are case-insensitive and Android delivers the redirect with a lowercase scheme,
+     * but intent-filter matching is case-sensitive, so the scheme is lowercased before probing.
      */
     @VisibleForTesting
     @Suppress("DEPRECATION")
     internal fun isCallbackSchemeRegistered(redirectUri: String): Boolean {
-        val probeIntent = Intent(Intent.ACTION_VIEW, redirectUri.toUri()).apply {
+        val uri = redirectUri.toUri()
+        val probeUri = uri.buildUpon().scheme(uri.scheme?.lowercase()).build()
+        val probeIntent = Intent(Intent.ACTION_VIEW, probeUri).apply {
             addCategory(Intent.CATEGORY_BROWSABLE)
             setPackage(packageName)  // scope to this app; avoids <queries> requirement
         }
