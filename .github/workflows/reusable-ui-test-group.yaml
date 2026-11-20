@@ -34,7 +34,7 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
         with:
           persist-credentials: false
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.head_ref || github.ref_name }}
       - name: Install Dependencies
         env:
           MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
@@ -45,9 +45,9 @@ jobs:
           ./install.sh
           printf '%s' "$UI_TEST_CONFIG" > ./shared/test/ui_test_config.json
           jq -e '
-            [.loginHosts[] | select(.name == "regular_auth").users | length] == [10]
+            [.loginHosts[] | select(.name == "regular_auth").users | length] >= [10]
           ' ./shared/test/ui_test_config.json > /dev/null || {
-            echo "UI_TEST_CONFIG must provide exactly 10 regular_auth users for UI tests." >&2
+            echo "UI_TEST_CONFIG must provide at least 10 regular_auth users for UI tests." >&2
             exit 1
           }
       - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9  # v4.8.0
