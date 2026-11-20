@@ -77,7 +77,7 @@
     },
     {
       "doc": "docs/smartstore/README.md",
-      "scope": "libs/SmartStore",
+      "scope": ["libs/SmartStore", "libs/SalesforceSDK/src/com/salesforce/androidsdk/security", "libs/SalesforceSDK/src/com/salesforce/androidsdk/accounts", "libs/SalesforceSDK/src/com/salesforce/androidsdk/app/SalesforceSDKManager.kt", "libs/MobileSync/src/com/salesforce/androidsdk/mobilesync/app/MobileSyncSDKManager.java"],
       "description": "SmartStore library - Android API reference: SmartStore, QuerySpec, IndexSpec, SmartSqlHelper, encryption, transactions, full-text search, key-value stores (no SoupSpec/external storage on Android)"
     }
   ]
