@@ -64,7 +64,8 @@ jobs:
       test_groups: native-login
     secrets: inherit
 
-  test-android:
+  ui-test-report:
+    name: UI Test Report
     # Nightly runs: reports on the results of the concurrent producer jobs. PR runs: runs the tests itself.
     needs: [nightly-regular-login-multi-user, nightly-regular-welcome-token-lifecycle, nightly-community, nightly-native-login]
     if: ${{ !cancelled() }}

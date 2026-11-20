@@ -11,6 +11,8 @@ if [ "$#" -eq 0 ]; then
   exit 2
 fi
 
+FAILED_GROUPS=()
+
 for GROUP in "$@"; do
   case "$GROUP" in
     login)
@@ -53,7 +55,7 @@ for GROUP in "$@"; do
     DEVICE_ARGS+=(--device "model=${DEVICE_MODEL},version=${LEVEL},locale=en,orientation=portrait")
   done
 
-  gcloud firebase test android run \
+  if ! gcloud firebase test android run \
     --project mobile-apps-firebase-test \
     --type instrumentation \
     --use-orchestrator \
@@ -67,5 +69,12 @@ for GROUP in "$@"; do
     --results-history-name=AuthFlowTester \
     --no-performance-metrics \
     --num-flaky-test-attempts=1 \
-    --timeout="$FIREBASE_TIMEOUT" || true
+    --timeout="$FIREBASE_TIMEOUT"; then
+    FAILED_GROUPS+=("$GROUP")
+  fi
 done
+
+if [ "${#FAILED_GROUPS[@]}" -gt 0 ]; then
+  echo "Failed AuthFlowTester test groups: ${FAILED_GROUPS[*]}" >&2
+  exit 1
+fi
