@@ -37,6 +37,7 @@ jobs:
     uses: ./.github/workflows/reusable-ui-test-group.yaml
     with:
       test_groups: "login multi-user"
+      display_name: "login + multi-user"
     secrets: inherit
 
   # Keep the short Welcome suite with the long token-lifecycle job. It runs concurrently with
@@ -46,6 +47,7 @@ jobs:
     uses: ./.github/workflows/reusable-ui-test-group.yaml
     with:
       test_groups: "welcome token-lifecycle"
+      display_name: "welcome + token-lifecycle"
     secrets: inherit
 
   # Community uses its full three-user host-local pool and runs independently of the regular jobs.
@@ -54,6 +56,7 @@ jobs:
     uses: ./.github/workflows/reusable-ui-test-group.yaml
     with:
       test_groups: community
+      display_name: community
     secrets: inherit
 
   # Native Login uses its dedicated three-user pool and runs independently of the other producers.
@@ -62,6 +65,7 @@ jobs:
     uses: ./.github/workflows/reusable-ui-test-group.yaml
     with:
       test_groups: native-login
+      display_name: native-login
     secrets: inherit
 
   ui-test-report:
