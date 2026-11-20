@@ -41,15 +41,21 @@ SalesforceHybrid
 
 ### Android Build Details
 - **Minimum SDK**: 31 (Android 12)
-- **Compile SDK**: 36 (Android 15.0)
-- **Target SDK**: Follows compileSdk
+- **Compile SDK**: 36.1 for SalesforceSDK and its dependents (SmartStore, MobileSync, SalesforceHybrid); 36 for SalesforceAnalytics
+- **Target SDK**: Set by each app; RestExplorer uses compile SDK 37 and target SDK 37
 - **Build system**: Gradle 9.4.1 with Kotlin DSL (`.gradle.kts` files)
-- **AGP (Android Gradle Plugin)**: 9.1.1
+- **AGP (Android Gradle Plugin)**: 9.2.1
 - **Setup**: Run `./install.sh` after cloning to pull submodule dependencies
 - **Dependency management**: Maven Central for dependencies, libraries published to Maven Central
 - **Encryption**: SmartStore depends on SQLCipher for Android (`net.zetetic:sqlcipher-android:4.10.0`)
 - **Language**: Kotlin for all new code. Legacy Java exists in older classes (e.g., SalesforceHybrid plugin classes). No new Java files.
 - **Kotlin version**: 2.3.20
+
+SalesforceSDK directly depends on `androidx.biometric:biometric:1.4.0-alpha07`,
+whose AAR metadata requires compile SDK 36.1. SmartStore, MobileSync and
+SalesforceHybrid use 36.1 because they depend on SalesforceSDK. MSDK 14 retains
+compile SDK major 36 for its libraries; the minor SDK requirement does not
+change the consuming app's target SDK.
 
 ### Android Build & Test Commands
 

@@ -24,6 +24,11 @@ Introduction
 ==
 
 ### What's New in 14.1.0
+Apps that consume SalesforceSDK, directly or through SmartStore, MobileSync or
+SalesforceHybrid, must compile with Android SDK 36.1 or higher because of the
+biometric dependency. The minimum supported Android version and the app's target
+SDK setting are unchanged.
+
 See [release notes](https://github.com/forcedotcom/SalesforceMobileSDK-Android/releases).
 
 ### Native Applications
