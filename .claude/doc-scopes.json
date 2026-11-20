@@ -74,6 +74,11 @@
       "doc": "docs/mobilesync/README.md",
       "scope": "libs/MobileSync",
       "description": "MobileSync library — Android API reference: SyncManager, all sync targets, SyncState, SyncOptions, SOQL/SOSL builders, JSON-driven configuration"
+    },
+    {
+      "doc": "docs/smartstore/README.md",
+      "scope": "libs/SmartStore",
+      "description": "SmartStore library - Android API reference: SmartStore, QuerySpec, IndexSpec, SmartSqlHelper, encryption, transactions, full-text search, key-value stores (no SoupSpec/external storage on Android)"
     }
   ]
 }
