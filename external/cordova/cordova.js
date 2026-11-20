@@ -19,7 +19,7 @@
  under the License.
 */
 ;(function() {
-var PLATFORM_VERSION_BUILD_LABEL = '15.0.0';
+var PLATFORM_VERSION_BUILD_LABEL = '15.1.0';
 // file: src/scripts/require.js
 var require;
 var define;
@@ -1645,6 +1645,11 @@ var statusBar = {};
 const statusBarScript = document.createElement('script');
 document.head.appendChild(statusBarScript);
 
+/**
+ * Sets the visibility of the status bar, which will only work if Android EdgeToEdge is disabled.
+ * If cordova-plugin-statusbar is used, the call will be forwarded to `window.StatusBar.show` or
+ * `window.StatusBar.hide` of the plugin.
+ */
 Object.defineProperty(statusBar, 'visible', {
     configurable: false,
     enumerable: true,
@@ -1671,6 +1676,14 @@ Object.defineProperty(statusBar, 'visible', {
     }
 });
 
+/**
+ * Sets the background color of the visible status bar.
+ * Supports valid CSS color values, e.g. `rebeccapurple`, `#RRGGBBAA`, `rgb(255 0 153)`.
+ *
+ * If cordova-plugin-statusbar is installed, calls are forwarded to the plugin API:
+ * `window.StatusBar.backgroundColorByHexString`
+ * See {@link https://s.apache.org/cdv-plugin-statusbar} for cordova-plugin-statusbar details.
+ */
 Object.defineProperty(statusBar, 'setBackgroundColor', {
     configurable: false,
     enumerable: false,
@@ -1679,28 +1692,29 @@ Object.defineProperty(statusBar, 'setBackgroundColor', {
         statusBarScript.style.color = value;
         var rgbStr = window.getComputedStyle(statusBarScript).getPropertyValue('color');
 
-        if (!rgbStr.match(/^rgb/)) { return; }
-
-        var rgbVals = rgbStr.match(/\d+/g).map(function (v) { return parseInt(v, 10); });
-
-        if (rgbVals.length < 3) {
+        if (!rgbStr.match(/^rgb/)) {
             return;
-        } else if (rgbVals.length === 3) {
-            rgbVals = [255].concat(rgbVals);
         }
 
-        // TODO: Use `padStart(2, '0')` once SDK 24 is dropped.
-        const padRgb = (val) => {
-            const hex = val.toString(16);
-            return hex.length === 1 ? '0' + hex : hex;
-        };
-        const a = padRgb(rgbVals[0]);
-        const r = padRgb(rgbVals[1]);
-        const g = padRgb(rgbVals[2]);
-        const b = padRgb(rgbVals[3]);
-        const hexStr = '#' + a + r + g + b;
+        var rgbVals = rgbStr.match(/[\d.]+/g).map(function (v, i) { return (i < 3) ? parseInt(v, 10) : parseFloat(v); });
+        if (rgbVals.length < 3) {
+            return;
+        }
 
         if (window.StatusBar) {
+            // try to let the StatusBar plugin handle it
+            // TODO: Use `padStart(2, '0')` once SDK 24 is dropped.
+            const padRgb = (val) => {
+                const hex = val.toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            };
+
+            const r = padRgb(rgbVals[0]);
+            const g = padRgb(rgbVals[1]);
+            const b = padRgb(rgbVals[2]);
+            const a = padRgb(255 * (rgbVals[3] !== undefined ? rgbVals[3] : 1.0));
+
+            const hexStr = '#' + a + r + g + b;
             window.StatusBar.backgroundColorByHexString(hexStr);
         } else {
             exec(null, null, 'SystemBarPlugin', 'setStatusBarBackgroundColor', rgbVals);

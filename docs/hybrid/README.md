@@ -2,6 +2,11 @@
 
 The `libs/SalesforceHybrid/` library is the Android native bridge for Cordova-based hybrid apps. It provides the Kotlin/Java implementations of all Cordova plugin classes and the WebView infrastructure that hybrid apps run inside.
 
+See [content and bridge trust](security.md) for the inherited file-origin,
+navigation and plugin security boundaries to review when upgrading an app.
+Use the [focused Cordova runtime checks](runtime-verification.md) to verify the
+WebView, bridge, Back handling and keyboard on an owned emulator.
+
 ## Package Breakdown
 
 ### `com.salesforce.androidsdk.phonegap.plugin` — Cordova Plugins
