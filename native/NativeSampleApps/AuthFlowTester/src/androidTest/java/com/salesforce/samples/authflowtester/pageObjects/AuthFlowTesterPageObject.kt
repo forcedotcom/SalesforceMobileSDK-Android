@@ -130,6 +130,8 @@ import com.salesforce.samples.authflowtester.testUtility.testConfig
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import com.salesforce.androidsdk.R as sdkR
 
 private const val APP_LOAD_TIMEOUT_MS = 30_000L
@@ -730,8 +732,8 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
     fun validateUserAgentFlags(present: Set<String>, absent: Set<String> = emptySet()) {
         val userAgent = getUserAgent()
         val flags = userAgent.substringAfter("ftr_", missingDelimiterValue = "").substringBefore(" ").split(".").toSet()
-        present.forEach { assert(it in flags) { "Expected '$it' in ftr_ flags of: $userAgent" } }
-        absent.forEach { assert(it !in flags) { "Unexpected '$it' in ftr_ flags of: $userAgent" } }
+        present.forEach { assertTrue("Expected '$it' in ftr_ flags of: $userAgent", it in flags) }
+        absent.forEach { assertFalse("Unexpected '$it' in ftr_ flags of: $userAgent", it in flags) }
     }
 
     /**

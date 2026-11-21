@@ -44,7 +44,7 @@ import org.junit.runner.RunWith
 /**
  * Tests for login flows using External Client App (ECA) configurations with Refresh Token Rotation (RTR).
  *
- * NB: Tests use the first user from ui_test_config.json
+ * Tests use the regular-auth user selected from the device API level.
  */
 @RunWith(AndroidJUnit4::class)
 @LargeTest

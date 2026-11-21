@@ -45,7 +45,8 @@ import com.salesforce.samples.authflowtester.pageObjects.ChromeCustomTabPageObje
 import com.salesforce.samples.authflowtester.testUtility.AppConfig
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
-import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.COMMUNITY_AUTH
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.NATIVE_LOGIN
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.LoginHost
@@ -73,7 +74,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Native Login (username and password in the SDK's debug Native Login form) against the
- * `community_auth` login host of `ui_test_config.json`.
+ * `native_login` login host of `ui_test_config.json`.
  *
  * Two headless External Client Apps from `apps` are used: `eca_jwt_headless` accepts DPoP and
  * `eca_jwt_dpop_headless` requires it. The four-case matrix below crosses them with the app's DPoP
@@ -82,7 +83,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * re-authentication, Activity recreation and multi-user isolation.
  *
  * Every test skips when neither headless ECA is configured, and fails when only one of them is or
- * `community_auth` is missing. The app starts in Native mode (see [beforeActivityLaunch]);
+ * `native_login` is missing. The app starts in Native mode (see [beforeActivityLaunch]);
  * [AuthFlowTest.cleanup] restores Browser mode.
  */
 @RunWith(AndroidJUnit4::class)
@@ -90,10 +91,11 @@ import java.util.concurrent.atomic.AtomicInteger
 class NativeLoginTests : AuthFlowTest() {
 
     private lateinit var setup: NativeLoginSetup
+    private val nativeUserConfig by lazy { userConfigForApiLevel(NATIVE_LOGIN) }
 
     /** Selects Native mode before the app launches so the first login attempt shows the native form. */
     override fun beforeActivityLaunch() {
-        val nativeSetup = runCatching { testConfig.nativeLoginSetup() }.getOrNull() ?: return
+        val nativeSetup = runCatching { testConfig.nativeLoginSetup(nativeUserConfig) }.getOrNull() ?: return
         val app = nativeSetup.ecaJwtHeadless
         SalesforceSDKManager.getInstance().debugLoginSettings.apply(
             JSONObject()
@@ -112,7 +114,7 @@ class NativeLoginTests : AuthFlowTest() {
             testConfig.hasNativeLoginApps,
         )
         setup = try {
-            testConfig.nativeLoginSetup()
+            testConfig.nativeLoginSetup(nativeUserConfig)
         } catch (e: NativeLoginConfigException) {
             throw AssertionError("Invalid Native Login configuration: ${e.message}", e)
         }
@@ -249,15 +251,14 @@ class NativeLoginTests : AuthFlowTest() {
     fun testNativeLogin_BrowserFallback_UsesBrowserConfig() {
         nativeLogin.waitForNativeLogin()
         with(SalesforceSDKManager.getInstance()) {
-            // The browser fallback logs in to the selected login server; point it at the community.
-            loginServerManager.getLoginServerFromURL(setup.host.url)?.let {
-                loginServerManager.setSelectedLoginServer(it)
-            }
+            // The fallback uses the selected browser-login server. Register this endpoint when it
+            // is not already present so its native-login credentials are never sent to regular_auth.
+            loginServerManager.addCustomLoginServer("Native Login", setup.host.url)
         }
         nativeLogin.tapBrowserFallback()
 
         val chrome = ChromeCustomTabPageObject(composeTestRule)
-        chrome.login(COMMUNITY_AUTH, KnownUserConfig.FIRST)
+        chrome.login(NATIVE_LOGIN, setup.knownUserConfig)
         app.waitForAppLoad()
 
         app.validateUserAgentFlags(present = setOf(Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG))
@@ -318,7 +319,7 @@ class NativeLoginTests : AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = CA_OPAQUE,
             knownLoginHostConfig = REGULAR_AUTH,
-            knownUserConfig = otherUser,
+            knownUserConfig = user,
             isMultiUser = true,
         )
         val (browserAccessToken, _) = app.getTokens()
@@ -328,7 +329,7 @@ class NativeLoginTests : AuthFlowTest() {
         // Switching back, the Native Login user is unchanged and still DPoP-bound.
         val users = SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers.orEmpty()
         assertEquals(2, users.size)
-        app.switchToUser(KnownUserConfig.FIRST, COMMUNITY_AUTH)
+        app.switchToUser(setup.knownUserConfig, NATIVE_LOGIN)
         assertEquals(nativeUsername, SalesforceSDKManager.getInstance().userAccountManager.currentUser?.username)
         assertEquals("DPoP", app.getTokenType())
         assertEquals(nativeAccessToken, app.getTokens().accessToken)
@@ -345,7 +346,7 @@ class NativeLoginTests : AuthFlowTest() {
         assertRevokeAndRefreshWorks(
             expectsRefreshTokenRotation = true, // The headless ECAs have refresh token rotation enabled.
             isDpop = isDpop,
-            knownLoginHostConfig = COMMUNITY_AUTH,
+            knownLoginHostConfig = NATIVE_LOGIN,
             expectAdvancedAuth = false,
             expectedAMarker = Features.FEATURE_AUTH_TYPE_NATIVE,
             isJwt = true,
@@ -458,7 +459,7 @@ class UITestConfigNativeLoginTest {
         } catch (e: NativeLoginConfigException) {
             throw AssertionError("Invalid Native Login configuration: ${e.message}", e)
         }
-        assertEquals(COMMUNITY_AUTH.name.lowercase(), setup.host.name)
+        assertEquals(NATIVE_LOGIN.name.lowercase(), setup.host.name)
         assertTrue(setup.ecaJwtHeadless.consumerKey.isNotBlank())
         assertTrue(setup.ecaJwtDPoPHeadless.consumerKey.isNotBlank())
         assertNotEquals(setup.ecaJwtHeadless.consumerKey, setup.ecaJwtDPoPHeadless.consumerKey)
@@ -485,15 +486,15 @@ class NativeLoginConfigRulesTest {
     }
 
     @Test
-    fun test_givenNoCommunityHost_whenResolved_thenFailsNamingTheHost() {
+    fun test_givenNoNativeLoginHost_whenResolved_thenFailsNamingTheHost() {
         val config = config(hosts = emptyList())
         val error = assertThrows(NativeLoginConfigException::class.java) { config.nativeLoginSetup() }
-        assertTrue(error.message.orEmpty(), error.message.orEmpty().contains("community_auth"))
+        assertTrue(error.message.orEmpty(), error.message.orEmpty().contains("native_login"))
     }
 
     @Test
-    fun test_givenCommunityHostWithoutUsers_whenResolved_thenFails() {
-        val config = config(hosts = listOf(LoginHost("community_auth", HOST_URL, emptyList())))
+    fun test_givenNativeLoginHostWithoutUsers_whenResolved_thenFails() {
+        val config = config(hosts = listOf(LoginHost("native_login", HOST_URL, emptyList())))
         val error = assertThrows(NativeLoginConfigException::class.java) { config.nativeLoginSetup() }
         assertTrue(error.message.orEmpty(), error.message.orEmpty().contains("has no users"))
     }
@@ -518,18 +519,98 @@ class NativeLoginConfigRulesTest {
     }
 
     @Test
-    fun test_givenCompleteFixtures_whenResolved_thenUsesAppsAndFirstHostUser() {
-        val setup = config().nativeLoginSetup()
+    fun test_givenCompleteFixtures_whenResolved_thenUsesAppsAndSelectedNativeLoginUser() {
+        val setup = config().nativeLoginSetup(KnownUserConfig.THIRD)
         assertEquals("eca_jwt_headless", setup.ecaJwtHeadless.name)
         assertEquals("eca_jwt_dpop_headless", setup.ecaJwtDPoPHeadless.name)
         assertEquals(HOST_URL, setup.host.url)
-        assertEquals("first@example.com", setup.user.username)
+        assertEquals("third@example.com", setup.user.username)
+        assertEquals(KnownUserConfig.THIRD, setup.knownUserConfig)
+    }
+
+    @Test
+    fun test_givenThreeNativeLoginUsers_whenSelectedByApiLevel_thenRotatesAcrossConfiguredUsers() {
+        val config = config()
+
+        assertEquals(KnownUserConfig.FIRST, config.userConfigForApiLevel(KnownLoginHostConfig.NATIVE_LOGIN, apiLevel = 31, minSdk = 31))
+        assertEquals(KnownUserConfig.SECOND, config.userConfigForApiLevel(KnownLoginHostConfig.NATIVE_LOGIN, apiLevel = 32, minSdk = 31))
+        assertEquals(KnownUserConfig.THIRD, config.userConfigForApiLevel(KnownLoginHostConfig.NATIVE_LOGIN, apiLevel = 33, minSdk = 31))
+        assertEquals(KnownUserConfig.FIRST, config.userConfigForApiLevel(KnownLoginHostConfig.NATIVE_LOGIN, apiLevel = 34, minSdk = 31))
+    }
+
+    @Test
+    fun test_givenTenRegularUsers_whenSelectedByApiLevel_thenUsesEveryConfiguredUser() {
+        val users = (1..10).map { index -> User("user$index@example.com", "placeholder") }
+        val config = config(hosts = listOf(LoginHost("regular_auth", HOST_URL, users)))
+
+        assertEquals(
+            KnownUserConfig.entries.toList(),
+            (31..40).map { apiLevel ->
+                config.userConfigForApiLevel(KnownLoginHostConfig.REGULAR_AUTH, apiLevel, minSdk = 31)
+            },
+        )
+    }
+
+    @Test
+    fun test_givenTenRegularUsers_whenSelectingOtherUser_thenUsesNextConfiguredUser() {
+        val users = (1..10).map { index -> User("user$index@example.com", "placeholder") }
+        val config = config(hosts = listOf(LoginHost("regular_auth", HOST_URL, users)))
+
+        assertEquals(
+            KnownUserConfig.EIGHTH,
+            config.otherUserConfig(KnownLoginHostConfig.REGULAR_AUTH, KnownUserConfig.SEVENTH),
+        )
+    }
+
+    @Test
+    fun test_givenOneRegularUser_whenSelectedForCrossHostLogin_thenResolvesFirstUser() {
+        val config = config(hosts = listOf(LoginHost("regular_auth", HOST_URL, listOf(User("user@example.com", "placeholder")))))
+
+        assertEquals(
+            KnownUserConfig.FIRST,
+            config.userConfigForApiLevel(KnownLoginHostConfig.REGULAR_AUTH, apiLevel = 31, minSdk = 31),
+        )
+    }
+
+    @Test
+    fun test_givenThreeCommunityUsers_whenSelectedByApiLevel_thenRotatesAcrossConfiguredUsers() {
+        val users = (1..3).map { index -> User("community$index@example.com", "placeholder") }
+        val config = config(hosts = listOf(LoginHost("community_auth", HOST_URL, users)))
+
+        assertEquals(
+            listOf(
+                KnownUserConfig.FIRST,
+                KnownUserConfig.SECOND,
+                KnownUserConfig.THIRD,
+                KnownUserConfig.FIRST,
+            ),
+            (31..34).map { apiLevel ->
+                config.userConfigForApiLevel(KnownLoginHostConfig.COMMUNITY_AUTH, apiLevel, minSdk = 31)
+            },
+        )
+    }
+
+    @Test
+    fun test_givenNoNativeLoginHost_whenSelectedByApiLevel_thenFailsNamingTheHost() {
+        val error = assertThrows(NativeLoginConfigException::class.java) {
+            config(hosts = emptyList()).userConfigForApiLevel(
+                KnownLoginHostConfig.NATIVE_LOGIN,
+                apiLevel = 31,
+                minSdk = 31,
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains("native_login"))
     }
 
     private fun config(
         apps: List<AppConfig> = listOf(app("eca_jwt_headless"), app("eca_jwt_dpop_headless")),
         hosts: List<LoginHost> = listOf(
-            LoginHost("community_auth", HOST_URL, listOf(User("first@example.com", "placeholder"))),
+            LoginHost("native_login", HOST_URL, listOf(
+                User("first@example.com", "placeholder"),
+                User("second@example.com", "placeholder"),
+                User("third@example.com", "placeholder"),
+            )),
         ),
     ) = UITestConfig(loginHosts = hosts, apps = apps)
 

@@ -28,41 +28,36 @@ package com.salesforce.samples.authflowtester
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
-import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
-import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
+import com.salesforce.androidsdk.app.Features
+import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.BEACON_OPAQUE
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
+import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Tests for login flows using Beacon app configurations with advanced authentication.
- * This class runs the same tests as BeaconLoginTests but uses the advanced_auth login host
- * with Chrome Custom Tabs instead of the in-app WebView.
- *
- * NB: Requires intent filters in AndroidManifest.xml for the beacon redirect URIs
- * (beaconopaque://success/done and beaconjwt://success/done) — same URIs as BeaconLoginTests
- * since both classes use forceAdvancedAuthentication=true (Custom Tabs) by default.
- *
- * NB: Tests use the second user from ui_test_config.json (advanced_auth host) to avoid
- * login conflicts when running in parallel with regular auth tests.
+ * Temporary compatibility coverage for a server that requires browser login when the deprecated
+ * forceAdvancedAuthentication opt-out is disabled. Remove with that opt-out and WebView login in
+ * SDK 15.0.
  */
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-class AdvancedAuthBeaconLoginTests : BeaconLoginTests() {
+class AdvancedAuthBeaconLoginTests : AuthFlowTest() {
 
-    // region Test Configuration
-
-    /**
-     * Override to use advanced authentication login host.
-     */
-    override fun loginHostConfig(): KnownLoginHostConfig {
-        return KnownLoginHostConfig.ADVANCED_AUTH
+    @Test
+    fun test_givenServerRequiresBrowserLogin_whenForceAdvancedAuthDisabled_thenUsesCustomTabWithB1() {
+        loginAndValidate(
+            knownAppConfig = BEACON_OPAQUE,
+            knownLoginHostConfig = ADVANCED_AUTH,
+            knownUserConfig = userConfigForApiLevel(ADVANCED_AUTH),
+            forceAdvancedAuthentication = false,
+        )
+        app.validateUserAgentFlags(
+            present = setOf("BW", Features.FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG),
+            absent = setOf(
+                Features.FEATURE_BROWSER_LOGIN_FOR_ADMIN,
+                Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+            ),
+        )
     }
-
-    /**
-     * Override to use second user to avoid login conflicts when running in parallel.
-     */
-    override fun userConfig(): KnownUserConfig {
-        return KnownUserConfig.SECOND
-    }
-
-    // endregion
 }

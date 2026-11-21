@@ -32,7 +32,6 @@ import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.BEACON_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
-import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.ALL
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.SUBSET
 import org.junit.Test
@@ -42,7 +41,7 @@ import org.junit.runner.RunWith
  * Tests for login flows using Beacon app configurations.
  * Beacon apps are lightweight authentication apps for specific use cases.
  *
- * NB: Tests use the first user from ui_test_config.json
+ * Tests use the regular-auth user selected for the device API level.
  */
 @RunWith(AndroidJUnit4::class)
 @LargeTest
@@ -58,14 +57,6 @@ open class BeaconLoginTests: AuthFlowTest() {
         return KnownLoginHostConfig.REGULAR_AUTH
     }
 
-    /**
-     * Returns the user configuration to use for tests.
-     * Subclasses can override this to use a different user.
-     */
-    open fun userConfig(): KnownUserConfig {
-        return KnownUserConfig.FIRST
-    }
-
     // endregion
 
     // region Beacon Opaque Tests
@@ -76,7 +67,7 @@ open class BeaconLoginTests: AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = BEACON_OPAQUE,
             knownLoginHostConfig = loginHostConfig(),
-            knownUserConfig = userConfig()
+            knownUserConfig = user,
         )
     }
 
@@ -87,7 +78,7 @@ open class BeaconLoginTests: AuthFlowTest() {
             knownAppConfig = BEACON_OPAQUE,
             scopeSelection = SUBSET,
             knownLoginHostConfig = loginHostConfig(),
-            knownUserConfig = userConfig()
+            knownUserConfig = user,
         )
     }
 
@@ -98,7 +89,7 @@ open class BeaconLoginTests: AuthFlowTest() {
             knownAppConfig = BEACON_OPAQUE,
             scopeSelection = ALL,
             knownLoginHostConfig = loginHostConfig(),
-            knownUserConfig = userConfig()
+            knownUserConfig = user,
         )
     }
 
@@ -112,7 +103,7 @@ open class BeaconLoginTests: AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = KnownAppConfig.BEACON_JWT,
             knownLoginHostConfig = loginHostConfig(),
-            knownUserConfig = userConfig()
+            knownUserConfig = user,
         )
     }
 
@@ -123,7 +114,7 @@ open class BeaconLoginTests: AuthFlowTest() {
             knownAppConfig = KnownAppConfig.BEACON_JWT,
             scopeSelection = SUBSET,
             knownLoginHostConfig = loginHostConfig(),
-            knownUserConfig = userConfig()
+            knownUserConfig = user,
         )
     }
 
@@ -134,7 +125,7 @@ open class BeaconLoginTests: AuthFlowTest() {
             knownAppConfig = KnownAppConfig.BEACON_JWT,
             scopeSelection = ALL,
             knownLoginHostConfig = loginHostConfig(),
-            knownUserConfig = userConfig()
+            knownUserConfig = user,
         )
     }
 

@@ -50,7 +50,7 @@ import org.junit.runner.RunWith
  * off (the Bearer baseline) and `cleanup()` restores it to off after each test. All DPoP tests use
  * the `regular_auth` login host (sdb38) — DPoP is an ECA property, not an org property.
  *
- * NB: Tests use the first user from ui_test_config.json
+ * Tests use the regular-auth user selected from the device API level.
  */
 @RunWith(AndroidJUnit4::class)
 @LargeTest

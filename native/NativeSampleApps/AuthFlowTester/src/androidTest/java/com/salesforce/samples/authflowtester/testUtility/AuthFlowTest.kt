@@ -58,6 +58,7 @@ import com.salesforce.samples.authflowtester.pageObjects.NativeLoginPageObject
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.COMMUNITY_AUTH
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.NATIVE_LOGIN
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.EMPTY
 import org.junit.After
@@ -124,16 +125,22 @@ abstract class AuthFlowTest {
     val app = AuthFlowTesterPageObject(composeTestRule)
 
     val user: KnownUserConfig by lazy {
-        val minSdk = InstrumentationRegistry.getInstrumentation().targetContext
-            .applicationInfo.minSdkVersion
-        val userNumber = (Build.VERSION.SDK_INT - minSdk) % KnownUserConfig.entries.toTypedArray().count()
-        KnownUserConfig.entries[userNumber]
+        userConfigForApiLevel(REGULAR_AUTH)
     }
 
     // For MultiUser tests
     val otherUser: KnownUserConfig by lazy {
-        val userNumber = (user.ordinal + 1) % KnownUserConfig.entries.toTypedArray().count()
-        KnownUserConfig.entries[userNumber]
+        testConfig.otherUserConfig(REGULAR_AUTH, user)
+    }
+
+    protected fun userConfigForApiLevel(knownLoginHostConfig: KnownLoginHostConfig): KnownUserConfig {
+        val minSdk = InstrumentationRegistry.getInstrumentation().targetContext
+            .applicationInfo.minSdkVersion
+        return testConfig.userConfigForApiLevel(
+            knownLoginHostConfig = knownLoginHostConfig,
+            apiLevel = Build.VERSION.SDK_INT,
+            minSdk = minSdk,
+        )
     }
 
     /**
@@ -517,9 +524,10 @@ abstract class AuthFlowTest {
             useWelcomeDiscovery -> Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
             // Pool server (login.salesforce.com, login.*.salesforce.com) registers L1, not L4.
             useLoginPoolHost -> Features.FEATURE_LOGIN_SERVER_PRODUCTION
-            // community_auth is a *.my.site.com Experience Cloud site, not a *.my.salesforce.com
-            // My Domain host, so the SDK classifies it L5 (Other) rather than L4 (My Domain).
-            knownLoginHostConfig == COMMUNITY_AUTH -> Features.FEATURE_LOGIN_SERVER_OTHER
+            // Experience Cloud endpoints are *.my.site.com, not *.my.salesforce.com My Domains,
+            // so the SDK classifies both community and Native Login hosts as L5 (Other).
+            knownLoginHostConfig == COMMUNITY_AUTH || knownLoginHostConfig == NATIVE_LOGIN ->
+                Features.FEATURE_LOGIN_SERVER_OTHER
             else -> Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
         }
         val expectedAMarker = when {
@@ -611,9 +619,10 @@ abstract class AuthFlowTest {
         val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
         val expectedLMarker = when {
             usesWelcomeDiscovery -> Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
-            // community_auth is a *.my.site.com Experience Cloud site, not a *.my.salesforce.com
-            // My Domain host, so the SDK classifies it L5 (Other) rather than L4 (My Domain).
-            knownLoginHostConfig == COMMUNITY_AUTH -> Features.FEATURE_LOGIN_SERVER_OTHER
+            // Experience Cloud endpoints are *.my.site.com, not *.my.salesforce.com My Domains,
+            // so the SDK classifies both community and Native Login hosts as L5 (Other).
+            knownLoginHostConfig == COMMUNITY_AUTH || knownLoginHostConfig == NATIVE_LOGIN ->
+                Features.FEATURE_LOGIN_SERVER_OTHER
             else -> Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
         }
         val expectedAMarker = when {
@@ -708,7 +717,7 @@ abstract class AuthFlowTest {
     fun loginNativeAndValidate(
         app: AppConfig,
         useDPoP: Boolean,
-        setup: NativeLoginSetup = testConfig.nativeLoginSetup(),
+        setup: NativeLoginSetup = testConfig.nativeLoginSetup(userConfigForApiLevel(KnownLoginHostConfig.NATIVE_LOGIN)),
         isMultiUser: Boolean = false,
         validateApi: Boolean = true,
     ) {
@@ -734,13 +743,13 @@ abstract class AuthFlowTest {
         expectedRtMarkerByUsername[username] = SalesforceSDKManager.getInstance()
             .userAccountManager.currentUser?.lastTokenRotationTime?.isNotBlank() == true
         this.app.validateUser(
-            COMMUNITY_AUTH,
-            KnownUserConfig.FIRST,
+            KnownLoginHostConfig.NATIVE_LOGIN,
+            setup.knownUserConfig,
             isMultiUser = isMultiUser,
             expectAdvancedAuth = false,
             isDpop = useDPoP,
             expectedBMarker = null,
-            // The SDK classifies the Native Login URL; the community_auth *.my.site.com site is L5.
+            // The SDK classifies the Native Login Experience Cloud URL as L5.
             expectedLMarker = Features.FEATURE_LOGIN_SERVER_OTHER,
             expectedAMarker = Features.FEATURE_AUTH_TYPE_NATIVE,
             isJwt = app.issuesJwt,
@@ -778,7 +787,7 @@ abstract class AuthFlowTest {
     fun loginNativeExpectingRejection(
         app: AppConfig,
         useDPoP: Boolean,
-        setup: NativeLoginSetup = testConfig.nativeLoginSetup(),
+        setup: NativeLoginSetup = testConfig.nativeLoginSetup(userConfigForApiLevel(KnownLoginHostConfig.NATIVE_LOGIN)),
     ): NativeLoginRejection {
         configureNativeLogin(setup, app, useDPoP)
         val userCountBefore = SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers?.size ?: 0
@@ -1198,9 +1207,10 @@ abstract class AuthFlowTest {
         }
         val expectedLMarker = when {
             useLoginPoolHost -> Features.FEATURE_LOGIN_SERVER_PRODUCTION
-            // community_auth is a *.my.site.com Experience Cloud site, not a *.my.salesforce.com
-            // My Domain host, so the SDK classifies it L5 (Other) rather than L4 (My Domain).
-            knownLoginHostConfig == COMMUNITY_AUTH -> Features.FEATURE_LOGIN_SERVER_OTHER
+            // Experience Cloud endpoints are *.my.site.com, not *.my.salesforce.com My Domains,
+            // so the SDK classifies both community and Native Login hosts as L5 (Other).
+            knownLoginHostConfig == COMMUNITY_AUTH || knownLoginHostConfig == NATIVE_LOGIN ->
+                Features.FEATURE_LOGIN_SERVER_OTHER
             else -> Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
         }
         app.validateUserAgent(

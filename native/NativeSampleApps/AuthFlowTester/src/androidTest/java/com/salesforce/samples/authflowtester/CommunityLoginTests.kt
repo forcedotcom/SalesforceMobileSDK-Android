@@ -39,7 +39,6 @@ import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.COMMUNITY_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
-import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.EMPTY
 import com.salesforce.samples.authflowtester.testUtility.testConfig
 import org.junit.Assert.assertEquals
@@ -73,14 +72,14 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
  * environment, so every test here starts with [assumeTrue] and skips cleanly when the host is
  * absent from `ui_test_config.json` (see [testConfig.hasLoginHost]).
  *
- * The `community_auth` login host only provisions a single user ([KnownUserConfig.FIRST]), so
- * every call below passes that explicitly rather than relying on the base class's
- * [user]/[otherUser] lazy properties (which pick an index up to [KnownUserConfig.FIFTH] depending
- * on API level and would go out of bounds against this host's single-user list).
+ * Every test selects its community user from the `community_auth` host by API level. This keeps the
+ * host-local rotation independent of the regular-auth user selected by the base class.
  */
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class CommunityLoginTests : AuthFlowTest() {
+
+    private val communityUser by lazy { userConfigForApiLevel(COMMUNITY_AUTH) }
 
     @Before
     fun skipIfCommunityAuthNotConfigured() {
@@ -98,7 +97,7 @@ class CommunityLoginTests : AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = ECA_OPAQUE,
             knownLoginHostConfig = COMMUNITY_AUTH,
-            knownUserConfig = KnownUserConfig.FIRST,
+            knownUserConfig = communityUser,
         )
         assertCommunityRevokeAndRefreshWorks(
             expectsRefreshTokenRotation = false,
@@ -111,7 +110,7 @@ class CommunityLoginTests : AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = ECA_OPAQUE,
             knownLoginHostConfig = COMMUNITY_AUTH,
-            knownUserConfig = KnownUserConfig.FIRST,
+            knownUserConfig = communityUser,
             useHybridAuthToken = false,
         )
         assertCommunityRevokeAndRefreshWorks(
@@ -127,7 +126,7 @@ class CommunityLoginTests : AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = ECA_JWT,
             knownLoginHostConfig = COMMUNITY_AUTH,
-            knownUserConfig = KnownUserConfig.FIRST,
+            knownUserConfig = communityUser,
         )
         assertCommunityRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isJwt = true)
     }
@@ -138,7 +137,7 @@ class CommunityLoginTests : AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = ECA_JWT,
             knownLoginHostConfig = COMMUNITY_AUTH,
-            knownUserConfig = KnownUserConfig.FIRST,
+            knownUserConfig = communityUser,
             useHybridAuthToken = false,
         )
         assertCommunityRevokeAndRefreshWorks(
@@ -157,7 +156,7 @@ class CommunityLoginTests : AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = ECA_OPAQUE,
             knownLoginHostConfig = COMMUNITY_AUTH,
-            knownUserConfig = KnownUserConfig.FIRST,
+            knownUserConfig = communityUser,
             forceAdvancedAuthentication = false,
         )
         assertCommunityRevokeAndRefreshWorks(
@@ -177,7 +176,7 @@ class CommunityLoginTests : AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = ECA_JWT_DPOP,
             knownLoginHostConfig = COMMUNITY_AUTH,
-            knownUserConfig = KnownUserConfig.FIRST,
+            knownUserConfig = communityUser,
             useDPoP = true,
         )
         assertCommunityRevokeAndRefreshWorks(
@@ -193,7 +192,7 @@ class CommunityLoginTests : AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = ECA_JWT_DPOP,
             knownLoginHostConfig = COMMUNITY_AUTH,
-            knownUserConfig = KnownUserConfig.FIRST,
+            knownUserConfig = communityUser,
             useHybridAuthToken = false,
             useDPoP = true,
         )
@@ -211,7 +210,7 @@ class CommunityLoginTests : AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = ECA_JWT_DPOP,
             knownLoginHostConfig = COMMUNITY_AUTH,
-            knownUserConfig = KnownUserConfig.FIRST,
+            knownUserConfig = communityUser,
             useDPoP = true,
             forceAdvancedAuthentication = false,
         )
@@ -233,7 +232,7 @@ class CommunityLoginTests : AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = ECA_JWT_DPOP_RTR,
             knownLoginHostConfig = COMMUNITY_AUTH,
-            knownUserConfig = KnownUserConfig.FIRST,
+            knownUserConfig = communityUser,
             useDPoP = true,
         )
         val keyThumbprintAfterLogin = app.getDpopInfo().keyThumbprint
@@ -264,12 +263,12 @@ class CommunityLoginTests : AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = ECA_OPAQUE,
             knownLoginHostConfig = COMMUNITY_AUTH,
-            knownUserConfig = KnownUserConfig.FIRST,
+            knownUserConfig = communityUser,
         )
         restartAndValidateUser(
             knownAppConfig = ECA_OPAQUE,
             knownLoginHostConfig = COMMUNITY_AUTH,
-            knownUserConfig = KnownUserConfig.FIRST,
+            knownUserConfig = communityUser,
         )
         assertCommunityRevokeAndRefreshWorks(expectsRefreshTokenRotation = false)
     }
@@ -281,7 +280,7 @@ class CommunityLoginTests : AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = ECA_JWT_DPOP,
             knownLoginHostConfig = COMMUNITY_AUTH,
-            knownUserConfig = KnownUserConfig.FIRST,
+            knownUserConfig = communityUser,
             useDPoP = true,
         )
         val keyThumbprintBeforeRestart = app.getDpopInfo().keyThumbprint
@@ -289,7 +288,7 @@ class CommunityLoginTests : AuthFlowTest() {
         restartAndValidateUser(
             knownAppConfig = ECA_JWT_DPOP,
             knownLoginHostConfig = COMMUNITY_AUTH,
-            knownUserConfig = KnownUserConfig.FIRST,
+            knownUserConfig = communityUser,
             isDpop = true,
         )
         assertEquals(keyThumbprintBeforeRestart, app.getDpopInfo().keyThumbprint)
@@ -314,13 +313,13 @@ class CommunityLoginTests : AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = ECA_JWT,
             knownLoginHostConfig = COMMUNITY_AUTH,
-            knownUserConfig = KnownUserConfig.FIRST,
+            knownUserConfig = communityUser,
             useDPoP = false,
         )
         upgradeToDPoPAndValidate(
             knownAppConfig = ECA_JWT,
             knownLoginHostConfig = COMMUNITY_AUTH,
-            knownUserConfig = KnownUserConfig.FIRST,
+            knownUserConfig = communityUser,
         )
     }
 
@@ -332,13 +331,13 @@ class CommunityLoginTests : AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = ECA_JWT,
             knownLoginHostConfig = COMMUNITY_AUTH,
-            knownUserConfig = KnownUserConfig.FIRST,
+            knownUserConfig = communityUser,
             useDPoP = true,
         )
         downgradeFromDPoPAndValidate(
             knownAppConfig = ECA_JWT,
             knownLoginHostConfig = COMMUNITY_AUTH,
-            knownUserConfig = KnownUserConfig.FIRST,
+            knownUserConfig = communityUser,
         )
     }
 
@@ -355,14 +354,14 @@ class CommunityLoginTests : AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = ECA_JWT,
             knownLoginHostConfig = COMMUNITY_AUTH,
-            knownUserConfig = KnownUserConfig.FIRST,
+            knownUserConfig = communityUser,
             useDPoP = false,
         )
         assertEquals("Bearer", app.getTokenType())
         val (accessTokenBeforeLogout, refreshTokenBeforeLogout) = app.getTokens()
 
         val sdkManager = SalesforceSDKManager.getInstance()
-        val communityUsername = testConfig.getUser(COMMUNITY_AUTH, KnownUserConfig.FIRST).username
+        val communityUsername = testConfig.getUser(COMMUNITY_AUTH, communityUser).username
         val communityAccount = sdkManager.userAccountManager.authenticatedUsers
             ?.find { it.username == communityUsername }
             ?: throw AssertionError("Community user account not found")
@@ -378,7 +377,7 @@ class CommunityLoginTests : AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = ECA_JWT,
             knownLoginHostConfig = COMMUNITY_AUTH,
-            knownUserConfig = KnownUserConfig.FIRST,
+            knownUserConfig = communityUser,
             useDPoP = true,
         )
         val dpopInfoAfterRelogin = app.getDpopInfo()
@@ -416,26 +415,27 @@ class CommunityLoginTests : AuthFlowTest() {
 
     // region Multi-Host Multi-User Tests
 
-    // The community login host only provisions one user, so same-host multi-user isolation can't be
-    // exercised the way DPoPLoginTests.testECAJwtDPoP_MultiUser_UniqueTokens does. Instead, pair the
-    // single community user with a second, regular_auth-hosted DPoP user: tokens, DPoP key material,
-    // and nonces must stay isolated per credential, and switching back and forth must not leak either
-    // session's auth scheme or markers into the other.
+        // Pair the selected community user with a distinct regular_auth-hosted DPoP user: tokens, DPoP
+        // key material, and nonces must stay isolated per credential, and switching back and forth must
+        // not leak either session's auth scheme or markers into the other.
     @Test
     fun testCommunityDPoP_And_RegularAuthDPoP_MultiHost_UniqueTokensAndIsolatedNonces() {
         loginAndValidate(
             knownAppConfig = ECA_JWT_DPOP,
             knownLoginHostConfig = COMMUNITY_AUTH,
-            knownUserConfig = KnownUserConfig.FIRST,
+            knownUserConfig = communityUser,
             useDPoP = true,
         )
         val (communityAccessToken, communityRefreshToken) = app.getTokens()
         val communityKeyThumbprint = app.getDpopInfo().keyThumbprint
 
-        addOtherUserAndValidate(
+        app.addNewAccount()
+        loginAndValidate(
             knownAppConfig = ECA_JWT_DPOP,
             knownLoginHostConfig = REGULAR_AUTH,
+            knownUserConfig = user,
             useDPoP = true,
+            isMultiUser = true,
         )
         val (otherAccessToken, otherRefreshToken) = app.getTokens()
         val otherKeyThumbprint = app.getDpopInfo().keyThumbprint
@@ -447,7 +447,7 @@ class CommunityLoginTests : AuthFlowTest() {
 
         // Switch back to the community user; revoke+refresh must work with its own DPoP nonce.
         switchToUserAndValidateUser(
-            KnownUserConfig.FIRST,
+            communityUser,
             knownLoginHostConfig = COMMUNITY_AUTH,
             isDpop = true,
             isJwt = true,
@@ -463,7 +463,7 @@ class CommunityLoginTests : AuthFlowTest() {
         // Switch to the regular_auth user; revoke+refresh must work independently with its own
         // nonce.
         switchToUserAndValidateUser(
-            otherUser,
+            user,
             knownLoginHostConfig = REGULAR_AUTH,
             isDpop = true,
             isJwt = true,
