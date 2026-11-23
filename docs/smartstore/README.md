@@ -255,7 +255,8 @@ Nested types: `SmartStore.Type` (`string`, `integer`, `floating`, `full_text`, `
 ```java
 public IndexSpec(String path, Type type)
 public IndexSpec(String path, Type type, String columnName)   // columnName filled in by the store; callers normally omit it
-public static IndexSpec[] fromJSON(JSONArray)  /  fromJSON(JSONObject)   // keys: path, type, columnName; a missing columnName yields "" (optString), not null
+public static IndexSpec fromJSON(JSONObject)    // keys: path, type, columnName; a missing columnName yields "" (optString), not null
+public static IndexSpec[] fromJSON(JSONArray)   // same keys, one IndexSpec per element
 public JSONObject toJSON()  /  static JSONArray toJSON(IndexSpec[])
 public static boolean hasFTS(IndexSpec[])  /  hasJSON1(IndexSpec[])
 ```
@@ -340,7 +341,7 @@ Runs `AlterSoupLongOperation`, a journaled multi-step operation. Each step runs 
 ### reIndexSoup
 
 ```java
-store.reIndexSoup("accounts", arrayOf("Name"), /* handleTx */ true)
+store.reIndexSoup("accounts", new String[] {"Name"}, /* handleTx */ true);
 ```
 
 Reads every row's JSON and rewrites the index columns (and FTS columns) for the given paths. Paths without an existing index spec are skipped with a warning; `json1` specs are skipped (nothing to extract). Does nothing if no eligible spec remains. Note `handleTx == true` calls `setTransactionSuccessful()` in the `finally` block, so a failure part way still commits what was done.
@@ -647,7 +648,7 @@ Accessors on `SmartStoreSDKManager` mirror the SmartStore ones: `getKeyValueStor
 - `SmartSqlHelper.SmartSqlException` (subclass) for invalid smart SQL (position reported as character index).
 - `JSONException` (checked) from `create`/`update`/`upsert`/`retrieve`/`query`/`queryWithArgs`/`alterSoup`.
 - `create` returns `null` (not an exception) when the insert's returned id differs from the expected one, and `update` returns `null` when the affected row count is not 1.
-- Underlying SQLCipher exceptions (`net.zetetic.database.sqlcipher.SQLiteException` etc.) propagate unwrapped.
+- Underlying SQLCipher exceptions (`android.database.sqlite.SQLiteException`, the framework type SQLCipher Android propagates) propagate unwrapped.
 - Logging goes through `SmartStoreLogger`.
 
 **Threading**
