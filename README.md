@@ -73,6 +73,8 @@ cd SalesforceMobileSDK-Android
 ./gradlew connectedAndroidTest
 ```
 
+For the CI-compatible, library-specific instrumentation-test shard runners, see [`.github/test-shards/README.md`](.github/test-shards/README.md). These runners require local test credentials and, for Firebase Test Lab, disposable credentials suitable for upload to the test project.
+
 Setting up your Development Environment
 ==
 
