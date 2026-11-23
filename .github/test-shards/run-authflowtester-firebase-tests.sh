@@ -5,6 +5,8 @@ set -euo pipefail
 : "${FULL_API_RANGE:?FULL_API_RANGE is required}"
 : "${PS16K_MIN_API_VERSION:?PS16K_MIN_API_VERSION is required}"
 : "${RUN_NUMBER:?RUN_NUMBER is required}"
+: "${FIREBASE_RESULTS_PREFIX:?FIREBASE_RESULTS_PREFIX is required}"
+: "${SINGLE_API_PR_RUN:?SINGLE_API_PR_RUN is required}"
 
 if [ "$#" -eq 0 ]; then
   echo "Usage: $0 <test-group> [<test-group>...]" >&2
@@ -45,7 +47,7 @@ for GROUP in "$@"; do
       ;;
   esac
 
-  GCLOUD_RESULTS_DIR="authflowtester-nightly-${GROUP}-build-${RUN_NUMBER}"
+  GCLOUD_RESULTS_DIR="authflowtester-${FIREBASE_RESULTS_PREFIX}-${GROUP}-build-${RUN_NUMBER}"
   DEVICE_ARGS=()
   for LEVEL in $FULL_API_RANGE; do
     DEVICE_MODEL="MediumPhone.arm"
@@ -59,7 +61,7 @@ for GROUP in "$@"; do
     --project mobile-apps-firebase-test \
     --type instrumentation \
     --use-orchestrator \
-    --environment-variables clearPackageData=true \
+    --environment-variables "clearPackageData=true,singleApiPrRun=${SINGLE_API_PR_RUN},uiTestGroup=${GROUP}" \
     --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
     --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
     --test-targets "$TEST_TARGETS" \

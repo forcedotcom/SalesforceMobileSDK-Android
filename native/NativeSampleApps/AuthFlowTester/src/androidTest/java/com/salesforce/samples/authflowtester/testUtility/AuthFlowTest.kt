@@ -134,6 +134,14 @@ abstract class AuthFlowTest {
     }
 
     protected fun userConfigForApiLevel(knownLoginHostConfig: KnownLoginHostConfig): KnownUserConfig {
+        val arguments = InstrumentationRegistry.getArguments()
+        if (arguments.getString("singleApiPrRun") == "true") {
+            return testConfig.userConfigForSingleApiPrGroup(
+                knownLoginHostConfig = knownLoginHostConfig,
+                testGroup = arguments.getString("uiTestGroup")
+                    ?: throw IllegalStateException("singleApiPrRun requires the uiTestGroup instrumentation argument."),
+            )
+        }
         val minSdk = InstrumentationRegistry.getInstrumentation().targetContext
             .applicationInfo.minSdkVersion
         return testConfig.userConfigForApiLevel(

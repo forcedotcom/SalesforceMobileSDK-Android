@@ -167,6 +167,43 @@ data class UITestConfig(
         return KnownUserConfig.entries[Math.floorMod(apiLevel - minSdk, userCount)]
     }
 
+    /**
+     * Allocates non-overlapping users when all PR test groups run on one API level.
+     *
+     * The multi-user group reserves its selected user and the following user. Community and Native
+     * Login use their own host-local pools, while Community's cross-host regular-auth operations use
+     * the dedicated community slot below.
+     */
+    fun userConfigForSingleApiPrGroup(
+        knownLoginHostConfig: KnownLoginHostConfig,
+        testGroup: String,
+    ): KnownUserConfig {
+        val index = when (knownLoginHostConfig) {
+            KnownLoginHostConfig.REGULAR_AUTH,
+            KnownLoginHostConfig.ADVANCED_AUTH,
+            -> when (testGroup) {
+                "login" -> 0
+                "welcome" -> 1
+                "token-lifecycle" -> 2
+                "multi-user" -> 3
+                "community" -> 5
+                else -> throw IllegalArgumentException("Unsupported single-API PR test group: $testGroup")
+            }
+            KnownLoginHostConfig.COMMUNITY_AUTH -> if (testGroup == "community") 0 else {
+                throw IllegalArgumentException("Group $testGroup cannot use the community_auth user pool.")
+            }
+            KnownLoginHostConfig.NATIVE_LOGIN -> if (testGroup == "native-login") 0 else {
+                throw IllegalArgumentException("Group $testGroup cannot use the native_login user pool.")
+            }
+        }
+        val users = getLoginHost(knownLoginHostConfig).users
+        return KnownUserConfig.entries.getOrNull(index)?.takeIf { index < users.size }
+            ?: throw NativeLoginConfigException(
+                "The '${knownLoginHostConfig.configName}' login host in ui_test_config.json needs user ${index + 1} " +
+                    "for the $testGroup single-API PR group.",
+            )
+    }
+
     fun otherUserConfig(
         knownLoginHostConfig: KnownLoginHostConfig,
         primaryUserConfig: KnownUserConfig,

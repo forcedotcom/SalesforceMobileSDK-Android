@@ -7,6 +7,18 @@ on:
       display_name:
         required: true
         type: string
+      api_levels:
+        required: true
+        type: string
+      results_prefix:
+        required: true
+        type: string
+      checkout_ref:
+        required: true
+        type: string
+      single_api_pr_run:
+        required: true
+        type: boolean
     secrets:
       MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL:
         required: true
@@ -26,15 +38,17 @@ jobs:
     runs-on: forcedotcom-ubuntu  # forks: use ubuntu-latest (org-scoped runner)
     timeout-minutes: 240
     env:
-      FULL_API_RANGE: "31 32 33 34 35 36 37"
+      FULL_API_RANGE: ${{ inputs.api_levels }}
       PS16K_MIN_API_VERSION: "36"
       RUN_NUMBER: ${{ github.run_number }}
       TEST_GROUPS: ${{ inputs.test_groups }}
+      FIREBASE_RESULTS_PREFIX: ${{ inputs.results_prefix }}
+      SINGLE_API_PR_RUN: ${{ inputs.single_api_pr_run }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
         with:
           persist-credentials: false
-          ref: ${{ github.head_ref || github.ref_name }}
+          ref: ${{ inputs.checkout_ref }}
       - name: Install Dependencies
         env:
           MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}

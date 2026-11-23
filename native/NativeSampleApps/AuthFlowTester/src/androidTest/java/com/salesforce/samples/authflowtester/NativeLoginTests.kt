@@ -563,6 +563,18 @@ class NativeLoginConfigRulesTest {
     }
 
     @Test
+    fun test_givenSingleApiPrGroups_whenSelected_thenUseNonOverlappingRegularUsers() {
+        val users = (1..10).map { index -> User("user$index@example.com", "placeholder") }
+        val config = config(hosts = listOf(LoginHost("regular_auth", HOST_URL, users)))
+
+        assertEquals(KnownUserConfig.FIRST, config.userConfigForSingleApiPrGroup(KnownLoginHostConfig.REGULAR_AUTH, "login"))
+        assertEquals(KnownUserConfig.SECOND, config.userConfigForSingleApiPrGroup(KnownLoginHostConfig.REGULAR_AUTH, "welcome"))
+        assertEquals(KnownUserConfig.THIRD, config.userConfigForSingleApiPrGroup(KnownLoginHostConfig.REGULAR_AUTH, "token-lifecycle"))
+        assertEquals(KnownUserConfig.FORTH, config.userConfigForSingleApiPrGroup(KnownLoginHostConfig.REGULAR_AUTH, "multi-user"))
+        assertEquals(KnownUserConfig.SIXTH, config.userConfigForSingleApiPrGroup(KnownLoginHostConfig.REGULAR_AUTH, "community"))
+    }
+
+    @Test
     fun test_givenOneRegularUser_whenSelectedForCrossHostLogin_thenResolvesFirstUser() {
         val config = config(hosts = listOf(LoginHost("regular_auth", HOST_URL, listOf(User("user@example.com", "placeholder")))))
 

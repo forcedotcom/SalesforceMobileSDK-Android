@@ -38,6 +38,10 @@ jobs:
     with:
       test_groups: "login multi-user"
       display_name: "login + multi-user"
+      api_levels: "31 32 33 34 35 36 37"
+      results_prefix: nightly
+      checkout_ref: ${{ github.head_ref || github.ref_name }}
+      single_api_pr_run: false
     secrets:
       MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
       MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
@@ -52,6 +56,10 @@ jobs:
     with:
       test_groups: "welcome token-lifecycle"
       display_name: "welcome + token-lifecycle"
+      api_levels: "31 32 33 34 35 36 37"
+      results_prefix: nightly
+      checkout_ref: ${{ github.head_ref || github.ref_name }}
+      single_api_pr_run: false
     secrets:
       MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
       MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
@@ -65,6 +73,10 @@ jobs:
     with:
       test_groups: community
       display_name: community
+      api_levels: "31 32 33 34 35 36 37"
+      results_prefix: nightly
+      checkout_ref: ${{ github.head_ref || github.ref_name }}
+      single_api_pr_run: false
     secrets:
       MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
       MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
@@ -78,6 +90,106 @@ jobs:
     with:
       test_groups: native-login
       display_name: native-login
+      api_levels: "31 32 33 34 35 36 37"
+      results_prefix: nightly
+      checkout_ref: ${{ github.head_ref || github.ref_name }}
+      single_api_pr_run: false
+    secrets:
+      MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
+      MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
+      UI_TEST_CONFIG: ${{ secrets.UI_TEST_CONFIG }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
+
+  pr-login:
+    if: ${{ inputs.is_pr && inputs.run_all_ui_tests }}
+    uses: ./.github/workflows/reusable-ui-test-group.yaml
+    with:
+      test_groups: login
+      display_name: PR login
+      api_levels: "36"
+      results_prefix: pr
+      checkout_ref: ${{ github.event.pull_request.head.sha }}
+      single_api_pr_run: true
+    secrets:
+      MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
+      MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
+      UI_TEST_CONFIG: ${{ secrets.UI_TEST_CONFIG }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
+
+  pr-welcome:
+    if: ${{ inputs.is_pr && inputs.run_all_ui_tests }}
+    uses: ./.github/workflows/reusable-ui-test-group.yaml
+    with:
+      test_groups: welcome
+      display_name: PR welcome
+      api_levels: "36"
+      results_prefix: pr
+      checkout_ref: ${{ github.event.pull_request.head.sha }}
+      single_api_pr_run: true
+    secrets:
+      MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
+      MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
+      UI_TEST_CONFIG: ${{ secrets.UI_TEST_CONFIG }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
+
+  pr-community:
+    if: ${{ inputs.is_pr && inputs.run_all_ui_tests }}
+    uses: ./.github/workflows/reusable-ui-test-group.yaml
+    with:
+      test_groups: community
+      display_name: PR community
+      api_levels: "36"
+      results_prefix: pr
+      checkout_ref: ${{ github.event.pull_request.head.sha }}
+      single_api_pr_run: true
+    secrets:
+      MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
+      MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
+      UI_TEST_CONFIG: ${{ secrets.UI_TEST_CONFIG }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
+
+  pr-native-login:
+    if: ${{ inputs.is_pr && inputs.run_all_ui_tests }}
+    uses: ./.github/workflows/reusable-ui-test-group.yaml
+    with:
+      test_groups: native-login
+      display_name: PR native-login
+      api_levels: "36"
+      results_prefix: pr
+      checkout_ref: ${{ github.event.pull_request.head.sha }}
+      single_api_pr_run: true
+    secrets:
+      MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
+      MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
+      UI_TEST_CONFIG: ${{ secrets.UI_TEST_CONFIG }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
+
+  pr-token-lifecycle:
+    if: ${{ inputs.is_pr && inputs.run_all_ui_tests }}
+    uses: ./.github/workflows/reusable-ui-test-group.yaml
+    with:
+      test_groups: token-lifecycle
+      display_name: PR token-lifecycle
+      api_levels: "36"
+      results_prefix: pr
+      checkout_ref: ${{ github.event.pull_request.head.sha }}
+      single_api_pr_run: true
+    secrets:
+      MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
+      MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
+      UI_TEST_CONFIG: ${{ secrets.UI_TEST_CONFIG }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
+
+  pr-multi-user:
+    if: ${{ inputs.is_pr && inputs.run_all_ui_tests }}
+    uses: ./.github/workflows/reusable-ui-test-group.yaml
+    with:
+      test_groups: multi-user
+      display_name: PR multi-user
+      api_levels: "36"
+      results_prefix: pr
+      checkout_ref: ${{ github.event.pull_request.head.sha }}
+      single_api_pr_run: true
     secrets:
       MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
       MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
@@ -87,7 +199,7 @@ jobs:
   ui-test-report:
     name: UI Test Report
     # Nightly runs: reports on the results of the concurrent producer jobs. PR runs: runs the tests itself.
-    needs: [nightly-regular-login-multi-user, nightly-regular-welcome-token-lifecycle, nightly-community, nightly-native-login]
+    needs: [nightly-regular-login-multi-user, nightly-regular-welcome-token-lifecycle, nightly-community, nightly-native-login, pr-login, pr-welcome, pr-community, pr-native-login, pr-token-lifecycle, pr-multi-user]
     if: ${{ !cancelled() }}
     runs-on: forcedotcom-ubuntu  # forks: use ubuntu-latest (org-scoped runner)
     env:
@@ -112,7 +224,7 @@ jobs:
           persist-credentials: false
           ref: ${{ github.head_ref || github.ref_name }}
       - name: Install Dependencies
-        if: ${{ inputs.is_pr }}
+        if: ${{ inputs.is_pr && !inputs.run_all_ui_tests }}
         env:
           MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
           MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
@@ -122,17 +234,17 @@ jobs:
           ./install.sh
           printf '%s' "$UI_TEST_CONFIG" > ./shared/test/ui_test_config.json
       - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9  # v4.8.0
-        if: ${{ inputs.is_pr }}
+        if: ${{ inputs.is_pr && !inputs.run_all_ui_tests }}
         with:
           distribution: 'zulu'
           java-version: '21'
       - name: Setup Android SDK
-        if: ${{ inputs.is_pr }}
+        if: ${{ inputs.is_pr && !inputs.run_all_ui_tests }}
         uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd  # v4.0.4
         with:
           packages: platform-tools
       - uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1  # v4.4.4
-        if: ${{ inputs.is_pr }}
+        if: ${{ inputs.is_pr && !inputs.run_all_ui_tests }}
         with:
           # This is the actual Gradle version (not AGP), which can be found in the gradle-wrapper.properties file.
           gradle-version: "8.14.3"
@@ -140,20 +252,20 @@ jobs:
           add-job-summary-as-pr-comment: on-failure
       - name: Build App for Testing
         id: build-app
-        if: ${{ inputs.is_pr && (success() || failure()) }}
+        if: ${{ inputs.is_pr && !inputs.run_all_ui_tests && (success() || failure()) }}
         run: |
           mkdir -p build_logs
           set -o pipefail
           ./gradlew native:NativeSampleApps:AuthFlowTester:assembleDebug 2>&1 | tee "build_logs/assembleDebug-AuthFlowTester.log"
       - name: Build UI Tests
-        if: ${{ inputs.is_pr }}
+        if: ${{ inputs.is_pr && !inputs.run_all_ui_tests }}
         id: build-ui-tests
         run: |
           mkdir -p build_logs
           set -o pipefail
           ./gradlew native:NativeSampleApps:AuthFlowTester:assembleAndroidTest 2>&1 | tee "build_logs/assembleAndroidTest-AuthFlowTester.log"
       - name: Archive build logs on failure
-        if: inputs.is_pr && failure() && (steps.build-app.outcome == 'failure' || steps.build-ui-tests.outcome == 'failure')
+        if: inputs.is_pr && !inputs.run_all_ui_tests && failure() && (steps.build-app.outcome == 'failure' || steps.build-ui-tests.outcome == 'failure')
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: build-logs-authflowtester-ui
@@ -161,11 +273,11 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
       - uses: 'google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed'  # v2.1.13
-        if: success() || failure()
+        if: ${{ inputs.is_pr && (success() || failure()) }}
         with:
           credentials_json: '${{ secrets.GCLOUD_SERVICE_KEY }}'
       - uses: 'google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f'  # v2.2.1
-        if: success() || failure()
+        if: ${{ inputs.is_pr && (success() || failure()) }}
       - name: Run PR Smoke Tests
         continue-on-error: true
         if: ${{ inputs.is_pr && !inputs.run_all_ui_tests }}
@@ -200,130 +312,6 @@ jobs:
             --test-targets="${PR_TESTS}" \
             --timeout=10m \
             --num-flaky-test-attempts=1
-      - name: Run Login Tests (AuthFlowTester changed in PR)
-        continue-on-error: true
-        if: ${{ inputs.is_pr && inputs.run_all_ui_tests }}
-        env:
-          RUN_NUMBER: ${{ github.run_number }}
-        run: |
-          # This is the catch-all shard. New test classes land here automatically unless they are
-          # explicitly moved to one of the dedicated whole-class shards below.
-          GCLOUD_RESULTS_DIR="authflowtester-pr-login-build-${RUN_NUMBER}"
-
-          gcloud firebase test android run \
-            --project mobile-apps-firebase-test \
-            --type instrumentation \
-            --use-orchestrator \
-            --environment-variables clearPackageData=true \
-            --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
-            --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
-            --device "model=${PR_DEVICE_MODEL},version=${PR_API_VERSION},locale=en,orientation=portrait" \
-            --directories-to-pull=/sdcard \
-            --results-dir="${GCLOUD_RESULTS_DIR}" \
-            --results-history-name=AuthFlowTester \
-            --no-performance-metrics \
-            --test-targets "notClass com.salesforce.samples.authflowtester.MultiUserLoginTests,notClass com.salesforce.samples.authflowtester.DPoPLoginTests,notClass com.salesforce.samples.authflowtester.LoginWithRestartTests,notClass com.salesforce.samples.authflowtester.RTRLoginTests,notClass com.salesforce.samples.authflowtester.RefreshTokenMigrationTests,notClass com.salesforce.samples.authflowtester.WelcomeLoginTests,notClass com.salesforce.samples.authflowtester.AdvancedAuthBeaconLoginTests,notClass com.salesforce.samples.authflowtester.CommunityLoginTests,notClass com.salesforce.samples.authflowtester.NativeLoginTests" \
-            --timeout=60m \
-            --num-flaky-test-attempts=1
-      - name: Run Welcome Discovery Tests (AuthFlowTester changed in PR)
-        continue-on-error: true
-        if: ${{ inputs.is_pr && inputs.run_all_ui_tests }}
-        env:
-          RUN_NUMBER: ${{ github.run_number }}
-        run: |
-          # NegativeLoginTests intentionally finishes with Chrome displaying an OAuth error.
-          # Keep Welcome tests in a fresh execution so delayed task cleanup cannot kill them.
-          GCLOUD_RESULTS_DIR="authflowtester-pr-welcome-build-${RUN_NUMBER}"
-
-          gcloud firebase test android run \
-            --project mobile-apps-firebase-test \
-            --type instrumentation \
-            --use-orchestrator \
-            --environment-variables clearPackageData=true \
-            --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
-            --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
-            --device "model=${PR_DEVICE_MODEL},version=${PR_API_VERSION},locale=en,orientation=portrait" \
-            --directories-to-pull=/sdcard \
-            --results-dir="${GCLOUD_RESULTS_DIR}" \
-            --results-history-name=AuthFlowTester \
-            --no-performance-metrics \
-            --test-targets "class com.salesforce.samples.authflowtester.WelcomeLoginTests,class com.salesforce.samples.authflowtester.AdvancedAuthBeaconLoginTests" \
-            --timeout=10m \
-            --num-flaky-test-attempts=1
-      - name: Run Community Login Tests (AuthFlowTester changed in PR)
-        continue-on-error: true
-        if: ${{ inputs.is_pr && inputs.run_all_ui_tests }}
-        env:
-          RUN_NUMBER: ${{ github.run_number }}
-        run: |
-          # Keep Community tests in their own shard: they use the community_auth login host and skip
-          # cleanly when it is not provisioned.
-          GCLOUD_RESULTS_DIR="authflowtester-pr-community-build-${RUN_NUMBER}"
-
-          gcloud firebase test android run \
-            --project mobile-apps-firebase-test \
-            --type instrumentation \
-            --use-orchestrator \
-            --environment-variables clearPackageData=true \
-            --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
-            --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
-            --device "model=${PR_DEVICE_MODEL},version=${PR_API_VERSION},locale=en,orientation=portrait" \
-            --directories-to-pull=/sdcard \
-            --results-dir="${GCLOUD_RESULTS_DIR}" \
-            --results-history-name=AuthFlowTester \
-            --no-performance-metrics \
-            --test-targets "class com.salesforce.samples.authflowtester.CommunityLoginTests,class com.salesforce.samples.authflowtester.NativeLoginTests" \
-            --timeout=45m \
-            --num-flaky-test-attempts=1
-      - name: Run Token Lifecycle Tests (AuthFlowTester changed in PR)
-        continue-on-error: true
-        if: ${{ inputs.is_pr && inputs.run_all_ui_tests }}
-        env:
-          RUN_NUMBER: ${{ github.run_number }}
-        run: |
-          # Select whole classes rather than individual methods, so new tests in these classes are
-          # included automatically. New classes remain covered by the catch-all login shard.
-          GCLOUD_RESULTS_DIR="authflowtester-pr-token-lifecycle-build-${RUN_NUMBER}"
-
-          gcloud firebase test android run \
-            --project mobile-apps-firebase-test \
-            --type instrumentation \
-            --use-orchestrator \
-            --environment-variables clearPackageData=true \
-            --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
-            --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
-            --device "model=${PR_DEVICE_MODEL},version=${PR_API_VERSION},locale=en,orientation=portrait" \
-            --directories-to-pull=/sdcard \
-            --results-dir="${GCLOUD_RESULTS_DIR}" \
-            --results-history-name=AuthFlowTester \
-            --no-performance-metrics \
-            --test-targets "class com.salesforce.samples.authflowtester.DPoPLoginTests,class com.salesforce.samples.authflowtester.LoginWithRestartTests,class com.salesforce.samples.authflowtester.RTRLoginTests,class com.salesforce.samples.authflowtester.RefreshTokenMigrationTests" \
-            --timeout=60m \
-            --num-flaky-test-attempts=1
-      - name: Run All Multi User Tests (AuthFlowTester changed in PR)
-        continue-on-error: true
-        if: ${{ inputs.is_pr && inputs.run_all_ui_tests }}
-        env:
-          RUN_NUMBER: ${{ github.run_number }}
-        run: |
-          # Unlike the mutually exclusive PR smoke step, this runs the complete multi-user class.
-          GCLOUD_RESULTS_DIR="authflowtester-pr-multi-user-build-${RUN_NUMBER}"
-
-          gcloud firebase test android run \
-            --project mobile-apps-firebase-test \
-            --type instrumentation \
-            --use-orchestrator \
-            --environment-variables clearPackageData=true \
-            --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
-            --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
-            --device "model=${PR_DEVICE_MODEL},version=${PR_API_VERSION},locale=en,orientation=portrait" \
-            --directories-to-pull=/sdcard \
-            --results-dir="${GCLOUD_RESULTS_DIR}" \
-            --results-history-name=AuthFlowTester \
-            --no-performance-metrics \
-            --test-targets "class com.salesforce.samples.authflowtester.MultiUserLoginTests" \
-            --timeout=45m \
-            --num-flaky-test-attempts=1
       - name: Copy Test Results
         continue-on-error: true
         if: success() || failure()
@@ -357,6 +345,7 @@ jobs:
               ORIG_FILE="firebase_results/${OUTPUT_PREFIX}_api_${API_LEVEL}_test_result.xml"
               gsutil cp "${RESULT_FILE}" "${RERUN_TMP}"
               if ! python3 - "${ORIG_FILE}" "${RERUN_TMP}" "${ORIG_FILE}" << 'PYEOF'
+          import os
           import sys
           import xml.etree.ElementTree as ET
           from pathlib import Path
@@ -433,6 +422,11 @@ jobs:
                 copy_results_by_api_level "${PR_COMMUNITY_PATH}" "pr-community"
               fi
 
+              PR_NATIVE_LOGIN_PATH="${BUCKET}/authflowtester-pr-native-login-build-${RUN_NUMBER}"
+              if gsutil ls "${PR_NATIVE_LOGIN_PATH}" > /dev/null 2>&1; then
+                copy_results_by_api_level "${PR_NATIVE_LOGIN_PATH}" "pr-native-login"
+              fi
+
               PR_TOKEN_PATH="${BUCKET}/authflowtester-pr-token-lifecycle-build-${RUN_NUMBER}"
               if gsutil ls "${PR_TOKEN_PATH}" > /dev/null 2>&1; then
                 copy_results_by_api_level "${PR_TOKEN_PATH}" "pr-token-lifecycle"
@@ -487,11 +481,10 @@ jobs:
               f"{prefix_root}-login",
               f"{prefix_root}-welcome",
               f"{prefix_root}-community",
+              f"{prefix_root}-native-login",
               f"{prefix_root}-token-lifecycle",
               f"{prefix_root}-multi-user",
           }
-          if not is_pr:
-              expected_groups.add("nightly-native-login")
           expected_api_levels = (
               {os.environ["PR_API_VERSION"]}
               if is_pr
