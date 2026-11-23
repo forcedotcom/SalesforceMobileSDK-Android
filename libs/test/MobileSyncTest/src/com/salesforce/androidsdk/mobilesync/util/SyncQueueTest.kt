@@ -99,6 +99,37 @@ class SyncQueueTest {
     }
 
     @Test
+    fun test_givenQueueSoupWithStringSequenceIndex_whenSetupCalled_thenSoupIsCorrectedAndOrderIsNumeric() {
+        val wrongSpecs = mutableListOf<IndexSpec>()
+        for (spec in expectedIndexSpecs()) {
+            wrongSpecs.add(if (spec.path == SyncQueue.SEQUENCE) IndexSpec(spec.path, SmartStore.Type.string) else spec)
+        }
+        store.registerSoup(SyncQueue.QUEUE_SOUP, wrongSpecs.toTypedArray())
+        assertEquals(11, store.getSoupIndexSpecs(SyncQueue.QUEUE_SOUP).size)
+
+        SyncManager.getInstance(null, null, store)
+
+        checkQueueIndexSpecs()
+        registerRecordSoup("soupA")
+        val manager = SyncManager.getInstance(null, null, store)
+        (1..12).forEach { manager.createLocal("soupA", account("local_$it")) }
+        val entries = queueEntries()
+        assertEquals((1L..12L).toList(), (0 until 12).map { entries.getJSONObject(it).getLong(SyncQueue.SEQUENCE) })
+    }
+
+    @Test
+    fun test_givenQueueSoupWithCorrectSpecs_whenSetupCalled_thenSoupAndDataAreUntouched() {
+        store.registerSoup(SyncQueue.QUEUE_SOUP, expectedIndexSpecs().reversed().toTypedArray())
+        store.create(SyncQueue.QUEUE_SOUP, JSONObject().put(SyncQueue.SEQUENCE, 5).put(SyncQueue.RECORD_ID, "a"))
+        val entryBefore = queueEntries().getJSONObject(0).toString()
+
+        SyncQueue.setupQueueSoupIfNeeded(store)
+
+        checkQueueIndexSpecs()
+        assertEquals(entryBefore, queueEntries().getJSONObject(0).toString())
+    }
+
+    @Test
     fun test_givenStore_whenSyncManagerCreated_thenSyncsSoupIsUntouched() {
         SyncManager.getInstance(null, null, store)
 
@@ -159,6 +190,20 @@ class SyncQueueTest {
         assertEquals((1L..12L).toList(), (0 until 12).map { entries.getJSONObject(it).getLong(SyncQueue.SEQUENCE) })
         assertEquals(ids, (0 until 12).map { entries.getJSONObject(it).getString(SyncQueue.RECORD_ID) })
     }
+
+    private fun expectedIndexSpecs() = listOf(
+        IndexSpec(SyncQueue.SEQUENCE, SmartStore.Type.integer),
+        IndexSpec(SyncQueue.SOUP_NAME, SmartStore.Type.string),
+        IndexSpec(SyncQueue.RECORD_ID, SmartStore.Type.string),
+        IndexSpec(SyncQueue.SOBJECT_TYPE, SmartStore.Type.string),
+        IndexSpec(SyncQueue.KIND, SmartStore.Type.string),
+        IndexSpec(SyncQueue.CHANGES, SmartStore.Type.json1),
+        IndexSpec(SyncQueue.BASE, SmartStore.Type.json1),
+        IndexSpec(SyncQueue.STATUS, SmartStore.Type.string),
+        IndexSpec(SyncQueue.LAST_ERROR, SmartStore.Type.json1),
+        IndexSpec(SyncQueue.ATTEMPTS, SmartStore.Type.integer),
+        IndexSpec(SyncQueue.PARENT_REF, SmartStore.Type.string),
+    )
 
     private fun checkQueueIndexSpecs() {
         val expected = mapOf(

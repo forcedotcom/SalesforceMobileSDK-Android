@@ -165,6 +165,7 @@ All three return the saved record, throw `MobileSyncException` (nothing is writt
 - To clear a field pass `JSONObject.NULL` (`put(key, null)` removes the key from a `JSONObject` instead).
 - `updateLocal` and `deleteLocal` fail if the record is missing or already flagged deleted.
 - `__display__` is neither written nor refreshed.
+- A record soup must use either queue-based or flag-based sync up, never both. The write API sets the dirty flags that flag-based sync up reads, and nothing reads the queue yet, so mixing both on the same soup is unsupported.
 
 Queue entries are `{sequence, soupName, recordId, sobjectType, kind, changes, status: "PENDING", attempts: 0}`. `sequence` is an integer allocated in the write transaction (highest + 1, starting at 1), so it is unique and increases in write order across all record soups; order entries by it. `base`, `lastError` and `parentRef` are indexed but not written yet. Index specs: `sequence`, `attempts` (integer); `soupName`, `recordId`, `sobjectType`, `kind`, `status`, `parentRef` (string); `changes`, `base`, `lastError` (json1).
 

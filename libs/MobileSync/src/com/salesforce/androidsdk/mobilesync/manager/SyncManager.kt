@@ -688,6 +688,10 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
      * This call blocks while holding the database lock; avoid calling it from the main thread for
      * large volumes. It does not require the sync manager to be accepting syncs.
      *
+     * A record soup must use either queue-based or flag-based sync up, never both: this API sets the
+     * dirty flags that flag-based sync up reads, and nothing reads the queue yet, so mixing both on
+     * the same soup is unsupported.
+     *
      * @param soupName Name of the record soup
      * @param record The record to create. It is not modified.
      * @return The saved record
@@ -707,6 +711,10 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
      * To clear a field, pass [JSONObject.NULL] as its value (`put(key, null)` removes the key
      * from the JSON object instead, so it would not be part of the changes).
      *
+     * A record soup must use either queue-based or flag-based sync up, never both: this API sets the
+     * dirty flags that flag-based sync up reads, and nothing reads the queue yet, so mixing both on
+     * the same soup is unsupported.
+     *
      * @param soupName Name of the record soup
      * @param id Id of the record (local or server id)
      * @param changes The fields to change. Must not be empty nor contain internal fields
@@ -725,6 +733,10 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
      * DELETE entry to the sync-up change queue, in one SmartStore transaction.
      *
      * `__local__` and `__locally_deleted__` are set to true; the other flags are unchanged.
+     *
+     * A record soup must use either queue-based or flag-based sync up, never both: this API sets the
+     * dirty flags that flag-based sync up reads, and nothing reads the queue yet, so mixing both on
+     * the same soup is unsupported.
      *
      * @param soupName Name of the record soup
      * @param id Id of the record (local or server id)

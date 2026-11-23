@@ -66,8 +66,20 @@ object SyncQueue {
     /** Reserved, never written by the write API yet */
     const val PARENT_REF = "parentRef"
 
-    /** Number of index specs of the queue soup */
-    private const val INDEX_SPEC_COUNT = 11
+    /** Index specs of the queue soup: the single source of truth for registration and validation */
+    private val INDEX_SPECS = listOf(
+        IndexSpec(SEQUENCE, SmartStore.Type.integer),
+        IndexSpec(SOUP_NAME, SmartStore.Type.string),
+        IndexSpec(RECORD_ID, SmartStore.Type.string),
+        IndexSpec(SOBJECT_TYPE, SmartStore.Type.string),
+        IndexSpec(KIND, SmartStore.Type.string),
+        IndexSpec(CHANGES, SmartStore.Type.json1),
+        IndexSpec(BASE, SmartStore.Type.json1),
+        IndexSpec(STATUS, SmartStore.Type.string),
+        IndexSpec(LAST_ERROR, SmartStore.Type.json1),
+        IndexSpec(ATTEMPTS, SmartStore.Type.integer),
+        IndexSpec(PARENT_REF, SmartStore.Type.string),
+    )
 
     /** Id field of the records in record soups */
     private const val ID_FIELD = Constants.ID
@@ -93,7 +105,8 @@ object SyncQueue {
 
     /**
      * Registers the queue soup if it does not exist yet.
-     * If it exists with a different number of index specs, it is altered (and re-indexed).
+     * If it exists but its index specs differ from the expected ones (different paths or types),
+     * it is altered and re-indexed.
      *
      * @param store The store that gets the queue soup
      * @throws MobileSyncException if the soup could not be altered
@@ -102,22 +115,10 @@ object SyncQueue {
     @JvmStatic
     fun setupQueueSoupIfNeeded(store: SmartStore) {
         val exists = store.hasSoup(QUEUE_SOUP)
-        if (exists && store.getSoupIndexSpecs(QUEUE_SOUP).size == INDEX_SPEC_COUNT) {
+        if (exists && hasExpectedIndexSpecs(store)) {
             return
         }
-        val indexSpecs = arrayOf(
-            IndexSpec(SEQUENCE, SmartStore.Type.integer),
-            IndexSpec(SOUP_NAME, SmartStore.Type.string),
-            IndexSpec(RECORD_ID, SmartStore.Type.string),
-            IndexSpec(SOBJECT_TYPE, SmartStore.Type.string),
-            IndexSpec(KIND, SmartStore.Type.string),
-            IndexSpec(CHANGES, SmartStore.Type.json1),
-            IndexSpec(BASE, SmartStore.Type.json1),
-            IndexSpec(STATUS, SmartStore.Type.string),
-            IndexSpec(LAST_ERROR, SmartStore.Type.json1),
-            IndexSpec(ATTEMPTS, SmartStore.Type.integer),
-            IndexSpec(PARENT_REF, SmartStore.Type.string),
-        )
+        val indexSpecs = INDEX_SPECS.toTypedArray()
         try {
             if (exists) {
                 store.alterSoup(QUEUE_SOUP, indexSpecs, true)
@@ -129,15 +130,20 @@ object SyncQueue {
         }
     }
 
+    private fun hasExpectedIndexSpecs(store: SmartStore): Boolean =
+        store.getSoupIndexSpecs(QUEUE_SOUP).map { it.path to it.type }.toSet() ==
+            INDEX_SPECS.map { it.path to it.type }.toSet()
+
     /**
      * Returns the sequence number for the next queue entry: the highest sequence + 1, or 1 if the
      * queue is empty. Call it inside the write transaction so that the value is unique.
      *
+     * Not public API: it does not reserve the value.
+     *
      * @param store The store holding the queue soup
      */
     @Throws(JSONException::class)
-    @JvmStatic
-    fun nextSequence(store: SmartStore): Long {
+    internal fun nextSequence(store: SmartStore): Long {
         val rows = store.query(
             QuerySpec.buildSmartQuerySpec("SELECT MAX({$QUEUE_SOUP:$SEQUENCE}) FROM {$QUEUE_SOUP}", 1),
             0
