@@ -152,18 +152,14 @@ object SyncQueue {
 
     internal fun createLocal(store: SmartStore, soupName: String, record: JSONObject): JSONObject {
         checkRecordSoup(store, soupName)
-        val copy = try {
-            JSONObject(record.toString())
-        } catch (e: JSONException) {
-            throw MobileSyncException("Record cannot be serialized to JSON", e)
-        }
+        val copy = deepCopy(record, "Record")
         for (key in copy.keys()) {
             if (key.startsWith("_soup")) {
                 throw MobileSyncException("Record cannot contain the SmartStore field $key")
             }
         }
-        val sobjectType = copy.optJSONObject(Constants.ATTRIBUTES)?.optString(Constants.LTYPE)
-        if (sobjectType.isNullOrEmpty()) {
+        val sobjectType = objectType(copy)
+        if (sobjectType == null) {
             throw MobileSyncException("Record must have ${Constants.SOBJECT_TYPE}")
         }
         val givenId = if (copy.isNull(ID_FIELD)) null else copy.get(ID_FIELD)
@@ -201,11 +197,7 @@ object SyncQueue {
 
     internal fun updateLocal(store: SmartStore, soupName: String, id: String, changes: JSONObject): JSONObject {
         checkRecordSoup(store, soupName)
-        val changesCopy = try {
-            JSONObject(changes.toString())
-        } catch (e: JSONException) {
-            throw MobileSyncException("Changes cannot be serialized to JSON", e)
-        }
+        val changesCopy = deepCopy(changes, "Changes")
         if (changesCopy.length() == 0) {
             throw MobileSyncException("Changes cannot be empty")
         }
@@ -251,7 +243,20 @@ object SyncQueue {
     }
 
     private fun objectType(record: JSONObject): String? =
-        record.optJSONObject(Constants.ATTRIBUTES)?.optString(Constants.LTYPE)?.takeIf { it.isNotEmpty() }
+        (record.optJSONObject(Constants.ATTRIBUTES)?.opt(Constants.LTYPE) as? String)?.takeIf { it.isNotEmpty() }
+
+    /**
+     * Deep-copies [source] through its JSON text. `toString()` returns null (it does not throw) when
+     * nested content cannot be serialized, e.g. a boxed NaN inside an array.
+     */
+    private fun deepCopy(source: JSONObject, what: String): JSONObject {
+        val text = source.toString() ?: throw MobileSyncException("$what cannot be serialized to JSON")
+        return try {
+            JSONObject(text)
+        } catch (e: JSONException) {
+            throw MobileSyncException("$what cannot be serialized to JSON", e)
+        }
+    }
 
     /**
      * Checks done before the transaction: the record soup exists and indexes the id field, and the

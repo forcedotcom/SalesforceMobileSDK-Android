@@ -186,6 +186,40 @@ class LocalWriteTest {
     }
 
     @Test
+    fun test_givenNonStringOrNullType_whenCreateLocal_thenFailsWithNothingWritten() {
+        val badTypes: List<Any> = listOf(JSONObject.NULL, 5, true, JSONObject().put("a", 1), "")
+        for (type in badTypes) {
+            val record = JSONObject().put("Id", "local_1").put("Name", "n")
+                .put("attributes", JSONObject().put("type", type))
+            assertWriteFails { manager.createLocal(SOUP, record) }
+        }
+        assertNothingWritten()
+    }
+
+    @Test
+    fun test_givenNestedNaN_whenCreateLocal_thenFailsWithNothingWritten() {
+        val nan: Any = Double.NaN // boxed, so that JSONArray.put(Object) is used (put(double) rejects NaN)
+        val record = account("local_1").put("Values", JSONArray().put(nan))
+
+        assertWriteFails { manager.createLocal(SOUP, record) }
+
+        assertNothingWritten()
+    }
+
+    @Test
+    fun test_givenNestedNaN_whenUpdateLocal_thenFailsWithNothingChanged() {
+        insertCleanRecord("001A", name = "orig", phone = "111")
+        val before = record("001A").toString()
+        val nan: Any = Double.NaN // boxed, so that JSONArray.put(Object) is used (put(double) rejects NaN)
+        val changes = JSONObject().put("Values", JSONArray().put(nan))
+
+        assertWriteFails { manager.updateLocal(SOUP, "001A", changes) }
+
+        assertEquals(before, record("001A").toString())
+        assertEquals(0, count(SyncQueue.QUEUE_SOUP))
+    }
+
+    @Test
     fun test_givenMissingSoup_whenCreateLocal_thenFails() {
         assertWriteFails { manager.createLocal("noSuchSoup", account("local_1")) }
         assertEquals(0, count(SyncQueue.QUEUE_SOUP))
