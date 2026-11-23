@@ -19,7 +19,7 @@ Configured libraries are `SalesforceSDK`, `MobileSync`, and `SalesforceHybrid`. 
 
 Each configuration file defines targets using the `class` keyword. To ensure all tests run exactly once, each config has a `remaining` shard that **only** uses the `notClass` keyword. New test classes are automatically included in `remaining`.
 
-Classes added to a named shard must also be added to `remaining` as `notClass` exclusions, preventing duplicate execution. Conversely, remove those exclusions when removing a named shard target, so tests are not skipped. CI validates this invariant.
+Classes added to a named shard must also be added to `remaining` as `notClass` exclusions, preventing duplicate execution. Conversely, remove those exclusions when removing a named shard target, so tests are not skipped. CI validates this invariant and rejects duplicate shard targets or exclusions.
 
 ## Local runners
 

@@ -87,6 +87,9 @@ fi
 if ! jq -e '
     (.shards | type == "array" and length > 0) and
     ([.shards[] | select(.name == "remaining")] | length == 1) and
+    ([.shards[] | .name] as $names | ($names | unique | length) == ($names | length)) and
+    ([.shards[] | select(.name != "remaining") | .targets[] | ltrimstr("class ")] as $classes | ($classes | unique | length) == ($classes | length)) and
+    ([.shards[] | select(.name == "remaining") | .targets[] | ltrimstr("notClass ")] as $not_classes | ($not_classes | unique | length) == ($not_classes | length)) and
     all(
         .shards[];
         (.name | type == "string") and
@@ -98,7 +101,7 @@ if ! jq -e '
         end
     )
 ' "$shard_config" >/dev/null; then
-    echo "Invalid shard config ${shard_config}: require one remaining shard, class targets, and notClass exclusions." >&2
+    echo "Invalid shard config ${shard_config}: require unique names and targets, one remaining shard, class targets, and notClass exclusions." >&2
     exit 1
 fi
 
