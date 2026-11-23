@@ -394,24 +394,6 @@ jobs:
             if testcase.tag == 'testcase'
           }
 
-          copy_group_results() {
-            local RESULT_DIRS=$1
-            local OUTPUT_PREFIX=$2
-            local GROUP_RESULT
-            local GROUP
-            local RESULT_DIR
-
-            if [ -z "$RESULT_DIRS" ]; then
-              return
-            fi
-
-            IFS=, read -r -a GROUP_RESULTS <<< "$RESULT_DIRS"
-            for GROUP_RESULT in "${GROUP_RESULTS[@]}"; do
-              GROUP=${GROUP_RESULT%%=*}
-              RESULT_DIR=${GROUP_RESULT#*=}
-              copy_results_by_api_level "${BUCKET}/${RESULT_DIR}" "${OUTPUT_PREFIX}-${GROUP}"
-            done
-          }
           for testcase in rerun_suite.findall('testcase'):
             test_key = key(testcase)
             if test_key in positions:
@@ -433,6 +415,25 @@ jobs:
                 echo "::warning title=Retry result merge failed::${OUTPUT_PREFIX} API ${API_LEVEL}: keeping the original Firebase result; see the Python error above"
               fi
               rm "${RERUN_TMP}"
+            done
+          }
+
+          copy_group_results() {
+            local RESULT_DIRS=$1
+            local OUTPUT_PREFIX=$2
+            local GROUP_RESULT
+            local GROUP
+            local RESULT_DIR
+
+            if [ -z "$RESULT_DIRS" ]; then
+              return
+            fi
+
+            IFS=, read -r -a GROUP_RESULTS <<< "$RESULT_DIRS"
+            for GROUP_RESULT in "${GROUP_RESULTS[@]}"; do
+              GROUP=${GROUP_RESULT%%=*}
+              RESULT_DIR=${GROUP_RESULT#*=}
+              copy_results_by_api_level "${BUCKET}/${RESULT_DIR}" "${OUTPUT_PREFIX}-${GROUP}"
             done
           }
 
