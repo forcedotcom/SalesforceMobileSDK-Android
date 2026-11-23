@@ -1,5 +1,9 @@
 on:
   workflow_call:
+    outputs:
+      result_dirs:
+        description: Firebase result directories keyed by test group.
+        value: ${{ jobs.test-group.outputs.result_dirs }}
     inputs:
       test_groups:
         required: true
@@ -37,10 +41,13 @@ jobs:
     name: ${{ inputs.display_name }}
     runs-on: forcedotcom-ubuntu  # forks: use ubuntu-latest (org-scoped runner)
     timeout-minutes: 240
+    outputs:
+      result_dirs: ${{ steps.run-tests.outputs.result_dirs }}
     env:
       FULL_API_RANGE: ${{ inputs.api_levels }}
       PS16K_MIN_API_VERSION: "36"
       RUN_NUMBER: ${{ github.run_number }}
+      RUN_ATTEMPT: ${{ github.run_attempt }}
       TEST_GROUPS: ${{ inputs.test_groups }}
       FIREBASE_RESULTS_PREFIX: ${{ inputs.results_prefix }}
       SINGLE_API_PR_RUN: ${{ inputs.single_api_pr_run }}
@@ -102,6 +109,7 @@ jobs:
           credentials_json: '${{ secrets.GCLOUD_SERVICE_KEY }}'
       - uses: 'google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f'  # v2.2.1
       - name: Run ${{ inputs.test_groups }} Tests
+        id: run-tests
         run: |
           read -r -a groups <<< "$TEST_GROUPS"
           bash .github/test-shards/run-authflowtester-firebase-tests.sh "${groups[@]}"

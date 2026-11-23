@@ -170,9 +170,9 @@ data class UITestConfig(
     /**
      * Allocates non-overlapping users when all PR test groups run on one API level.
      *
-     * The multi-user group reserves its selected user and the following user. Community and Native
-     * Login use their own host-local pools, while Community's cross-host regular-auth operations use
-     * the dedicated community slot below.
+     * Token lifecycle and multi-user each reserve their selected user and the following user.
+     * Community and Native Login use their own host-local pools, while their cross-host regular-auth
+     * operations use dedicated slots below.
      */
     fun userConfigForSingleApiPrGroup(
         knownLoginHostConfig: KnownLoginHostConfig,
@@ -185,9 +185,9 @@ data class UITestConfig(
                 "login" -> 0
                 "welcome" -> 1
                 "token-lifecycle" -> 2
-                "multi-user" -> 3
-                "community" -> 5
-                "native-login" -> 6
+                "multi-user" -> 4
+                "community" -> 6
+                "native-login" -> 7
                 else -> throw IllegalArgumentException("Unsupported single-API PR test group: $testGroup")
             }
             KnownLoginHostConfig.COMMUNITY_AUTH -> if (testGroup == "community") 0 else {

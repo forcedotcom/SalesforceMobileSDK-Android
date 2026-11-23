@@ -210,6 +210,16 @@ jobs:
       FULL_API_RANGE: "31 32 33 34 35 36 37"
       PS16K_MIN_API_VERSION: "36"
       EXPECTED_LOGICAL_TESTS: "179"
+      NIGHTLY_REGULAR_LOGIN_MULTI_USER_RESULTS: ${{ needs.nightly-regular-login-multi-user.outputs.result_dirs }}
+      NIGHTLY_REGULAR_WELCOME_TOKEN_LIFECYCLE_RESULTS: ${{ needs.nightly-regular-welcome-token-lifecycle.outputs.result_dirs }}
+      NIGHTLY_COMMUNITY_RESULTS: ${{ needs.nightly-community.outputs.result_dirs }}
+      NIGHTLY_NATIVE_LOGIN_RESULTS: ${{ needs.nightly-native-login.outputs.result_dirs }}
+      PR_LOGIN_RESULTS: ${{ needs.pr-login.outputs.result_dirs }}
+      PR_WELCOME_RESULTS: ${{ needs.pr-welcome.outputs.result_dirs }}
+      PR_COMMUNITY_RESULTS: ${{ needs.pr-community.outputs.result_dirs }}
+      PR_NATIVE_LOGIN_RESULTS: ${{ needs.pr-native-login.outputs.result_dirs }}
+      PR_TOKEN_LIFECYCLE_RESULTS: ${{ needs.pr-token-lifecycle.outputs.result_dirs }}
+      PR_MULTI_USER_RESULTS: ${{ needs.pr-multi-user.outputs.result_dirs }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
         if: ${{ inputs.is_pr }}
@@ -283,10 +293,11 @@ jobs:
         if: ${{ inputs.is_pr && !inputs.run_all_ui_tests }}
         env:
           RUN_NUMBER: ${{ github.run_number }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           # Ordinary PRs run a representative smoke subset, including two multi-user cases.
           # AuthFlowTester-changing PRs skip this step and run every test in the shards below.
-          GCLOUD_RESULTS_DIR="authflowtester-pr-build-${RUN_NUMBER}"
+          GCLOUD_RESULTS_DIR="authflowtester-pr-build-${RUN_NUMBER}-attempt-${RUN_ATTEMPT}"
 
           PR_TESTS="class com.salesforce.samples.authflowtester.BootConfigLoginTests#testCAOpaque_DefaultScopes_WebServerFlow, \
             class com.salesforce.samples.authflowtester.ECALoginTests#testECAOpaque_DefaultScopes, \
@@ -319,6 +330,7 @@ jobs:
           IS_PR: ${{ inputs.is_pr }}
           RUN_ALL_UI_TESTS: ${{ inputs.run_all_ui_tests }}
           RUN_NUMBER: ${{ github.run_number }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           mkdir -p firebase_results
           BUCKET="gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw"
@@ -381,6 +393,25 @@ jobs:
             for index, testcase in enumerate(list(original_suite))
             if testcase.tag == 'testcase'
           }
+
+          copy_group_results() {
+            local RESULT_DIRS=$1
+            local OUTPUT_PREFIX=$2
+            local GROUP_RESULT
+            local GROUP
+            local RESULT_DIR
+
+            if [ -z "$RESULT_DIRS" ]; then
+              return
+            fi
+
+            IFS=, read -r -a GROUP_RESULTS <<< "$RESULT_DIRS"
+            for GROUP_RESULT in "${GROUP_RESULTS[@]}"; do
+              GROUP=${GROUP_RESULT%%=*}
+              RESULT_DIR=${GROUP_RESULT#*=}
+              copy_results_by_api_level "${BUCKET}/${RESULT_DIR}" "${OUTPUT_PREFIX}-${GROUP}"
+            done
+          }
           for testcase in rerun_suite.findall('testcase'):
             test_key = key(testcase)
             if test_key in positions:
@@ -407,48 +438,23 @@ jobs:
 
           if [ "$IS_PR" = "true" ] ; then
             if [ "$RUN_ALL_UI_TESTS" = "true" ] ; then
-              PR_LOGIN_PATH="${BUCKET}/authflowtester-pr-login-build-${RUN_NUMBER}"
-              if gsutil ls "${PR_LOGIN_PATH}" > /dev/null 2>&1; then
-                copy_results_by_api_level "${PR_LOGIN_PATH}" "pr-login"
-              fi
-
-              PR_WELCOME_PATH="${BUCKET}/authflowtester-pr-welcome-build-${RUN_NUMBER}"
-              if gsutil ls "${PR_WELCOME_PATH}" > /dev/null 2>&1; then
-                copy_results_by_api_level "${PR_WELCOME_PATH}" "pr-welcome"
-              fi
-
-              PR_COMMUNITY_PATH="${BUCKET}/authflowtester-pr-community-build-${RUN_NUMBER}"
-              if gsutil ls "${PR_COMMUNITY_PATH}" > /dev/null 2>&1; then
-                copy_results_by_api_level "${PR_COMMUNITY_PATH}" "pr-community"
-              fi
-
-              PR_NATIVE_LOGIN_PATH="${BUCKET}/authflowtester-pr-native-login-build-${RUN_NUMBER}"
-              if gsutil ls "${PR_NATIVE_LOGIN_PATH}" > /dev/null 2>&1; then
-                copy_results_by_api_level "${PR_NATIVE_LOGIN_PATH}" "pr-native-login"
-              fi
-
-              PR_TOKEN_PATH="${BUCKET}/authflowtester-pr-token-lifecycle-build-${RUN_NUMBER}"
-              if gsutil ls "${PR_TOKEN_PATH}" > /dev/null 2>&1; then
-                copy_results_by_api_level "${PR_TOKEN_PATH}" "pr-token-lifecycle"
-              fi
-
-              PR_MULTI_PATH="${BUCKET}/authflowtester-pr-multi-user-build-${RUN_NUMBER}"
-              if gsutil ls "${PR_MULTI_PATH}" > /dev/null 2>&1; then
-                copy_results_by_api_level "${PR_MULTI_PATH}" "pr-multi-user"
-              fi
+              copy_group_results "$PR_LOGIN_RESULTS" "pr"
+              copy_group_results "$PR_WELCOME_RESULTS" "pr"
+              copy_group_results "$PR_COMMUNITY_RESULTS" "pr"
+              copy_group_results "$PR_NATIVE_LOGIN_RESULTS" "pr"
+              copy_group_results "$PR_TOKEN_LIFECYCLE_RESULTS" "pr"
+              copy_group_results "$PR_MULTI_USER_RESULTS" "pr"
             else
-              PR_PATH="${BUCKET}/authflowtester-pr-build-${RUN_NUMBER}"
+              PR_PATH="${BUCKET}/authflowtester-pr-build-${RUN_NUMBER}-attempt-${RUN_ATTEMPT}"
               if gsutil ls "${PR_PATH}" > /dev/null 2>&1; then
                 copy_results_by_api_level "${PR_PATH}" "pr"
               fi
             fi
           else
-            for GROUP in login welcome community native-login token-lifecycle multi-user; do
-              NIGHTLY_PATH="${BUCKET}/authflowtester-nightly-${GROUP}-build-${RUN_NUMBER}"
-              if gsutil ls "${NIGHTLY_PATH}" > /dev/null 2>&1; then
-                copy_results_by_api_level "${NIGHTLY_PATH}" "nightly-${GROUP}"
-              fi
-            done
+            copy_group_results "$NIGHTLY_REGULAR_LOGIN_MULTI_USER_RESULTS" "nightly"
+            copy_group_results "$NIGHTLY_REGULAR_WELCOME_TOKEN_LIFECYCLE_RESULTS" "nightly"
+            copy_group_results "$NIGHTLY_COMMUNITY_RESULTS" "nightly"
+            copy_group_results "$NIGHTLY_NATIVE_LOGIN_RESULTS" "nightly"
           fi
       - name: Validate Complete Test Results
         if: ${{ !cancelled() && (!inputs.is_pr || inputs.run_all_ui_tests) }}
@@ -464,6 +470,7 @@ jobs:
           from pathlib import Path
 
           MAX_JUNIT_BYTES = 25 * 1024 * 1024
+          EXPECTED_LOGICAL_TESTS = int(os.environ["EXPECTED_LOGICAL_TESTS"])
 
           def parse_bounded(path_value):
               path = Path(path_value)
