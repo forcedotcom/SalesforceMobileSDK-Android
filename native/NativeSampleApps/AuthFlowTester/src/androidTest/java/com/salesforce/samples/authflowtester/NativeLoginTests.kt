@@ -572,6 +572,7 @@ class NativeLoginConfigRulesTest {
         assertEquals(KnownUserConfig.THIRD, config.userConfigForSingleApiPrGroup(KnownLoginHostConfig.REGULAR_AUTH, "token-lifecycle"))
         assertEquals(KnownUserConfig.FORTH, config.userConfigForSingleApiPrGroup(KnownLoginHostConfig.REGULAR_AUTH, "multi-user"))
         assertEquals(KnownUserConfig.SIXTH, config.userConfigForSingleApiPrGroup(KnownLoginHostConfig.REGULAR_AUTH, "community"))
+        assertEquals(KnownUserConfig.SEVENTH, config.userConfigForSingleApiPrGroup(KnownLoginHostConfig.REGULAR_AUTH, "native-login"))
     }
 
     @Test

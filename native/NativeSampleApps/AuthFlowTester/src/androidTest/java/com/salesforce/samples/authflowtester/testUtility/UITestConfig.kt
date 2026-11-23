@@ -187,6 +187,7 @@ data class UITestConfig(
                 "token-lifecycle" -> 2
                 "multi-user" -> 3
                 "community" -> 5
+                "native-login" -> 6
                 else -> throw IllegalArgumentException("Unsupported single-API PR test group: $testGroup")
             }
             KnownLoginHostConfig.COMMUNITY_AUTH -> if (testGroup == "community") 0 else {

@@ -209,7 +209,7 @@ jobs:
       PR_DEVICE_MODEL: "MediumPhone_ps16k.arm"
       FULL_API_RANGE: "31 32 33 34 35 36 37"
       PS16K_MIN_API_VERSION: "36"
-      EXPECTED_LOGICAL_TESTS: "129"
+      EXPECTED_LOGICAL_TESTS: "179"
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
         if: ${{ inputs.is_pr }}
@@ -273,11 +273,11 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
       - uses: 'google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed'  # v2.1.13
-        if: ${{ inputs.is_pr && (success() || failure()) }}
+        if: success() || failure()
         with:
           credentials_json: '${{ secrets.GCLOUD_SERVICE_KEY }}'
       - uses: 'google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f'  # v2.2.1
-        if: ${{ inputs.is_pr && (success() || failure()) }}
+        if: success() || failure()
       - name: Run PR Smoke Tests
         continue-on-error: true
         if: ${{ inputs.is_pr && !inputs.run_all_ui_tests }}
