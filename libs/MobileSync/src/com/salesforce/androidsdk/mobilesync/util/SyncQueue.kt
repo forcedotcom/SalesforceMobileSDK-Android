@@ -156,6 +156,9 @@ object SyncQueue {
 
     // region Local write API (called by SyncManager)
 
+    /** Generates the local ids of records created without an id (replaceable by tests to force collisions) */
+    internal var localIdGenerator: () -> String = { SyncTarget.createLocalId() }
+
     internal fun createLocal(store: SmartStore, soupName: String, record: JSONObject): JSONObject {
         checkRecordSoup(store, soupName)
         val copy = deepCopy(record, "Record")
@@ -190,9 +193,12 @@ object SyncQueue {
                 }
                 givenId
             } else {
-                var candidate = SyncTarget.createLocalId()
-                while (store.lookupSoupEntryId(soupName, ID_FIELD, candidate) != -1L) {
-                    candidate = SyncTarget.createLocalId()
+                // Same rules as for a given id: unused in this soup and in every other soup of the store
+                var candidate = localIdGenerator()
+                while (store.lookupSoupEntryId(soupName, ID_FIELD, candidate) != -1L ||
+                    soupUsingId(store, soupName, candidate) != null
+                ) {
+                    candidate = localIdGenerator()
                 }
                 candidate
             }

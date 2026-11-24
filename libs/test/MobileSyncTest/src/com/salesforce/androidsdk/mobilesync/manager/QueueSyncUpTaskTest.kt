@@ -295,21 +295,31 @@ class QueueSyncUpTaskTest {
     }
 
     @Test
-    fun test_givenRejectedCreateThenDelete_whenSyncUp_thenDeleteWaitsForTheCreate() {
+    fun test_givenRejectedCreateThenDelete_whenSyncUp_thenLocalOnlyDeleteIsNotDeferredAndCleansEverything() {
         manager.createLocal(ACCOUNTS, account("local_1"))
         manager.deleteLocal(ACCOUNTS, "local_1")
         client.responder = { Reply(400, "bad") }
 
         val sync = runQueueSync()
 
+        // The DELETE of a record that never reached the server makes no call and is never deferred
         assertEquals(SyncState.Status.DONE, sync.status)
         assertEquals(listOf("POST Account"), client.requestLines())
-        val entries = queueEntries()
-        assertEquals(2, entries.length())
-        assertEquals(1, entries.getJSONObject(0).getInt(SyncQueue.ATTEMPTS))
-        assertEquals(0, entries.getJSONObject(1).optInt(SyncQueue.ATTEMPTS))
-        assertFalse(entries.getJSONObject(1).has(SyncQueue.LAST_ERROR))
-        assertNotNull(findRecord(ACCOUNTS, "local_1"))
+        assertEquals(0, queueEntries().length())
+        assertNull(findRecord(ACCOUNTS, "local_1"))
+    }
+
+    @Test
+    fun test_givenRejectedUpdateThenDeleteOfServerId_whenSyncUp_thenDeleteIsDeferred() {
+        insertCleanRecord(ACCOUNTS, "001A", "Account")
+        manager.updateLocal(ACCOUNTS, "001A", JSONObject().put("Name", "a1"))
+        manager.deleteLocal(ACCOUNTS, "001A")
+        client.responder = { Reply(400, "bad") }
+
+        runQueueSync()
+
+        assertEquals(listOf("PATCH Account/001A"), client.requestLines())
+        assertEquals(2, queueEntries().length())
     }
 
     @Test
@@ -1060,6 +1070,101 @@ class QueueSyncUpTaskTest {
         assertEquals(SyncState.Status.FAILED, sync.status)
         // The write to the record was undone with the failed one
         assertFalse(findRecord(ACCOUNTS, "001A")!!.has(SyncTarget.LAST_ERROR))
+    }
+
+    @Test
+    fun test_givenRejectedUpdateThenUpsertOfSameType_whenReSync_thenUpsertWaitsAndNewerWins() {
+        insertCleanRecord(ACCOUNTS, "001A", "Account", mapOf("ExtId__c" to "ext-1"))
+        manager.updateLocal(ACCOUNTS, "001A", JSONObject().put("Name", "older"))
+        manager.createLocal(ACCOUNTS, account("local_n").put("Name", "newer").put("ExtId__c", "ext-1"))
+        manager.createLocal(CONTACTS, contact("local_c"))
+        manager.createLocal(ACCOUNTS, account("local_p").put("Name", "plain"))
+        var rejectOnce = true
+        var serverName: String? = null
+        val sent = mutableListOf<String>()
+        client.nextIds.addAll(listOf("003C", "001P", "001A"))
+        client.responder = {
+            val name = it.getRequestBodyAsJson().optString("Name")
+            if (name == "older" || name == "newer") sent.add(name)
+            if (name == "older" && rejectOnce) {
+                rejectOnce = false
+                Reply(400, "bad")
+            } else {
+                if (name == "older" || name == "newer") serverName = name
+                null
+            }
+        }
+
+        val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        // Run 1: the upsert of the same type waits; a CREATE without external id and other types go
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(listOf("older"), sent)
+        assertEquals(3, client.requests.size)
+        assertEquals(2, queueEntries().length())
+        assertEquals("PENDING", queueEntries().getJSONObject(1).getString(SyncQueue.STATUS))
+        assertEquals(0, queueEntries().getJSONObject(1).optInt(SyncQueue.ATTEMPTS))
+
+        val resync = runResync(sync)
+
+        assertEquals(SyncState.Status.DONE, resync.status)
+        assertEquals(listOf("older", "older", "newer"), sent)
+        assertEquals("newer", serverName)
+        assertEquals(0, queueEntries().length())
+        val record = findRecord(ACCOUNTS, "001A")!!
+        assertEquals("newer", record.getString("Name"))
+        checkFlags(record, local = false, created = false, updated = false, deleted = false)
+    }
+
+    @Test
+    fun test_givenGeneratedIdCollidesWithAnotherSoup_whenCreateLocal_thenGenerationRetries() {
+        manager.createLocal(ACCOUNTS, account("local_dup"))
+        val ids = ArrayDeque(listOf("local_dup", "local_ok"))
+        val original = SyncQueue.localIdGenerator
+        SyncQueue.localIdGenerator = { ids.removeFirst() }
+        try {
+            val saved = manager.createLocal(CONTACTS, JSONObject().put("attributes", JSONObject().put("type", "Contact")))
+            assertEquals("local_ok", saved.getString("Id"))
+            assertTrue(ids.isEmpty())
+        } finally {
+            SyncQueue.localIdGenerator = original
+        }
+    }
+
+    @Test
+    fun test_givenTwoSyncManagersOnTheSameStore_whenFirstIsPaused_thenSecondWaitsForTheWholeRun() {
+        for (i in 1..4) manager.createLocal(ACCOUNTS, account("local_$i"))
+        val constructor = SyncManager::class.java.getDeclaredConstructor(SmartStore::class.java, RestClient::class.java)
+        constructor.isAccessible = true
+        val other = constructor.newInstance(store, client)
+        val firstPaused = java.util.concurrent.CountDownLatch(1)
+        val secondStarted = java.util.concurrent.CountDownLatch(1)
+        val threadsOfRequests = java.util.concurrent.ConcurrentLinkedQueue<Long>()
+        client.onRequest = {
+            threadsOfRequests.add(Thread.currentThread().id)
+            if (client.requests.size == 2) {
+                // Half-way through the first run, let the second one start and give it time to interleave
+                firstPaused.countDown()
+                secondStarted.await(5, java.util.concurrent.TimeUnit.SECONDS)
+                Thread.sleep(500)
+            }
+        }
+        val first = manager.createSyncUp(QueueSyncUpTarget(), SyncOptions.optionsForSyncUp(emptyList()), SyncQueue.QUEUE_SOUP, null)
+        val firstCallbacks = SyncUpdateCallbackQueue(first.id)
+        manager.runSync(first, firstCallbacks)
+        assertTrue(firstPaused.await(30, java.util.concurrent.TimeUnit.SECONDS))
+        val second = other.createSyncUp(QueueSyncUpTarget(), SyncOptions.optionsForSyncUp(emptyList()), SyncQueue.QUEUE_SOUP, null)
+        val secondCallbacks = SyncUpdateCallbackQueue(second.id)
+        other.runSync(second, secondCallbacks)
+        secondStarted.countDown()
+
+        assertEquals(SyncState.Status.DONE, waitTerminal(firstCallbacks, first.id).status)
+        assertEquals(SyncState.Status.DONE, waitTerminal(secondCallbacks, second.id).status)
+        // All the requests come from the first run: the second read the queue after it was done
+        assertEquals(4, client.requests.size)
+        assertEquals(1, threadsOfRequests.toSet().size)
+        assertEquals(0, queueEntries().length())
+        other.stop()
     }
 
     @Test

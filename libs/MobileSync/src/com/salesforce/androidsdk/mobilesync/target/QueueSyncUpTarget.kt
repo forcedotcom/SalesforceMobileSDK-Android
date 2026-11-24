@@ -140,6 +140,16 @@ open class QueueSyncUpTarget : SyncUpTarget {
         }
     }
 
+    /**
+     * The external id value of a CREATE that is an upsert (the target has an external id field and
+     * `changes` holds a value for it that is not a local id), null for a plain create. An upsert can
+     * land on any existing record of its type.
+     */
+    internal fun upsertExternalId(changes: JSONObject?): String? =
+        if (externalIdFieldName != null && changes != null) {
+            JSONObjectHelper.optString(changes, externalIdFieldName)?.takeIf { !isLocalId(it) }
+        } else null
+
     private fun create(
         syncManager: SyncManager,
         sobjectType: String,
@@ -148,10 +158,8 @@ open class QueueSyncUpTarget : SyncUpTarget {
     ): ReplayResult {
         // Same decision as createOnServer(syncManager, record, fieldlist): the check on local ids is
         // there for an external id field that is the id field and holds a local id
-        val externalId = if (externalIdFieldName != null && changes != null) {
-            JSONObjectHelper.optString(changes, externalIdFieldName)
-        } else null
-        val request = if (externalId != null && !isLocalId(externalId)) {
+        val externalId = upsertExternalId(changes)
+        val request = if (externalId != null) {
             RestRequest.getRequestForUpsert(syncManager.apiVersion, sobjectType, externalIdFieldName, encodePathSegment(externalId), fields)
         } else {
             RestRequest.getRequestForCreate(syncManager.apiVersion, sobjectType, fields)

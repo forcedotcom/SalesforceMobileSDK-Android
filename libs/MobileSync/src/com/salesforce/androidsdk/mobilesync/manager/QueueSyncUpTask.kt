@@ -67,6 +67,9 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
     /** Records (soup name, id) with an entry rejected during this run: their later entries wait for the next run */
     private val blockedRecords = HashSet<Pair<String, String>>()
 
+    /** Object types with an entry rejected or deferred during this run: upserts of these types wait too */
+    private val blockedTypes = HashSet<String>()
+
     /** Ids of the blocked records, to also defer the entries that point to them */
     private val blockedIds = HashSet<String>()
 
@@ -75,26 +78,26 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
 
     @Throws(Exception::class)
     override fun runSync() {
-        val target = sync.target as QueueSyncUpTarget
+        // One queue replay at a time per store, for the whole run (done, failed or stopped): a queue
+        // sync of another sync manager on the same store waits here, then reads the fresh queue state
+        lockFor(store).withLock { replayQueue(sync.target as QueueSyncUpTarget) }
+    }
+
+    @Throws(Exception::class)
+    private fun replayQueue(target: QueueSyncUpTarget) {
         // Entries are read once; each one is read again right before it is replayed since replaying
         // a CREATE rewrites the entries that follow
         val entryIds = SyncQueue.pendingEntryIds(store)
         sync.totalSize = entryIds.size
         updateSync(sync, SyncState.Status.RUNNING, 0, callback)
-        val lock = lockFor(store)
         for ((i, entryId) in entryIds.withIndex()) {
             checkIfStopRequested()
-            // One replay at a time per store, from the read of the entry to the commit of its outcome:
-            // a queue sync of another sync manager on the same store waits here, then reads the fresh
-            // entry (already gone if the other one replayed it)
-            lock.withLock {
-                val entry = SyncQueue.readEntry(store, entryId)
-                if (entry != null && entry.optString(SyncQueue.STATUS) == SyncQueue.Status.PENDING.name) {
-                    if (isDeferred(entry)) {
-                        defer(entry)
-                    } else {
-                        replay(target, entryId, entry)
-                    }
+            val entry = SyncQueue.readEntry(store, entryId)
+            if (entry != null && entry.optString(SyncQueue.STATUS) == SyncQueue.Status.PENDING.name) {
+                if (isDeferred(target, entry)) {
+                    defer(entry)
+                } else {
+                    replay(target, entryId, entry)
                 }
             }
             val progress = (i + 1) * 100 / entryIds.size
@@ -109,10 +112,20 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
      * (sending this one first would let a stale edit be overwritten by a newer one), or the entry
      * points to such a record (`parentRef` or a top-level value of `changes`).
      */
-    private fun isDeferred(entry: JSONObject): Boolean {
+    private fun isDeferred(target: QueueSyncUpTarget, entry: JSONObject): Boolean {
         if (blockedRecords.isEmpty()) return false
         val soupName = entry.optString(SyncQueue.SOUP_NAME)
-        if ((soupName to mapId(soupName, entry.optString(SyncQueue.RECORD_ID))) in blockedRecords) return true
+        val recordId = mapId(soupName, entry.optString(SyncQueue.RECORD_ID))
+        val kind = entry.optString(SyncQueue.KIND)
+        // Deleting a record that never reached the server makes no call: nothing to order
+        if (kind == SyncQueue.Kind.DELETE.name && SyncTarget.isLocalId(recordId)) return false
+        if ((soupName to recordId) in blockedRecords) return true
+        // An upsert can land on any existing record of its type, including one with a rejected entry
+        if (kind == SyncQueue.Kind.CREATE.name && entry.optString(SyncQueue.SOBJECT_TYPE) in blockedTypes &&
+            target.upsertExternalId(entry.optJSONObject(SyncQueue.CHANGES)) != null
+        ) {
+            return true
+        }
         if (entry.optString(SyncQueue.PARENT_REF) in blockedIds) return true
         val changes = entry.optJSONObject(SyncQueue.CHANGES) ?: return false
         return changes.keys().asSequence().any { (changes.opt(it) as? String) in blockedIds }
@@ -121,10 +134,11 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
     /** Leaves the entry untouched (no send, no attempt, no error), and blocks what depends on it */
     private fun defer(entry: JSONObject) {
         val soupName = entry.optString(SyncQueue.SOUP_NAME)
-        block(soupName, mapId(soupName, entry.optString(SyncQueue.RECORD_ID)))
+        block(soupName, mapId(soupName, entry.optString(SyncQueue.RECORD_ID)), entry.optString(SyncQueue.SOBJECT_TYPE))
     }
 
-    private fun block(soupName: String, recordId: String) {
+    private fun block(soupName: String, recordId: String, sobjectType: String) {
+        if (sobjectType.isNotEmpty()) blockedTypes.add(sobjectType)
         if (recordId.isNotEmpty()) {
             blockedRecords.add(soupName to recordId)
             blockedIds.add(recordId)
@@ -285,7 +299,7 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
         error: String
     ) {
         MobileSyncLogger.w(TAG, "Queue entry $entryId failed: $error")
-        block(soupName, recordId)
+        block(soupName, recordId, entry.optString(SyncQueue.SOBJECT_TYPE))
         SyncQueue.inTransaction(store, soupName) {
             if (recordEntryId != -1L && store.hasSoup(soupName)) {
                 store.retrieve(soupName, recordEntryId).optJSONObject(0)?.let { record ->
