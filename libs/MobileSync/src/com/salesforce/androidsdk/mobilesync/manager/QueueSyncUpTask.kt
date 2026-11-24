@@ -79,6 +79,9 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
      */
     private val blockedTypes = HashSet<String>()
 
+    /** Destination lookups of this run, by (object type, external id value): each value is looked up once */
+    private val destinations = HashMap<Pair<String, String>, QueueSyncUpTarget.Destination>()
+
     /** Number of entries after the one being replayed (a destination lookup is useless when 0) */
     private var remaining = 0
 
@@ -108,7 +111,7 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
             remaining = entryIds.size - i - 1
             if (entry != null && entry.optString(SyncQueue.STATUS) == SyncQueue.Status.PENDING.name) {
                 if (isDeferred(target, entryId, entry)) {
-                    defer(target, entry)
+                    defer(target, entryId, entry)
                 } else {
                     replay(target, entryId, entry)
                 }
@@ -151,32 +154,29 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
         val externalId = if (kind == SyncQueue.Kind.CREATE.name) target.upsertExternalId(changes) else null
         if (externalId != null) {
             if ((sobjectType to externalId) in blockedUpserts) return true
-            val destination = try {
-                target.lookupDestination(syncManager, sobjectType, externalId)
-            } catch (e: Exception) {
-                recordFailure(entryId, entry, e.message ?: e.toString())
-                throw e
-            }
-            when (destination.kind) {
-                QueueSyncUpTarget.DestinationKind.FOUND -> return (sobjectType to destination.id!!) in blockedTypedIds
-                QueueSyncUpTarget.DestinationKind.NOT_FOUND -> return false
-                QueueSyncUpTarget.DestinationKind.INCONCLUSIVE -> {
+            val destination = resolveDestination(target, entryId, entry, sobjectType, externalId)
+            return when (destination.kind) {
+                QueueSyncUpTarget.DestinationKind.FOUND -> (sobjectType to destination.id!!) in blockedTypedIds
+                QueueSyncUpTarget.DestinationKind.NOT_FOUND -> false
+                else -> {
                     blockedTypes.add(sobjectType)
-                    return true
-                }
-                QueueSyncUpTarget.DestinationKind.TRANSPORT_ERROR -> {
-                    recordFailure(entryId, entry, destination.error ?: "Unknown error")
-                    throw MobileSyncException("Lookup of the destination of $sobjectType $externalId failed: ${destination.error}")
+                    true
                 }
             }
         }
         return false
     }
 
-    /** Leaves the entry untouched (no send, no attempt, no error), and blocks what depends on it */
-    private fun defer(target: QueueSyncUpTarget, entry: JSONObject) {
+    /**
+     * Leaves the entry untouched (no send, no attempt, no error), and blocks what depends on it. A deferred
+     * upsert CREATE may land on an existing record: that destination is resolved too, so that later
+     * entries for it wait (unless nothing follows).
+     */
+    @Throws(Exception::class)
+    private fun defer(target: QueueSyncUpTarget, entryId: Long, entry: JSONObject) {
         val soupName = entry.optString(SyncQueue.SOUP_NAME)
         block(target, soupName, mapId(soupName, entry.optString(SyncQueue.RECORD_ID)), entry)
+        if (remaining > 0) blockDestination(target, entryId, entry, counted = false)
     }
 
     private fun block(target: QueueSyncUpTarget, soupName: String, recordId: String, entry: JSONObject) {
@@ -267,6 +267,14 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
                         // The server record may already be in the soup (sync down, upsert that hit an existing record)
                         val existing = store.lookupSoupEntryId(soupName, target.idFieldName, serverId)
                         if (existing != -1L && existing != recordEntryId) {
+                            // Fields the upsert did not carry stay as the existing row has them; the CREATE row's own win
+                            store.retrieve(soupName, existing).optJSONObject(0)?.let { other ->
+                                for (key in other.keys()) {
+                                    if (!record.has(key) && key != SmartStore.SOUP_ENTRY_ID && key != SmartStore.SOUP_LAST_MODIFIED_DATE) {
+                                        record.put(key, other.get(key))
+                                    }
+                                }
+                            }
                             store.delete(soupName, existing)
                             // The deleted row held the later local edits of that record: they are
                             // queued after this CREATE, so they go over the surviving row, in order
@@ -375,31 +383,57 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
             entry.put(SyncQueue.ATTEMPTS, entry.optInt(SyncQueue.ATTEMPTS) + 1)
             updateOrThrow(SyncQueue.QUEUE_SOUP, entry, entryId)
         }
-        if (sent && remaining > 0) blockDestination(target, entry)
+        if (sent && remaining > 0) blockDestination(target, entryId, entry, counted = true)
     }
 
     /**
-     * A rejected upsert CREATE may have been meant for an existing record: later entries that address
-     * that record (any soup) must not go before it. The destination is resolved by the id lookup:
-     * found, its id is blocked; not found, nothing more to block; inconclusive, every later entry of
-     * the type for a server id waits; a failed lookup fails the sync (the entry already holds its error).
+     * An upsert CREATE that was rejected or deferred may be meant for an existing record: later entries
+     * that address that record (any soup) must not go before it. The destination is resolved by the id
+     * lookup: found, its id is blocked; not found, nothing more to block; inconclusive, every later entry
+     * of the type for a server id waits; a failed lookup fails the sync (one attempt counted on the entry).
      */
     @Throws(Exception::class)
-    private fun blockDestination(target: QueueSyncUpTarget, entry: JSONObject) {
+    private fun blockDestination(target: QueueSyncUpTarget, entryId: Long, entry: JSONObject, counted: Boolean) {
         if (entry.optString(SyncQueue.KIND) != SyncQueue.Kind.CREATE.name) return
         val externalId = target.upsertExternalId(entry.optJSONObject(SyncQueue.CHANGES)) ?: return
         val sobjectType = entry.optString(SyncQueue.SOBJECT_TYPE)
-        val destination = target.lookupDestination(syncManager, sobjectType, externalId)
+        val destination = resolveDestination(target, entryId, entry, sobjectType, externalId, counted)
         when (destination.kind) {
             QueueSyncUpTarget.DestinationKind.FOUND -> {
                 blockedTypedIds.add(sobjectType to destination.id!!)
                 blockedIds.add(destination.id)
             }
             QueueSyncUpTarget.DestinationKind.NOT_FOUND -> {}
-            QueueSyncUpTarget.DestinationKind.INCONCLUSIVE -> blockedTypes.add(sobjectType)
-            QueueSyncUpTarget.DestinationKind.TRANSPORT_ERROR ->
-                throw MobileSyncException("Lookup of the destination of $sobjectType $externalId failed: ${destination.error}")
+            else -> blockedTypes.add(sobjectType)
         }
+    }
+
+    /**
+     * Looks up the record an upsert would land on, once per (object type, value) in a run. A failed
+     * lookup fails the sync and counts one attempt on the entry, unless [counted] (the entry was just rejected).
+     */
+    @Throws(Exception::class)
+    private fun resolveDestination(
+        target: QueueSyncUpTarget,
+        entryId: Long,
+        entry: JSONObject,
+        sobjectType: String,
+        externalId: String,
+        counted: Boolean = false
+    ): QueueSyncUpTarget.Destination {
+        destinations[sobjectType to externalId]?.let { return it }
+        val destination = try {
+            target.lookupDestination(syncManager, sobjectType, externalId)
+        } catch (e: Exception) {
+            if (!counted) recordFailure(entryId, entry, e.message ?: e.toString())
+            throw e
+        }
+        if (destination.kind == QueueSyncUpTarget.DestinationKind.TRANSPORT_ERROR) {
+            if (!counted) recordFailure(entryId, entry, destination.error ?: "Unknown error")
+            throw MobileSyncException("Lookup of the destination of $sobjectType $externalId failed: ${destination.error}")
+        }
+        destinations[sobjectType to externalId] = destination
+        return destination
     }
 
     /** Counts a failed attempt on the entry, which stays pending, and keeps the error */

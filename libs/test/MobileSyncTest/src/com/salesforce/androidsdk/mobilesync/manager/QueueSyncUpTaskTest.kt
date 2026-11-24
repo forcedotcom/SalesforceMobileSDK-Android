@@ -1337,6 +1337,138 @@ class QueueSyncUpTaskTest {
 
     // endregion
 
+    // region Round 5: deferred upserts resolve their destination, partial upsert keeps cached fields
+
+    /**
+     * seq 1: CREATE local_a, rejected; seq 2: upsert CREATE (ext-1) that depends on local_a, so it is deferred;
+     * seq 3: direct UPDATE of 001S (the upsert's destination); seq 4: UPDATE of the unrelated Contact 003C.
+     */
+    private fun runDeferredUpsertThenUpdateOfItsDestination(lookupReply: Reply?): SyncState {
+        insertCleanRecord(ACCOUNTS, "001S", "Account", mapOf("ExtId__c" to "ext-1"))
+        insertCleanRecord(CONTACTS, "003C", "Contact")
+        manager.createLocal(ACCOUNTS, account("local_a"))
+        manager.createLocal(ACCOUNTS, account("local_u").put("Name", "older").put("ExtId__c", "ext-1").put("ParentId", "local_a"))
+        manager.updateLocal(ACCOUNTS, "001S", JSONObject().put("Name", "newer"))
+        manager.updateLocal(CONTACTS, "003C", JSONObject().put("LastName", "c"))
+        client.responder = {
+            when {
+                it.method == RestRequest.RestMethod.GET -> lookupReply ?: throw IOException("offline")
+                it.method == RestRequest.RestMethod.POST -> Reply(400, "bad")
+                else -> null
+            }
+        }
+        return runQueueSync(QueueSyncUpTarget("ExtId__c"))
+    }
+
+    @Test
+    fun test_givenUpsertDeferredByDependency_whenDestinationFound_thenNewerUpdateOfDestinationWaitsAndOrderKept() {
+        val sync = runDeferredUpsertThenUpdateOfItsDestination(Reply(200, """{"Id":"001S"}"""))
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(
+            listOf("POST Account", "GET Account/ExtId__c/ext-1?fields=Id", "PATCH Contact/003C"),
+            client.requestLines()
+        )
+        assertEquals(3, queueEntries().length())
+
+        client.requests.clear()
+        client.responder = null
+        val resync = runResync(sync)
+
+        assertEquals(SyncState.Status.DONE, resync.status)
+        assertEquals(
+            listOf("POST Account", "PATCH Account/ExtId__c/ext-1", "PATCH Account/001S"),
+            client.requestLines()
+        )
+        assertEquals(0, queueEntries().length())
+    }
+
+    @Test
+    fun test_givenUpsertDeferredByDependency_whenDestinationNotFound_thenLaterUpdateIsSent() {
+        val sync = runDeferredUpsertThenUpdateOfItsDestination(Reply(404, "[]"))
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(
+            listOf("POST Account", "GET Account/ExtId__c/ext-1?fields=Id", "PATCH Account/001S", "PATCH Contact/003C"),
+            client.requestLines()
+        )
+        assertEquals(2, queueEntries().length())
+    }
+
+    @Test
+    fun test_givenUpsertDeferredByDependency_whenLookupFails_thenSyncFailsWithOneAttemptOnTheCreate() {
+        for (reply in listOf<Reply?>(Reply(503, "down"), null, Reply(200, """{"Id":" "}"""), Reply(200, "{}"), Reply(200, "<html/>"))) {
+            setUp()
+            val sync = runDeferredUpsertThenUpdateOfItsDestination(reply)
+
+            assertEquals(SyncState.Status.FAILED, sync.status)
+            assertEquals(listOf("POST Account", "GET Account/ExtId__c/ext-1?fields=Id"), client.requestLines())
+            val entries = queueEntries()
+            assertEquals(4, entries.length())
+            assertEquals("local_u", entries.getJSONObject(1).getString(SyncQueue.RECORD_ID))
+            assertEquals(1, entries.getJSONObject(1).getInt(SyncQueue.ATTEMPTS))
+            assertFalse(entries.getJSONObject(1).optString(SyncQueue.LAST_ERROR).isEmpty())
+            assertEquals(0, entries.getJSONObject(2).optInt(SyncQueue.ATTEMPTS))
+        }
+    }
+
+    @Test
+    fun test_givenUpsertDeferredByDependency_whenLookupInconclusive_thenServerIdsOfTheTypeWaitOthersGo() {
+        for (reply in listOf(Reply(403, "denied"), Reply(300, "multiple"), Reply(400, "bad"))) {
+            setUp()
+            val sync = runDeferredUpsertThenUpdateOfItsDestination(reply)
+
+            assertEquals(SyncState.Status.DONE, sync.status)
+            assertEquals(
+                listOf("POST Account", "GET Account/ExtId__c/ext-1?fields=Id", "PATCH Contact/003C"),
+                client.requestLines()
+            )
+            assertEquals(3, queueEntries().length())
+        }
+    }
+
+    @Test
+    fun test_givenTwoUpsertsDeferredWithSameExternalId_whenSyncUp_thenLookedUpOnce() {
+        insertCleanRecord(ACCOUNTS, "001S", "Account")
+        manager.createLocal(ACCOUNTS, account("local_a"))
+        manager.createLocal(ACCOUNTS, account("local_u1").put("ExtId__c", "ext-1").put("ParentId", "local_a"))
+        manager.createLocal(ACCOUNTS, account("local_u2").put("ExtId__c", "ext-1").put("ParentId", "local_a"))
+        manager.updateLocal(ACCOUNTS, "001S", JSONObject().put("Name", "newer"))
+        client.responder = {
+            when {
+                it.method == RestRequest.RestMethod.GET -> Reply(200, """{"Id":"001S"}""")
+                it.method == RestRequest.RestMethod.POST -> Reply(400, "bad")
+                else -> null
+            }
+        }
+
+        runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        assertEquals(listOf("POST Account", "GET Account/ExtId__c/ext-1?fields=Id"), client.requestLines())
+        assertEquals(4, queueEntries().length())
+    }
+
+    @Test
+    fun test_givenPartialUpsertOntoStoredRow_whenSyncUp_thenUntouchedFieldsSurviveAndNewestEditWins() {
+        insertCleanRecord(ACCOUNTS, "001A", "Account", mapOf("ExtId__c" to "ext-1", "Phone" to "555"))
+        manager.createLocal(ACCOUNTS, account("local_n").put("Name", "older").put("ExtId__c", "ext-1"))
+        manager.updateLocal(ACCOUNTS, "001A", JSONObject().put("Name", "newest"))
+        client.nextIds.add("001A")
+
+        val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(1, count(ACCOUNTS))
+        val record = findRecord(ACCOUNTS, "001A")!!
+        assertEquals("555", record.getString("Phone"))
+        assertEquals("newest", record.getString("Name"))
+        assertEquals("ext-1", record.getString("ExtId__c"))
+        checkFlags(record, local = false, created = false, updated = false, deleted = false)
+        assertEquals(0, queueEntries().length())
+    }
+
+    // endregion
+
     private fun runUpsertWithOtherRecordBlocked(lookupReply: Reply): SyncState {
         insertCleanRecord(ACCOUNTS, "001A", "Account", mapOf("ExtId__c" to "ext-1"))
         manager.updateLocal(ACCOUNTS, "001A", JSONObject().put("Name", "older"))
