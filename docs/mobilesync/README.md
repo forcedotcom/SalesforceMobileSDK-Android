@@ -27,7 +27,7 @@ For cross-platform concepts (architecture, data flows, conflict resolution) see 
 |---|---|
 | `app` | `MobileSyncSDKManager`, `MobileSyncUpgradeManager`, `Features` |
 | `config` | `SyncsConfig` |
-| `manager` | `SyncManager`, `LayoutSyncManager`, `MetadataSyncManager` |
+| `manager` | `SyncManager`, `LayoutSyncManager`, `MetadataSyncManager`, `QueueSyncUpTask` |
 | `model` | `Layout`, `Metadata`, `SalesforceObject` |
 | `target` | All sync targets (see below) |
 | `util` | `SyncState`, `SyncQueue`, `SyncOptions`, `SOQLBuilder`, `SOQLMutator`, `SOSLBuilder`, `ParentInfo`, `ChildrenInfo`, `BriefcaseObjectInfo`, `Constants` |
@@ -145,7 +145,7 @@ fun deleteSync(name: String?)
 
 ### Local Write API and Sync-Up Queue
 
-`createLocal`, `updateLocal` and `deleteLocal` write a record in a record soup and append one entry to the sync-up change queue, in a single SmartStore transaction: both writes happen or neither does. The queue is the `mobilesync_queue` soup (one per store), created empty by `SyncQueue.setupQueueSoupIfNeeded(store)` when a `SyncManager` is created (right after `SyncState.setupSyncsSoupIfNeeded`). Apps that never call the write API only see an empty soup; nothing else reads it yet and sync-up behavior is unchanged.
+`createLocal`, `updateLocal` and `deleteLocal` write a record in a record soup and append one entry to the sync-up change queue, in a single SmartStore transaction: both writes happen or neither does. The queue is the `mobilesync_queue` soup (one per store), created empty by `SyncQueue.setupQueueSoupIfNeeded(store)` when a `SyncManager` is created (right after `SyncState.setupSyncsSoupIfNeeded`). Apps that never call the write API only see an empty soup; only a sync up with a `QueueSyncUpTarget` reads it (see below), so sync-up behavior is unchanged for everyone else.
 
 ```kotlin
 fun createLocal(soupName: String, record: JSONObject): JSONObject
@@ -165,9 +165,28 @@ All three return the saved record, throw `MobileSyncException` (nothing is writt
 - To clear a field pass `JSONObject.NULL` (`put(key, null)` removes the key from a `JSONObject` instead).
 - `updateLocal` and `deleteLocal` fail if the record is missing or already flagged deleted.
 - `__display__` is neither written nor refreshed.
-- A record soup must use either queue-based or flag-based sync up, never both. The write API sets the dirty flags that flag-based sync up reads, and nothing reads the queue yet, so mixing both on the same soup is unsupported.
+- A record soup must use either queue-based or flag-based sync up, never both. The write API sets the dirty flags that flag-based sync up reads, and a flag-based sync up does not read the queue, so mixing both on the same soup is unsupported.
 
 Queue entries are `{sequence, soupName, recordId, sobjectType, kind, changes, status: "PENDING", attempts: 0}`. `sequence` is an integer allocated in the write transaction (highest + 1, starting at 1), so it is unique and increases in write order across all record soups; order entries by it. `base`, `lastError` and `parentRef` are indexed but not written yet. Index specs: `sequence`, `attempts` (integer); `soupName`, `recordId`, `sobjectType`, `kind`, `status`, `parentRef` (string); `changes`, `base`, `lastError` (json1).
+
+#### Replaying the queue: `QueueSyncUpTarget`
+
+A queue sync is a normal sync up whose target is a `QueueSyncUpTarget` and whose soup name is the queue soup (`SyncQueue.QUEUE_SOUP`). `SyncManager.runSync` picks `QueueSyncUpTask` for it, so `syncUp(target, options, SyncQueue.QUEUE_SOUP, name, callback)`, sync names, `reSync(id)` and `reSync(name)` work as for any sync up. The target persists with `androidImpl` like other targets, so a re-sync rebuilds it.
+
+```kotlin
+val target = QueueSyncUpTarget(externalIdFieldName = null) // optional upsert key for CREATE
+syncManager.syncUp(target, SyncOptions.optionsForSyncUp(emptyList()), SyncQueue.QUEUE_SOUP, "queueSync", callback)
+```
+
+The task replays the `PENDING` entries in `sequence` order, strictly one at a time (never reordered or batched), building each request from the entry, not from the dirty flags: CREATE is `POST /sobjects/<type>` (or an upsert on `externalIdFieldName` when the entry has a value for it) with `changes`; UPDATE is `PATCH /sobjects/<type>/<id>` with `changes` only; DELETE is `DELETE /sobjects/<type>/<id>`. `fieldlist`, `createFieldlist`, `updateFieldlist` are ignored. The merge mode is ignored too for now (no conflict check on queue syncs yet). Flagged records without a queue entry are never touched.
+
+| Outcome | What happens |
+|---|---|
+| Success (2xx; DELETE also 404) | The entry is removed. CREATE: the record gets the server id and is cleaned. UPDATE: the record is cleaned unless a later entry for it is pending. DELETE: the record is removed from its soup (a DELETE of a record that still has a local id makes no server call) |
+| Record-level error (HTTP 4xx, or a missing record, soup or `sobjectType`) | The sync does not fail. The entry keeps `status` `PENDING`, gets `lastError` (the server error body) and `attempts` + 1; the record gets `__last_error__`. The next entries still run, including those that depend on the failed one (they fail in turn) |
+| Transport error (`IOException`, HTTP 5xx, `REQUEST_LIMIT_EXCEEDED`) | The sync fails with the error. The entry stays first in line with `attempts` + 1; the later entries are not sent. `reSync` retries it |
+
+**Temp-id remapping.** After a CREATE succeeds, in one transaction: the replayed entry is removed, the record is rewritten in place by soup entry id (`Id` = server id, flags cleared, `__last_error__` removed; no second row), and every `PENDING` entry in the queue (any soup) gets the server id in `recordId`, in `parentRef`, and in the top-level `changes` values that are exactly the local id (a lookup to the new record). An in-memory map for the run is also applied to the request being built. Limitation: lookup fields in the record-soup copies of later, still-unsent records keep the local id; their queue entries are remapped (that is what is sent) and the copies heal on the next sync down. If a CREATE fails, later entries referencing its local id are sent as they are and the server rejects them.
 
 ### Callbacks
 
@@ -401,9 +420,10 @@ Fetches `/sobjects/<objectType>/describe`. SmartStore key = `objectType`. Ghost 
 SyncUpTarget (base)
 ├── BatchSyncUpTarget           (Composite Batch API; max 25/call)
 │   └── CollectionSyncUpTarget  (Collections API; max 200/call) ← DEFAULT
-└── ParentChildrenSyncUpTarget  (one parent-tree per Composite Batch call)
+├── ParentChildrenSyncUpTarget  (one parent-tree per Composite Batch call)
+└── QueueSyncUpTarget           (replays the sync-up change queue, one request per entry; see "Local Write API and Sync-Up Queue")
 
-AdvancedSyncUpTarget (interface) — implemented by all three above
+AdvancedSyncUpTarget (interface) — implemented by the three advanced targets above (not `QueueSyncUpTarget`)
 ```
 
 `CollectionSyncUpTarget` is the default when `androidImpl` is absent in the target JSON.
