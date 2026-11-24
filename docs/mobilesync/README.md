@@ -183,6 +183,7 @@ The task replays the `PENDING` entries in `sequence` order, strictly one at a ti
 | Outcome | What happens |
 |---|---|
 | Success (2xx; DELETE also 404) | The entry is removed. CREATE: the record gets the server id and is cleaned. UPDATE: the record is cleaned unless a later entry for it is pending. DELETE: the record is removed from its soup (a DELETE of a record that still has a local id makes no server call) |
+| Upsert (CREATE with `externalIdFieldName`) answering 204 | An existing record was updated and the body has no id: the server id is fetched with `GET /sobjects/<type>/<externalIdField>/<value>?fields=Id` (value from the entry's `changes`), then the CREATE is completed as above. A failing lookup is classified like any other request. A 300 (several records match) is a record-level error; a 201 carries the id in its body |
 | Record-level error (HTTP 4xx, or a missing record, soup or `sobjectType`) | The sync does not fail. The entry keeps `status` `PENDING`, gets `lastError` (the server error body) and `attempts` + 1; the record gets `__last_error__`. The next entries still run, including those that depend on the failed one (they fail in turn) |
 | Transport error (`IOException`, HTTP 5xx, `REQUEST_LIMIT_EXCEEDED`) | The sync fails with the error. The entry stays first in line with `attempts` + 1; the later entries are not sent. `reSync` retries it |
 

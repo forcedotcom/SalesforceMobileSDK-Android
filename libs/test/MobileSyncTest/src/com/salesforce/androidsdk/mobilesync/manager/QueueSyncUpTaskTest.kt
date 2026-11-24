@@ -143,6 +143,85 @@ class QueueSyncUpTaskTest {
     }
 
     @Test
+    fun test_givenUpsertAnswering201_whenSyncUp_thenIdComesFromBody() {
+        manager.createLocal(ACCOUNTS, account("local_1").put("ExtId__c", "ext-1"))
+        client.nextIds.add("001SERVER")
+
+        val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(1, client.requests.size)
+        assertNotNull(findRecord(ACCOUNTS, "001SERVER"))
+    }
+
+    @Test
+    fun test_givenUpsertAnswering204_whenSyncUp_thenIdIsLookedUpAndRecordRemapped() {
+        manager.createLocal(ACCOUNTS, account("local_1").put("ExtId__c", "ext 1"))
+        manager.createLocal(CONTACTS, contact("local_c").put("AccountId", "local_1"))
+        client.responder = {
+            when {
+                it.method == RestRequest.RestMethod.PATCH -> Reply(204, "")
+                it.method == RestRequest.RestMethod.GET -> Reply(200, """{"Id":"001EXIST","attributes":{}}""")
+                else -> null
+            }
+        }
+
+        val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(3, client.requests.size)
+        val lookup = client.requests[1]
+        assertEquals(RestRequest.RestMethod.GET, lookup.method)
+        assertTrue(lookup.path.contains("/sobjects/Account/ExtId__c/ext%201"))
+        assertTrue(lookup.path.endsWith("?fields=Id"))
+        assertEquals("001EXIST", client.requests[2].getRequestBodyAsJson().getString("AccountId"))
+        assertNull(findRecord(ACCOUNTS, "local_1"))
+        checkFlags(findRecord(ACCOUNTS, "001EXIST")!!, local = false, created = false, updated = false, deleted = false)
+        assertEquals(0, queueEntries().length())
+    }
+
+    @Test
+    fun test_givenUpsertAnswering204AndRecordLevelLookupFailure_whenSyncUp_thenRecordLevelError() {
+        manager.createLocal(ACCOUNTS, account("local_1").put("ExtId__c", "ext-1"))
+        client.responder = {
+            if (it.method == RestRequest.RestMethod.PATCH) Reply(204, "") else Reply(404, "not found")
+        }
+
+        val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(1, queueEntries().length())
+        assertEquals(1, queueEntries().getJSONObject(0).getInt(SyncQueue.ATTEMPTS))
+        assertNotNull(findRecord(ACCOUNTS, "local_1"))
+    }
+
+    @Test
+    fun test_givenUpsertAnswering204AndTransportLookupFailure_whenSyncUp_thenSyncFails() {
+        manager.createLocal(ACCOUNTS, account("local_1").put("ExtId__c", "ext-1"))
+        client.responder = {
+            if (it.method == RestRequest.RestMethod.PATCH) Reply(204, "") else throw IOException("offline")
+        }
+
+        val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        assertEquals(SyncState.Status.FAILED, sync.status)
+        assertEquals(1, queueEntries().length())
+        assertNotNull(findRecord(ACCOUNTS, "local_1"))
+    }
+
+    @Test
+    fun test_givenUpsertAnswering300_whenSyncUp_thenRecordLevelError() {
+        manager.createLocal(ACCOUNTS, account("local_1").put("ExtId__c", "ext-1"))
+        client.responder = { Reply(300, """["001A","001B"]""") }
+
+        val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(1, client.requests.size)
+        assertEquals("""["001A","001B"]""", queueEntries().getJSONObject(0).getString(SyncQueue.LAST_ERROR))
+    }
+
+    @Test
     fun test_givenFieldlistInOptions_whenSyncUp_thenIgnored() {
         insertCleanRecord(ACCOUNTS, "001U", "Account", mapOf("Phone" to "old"))
         manager.updateLocal(ACCOUNTS, "001U", JSONObject().put("Phone", "new"))

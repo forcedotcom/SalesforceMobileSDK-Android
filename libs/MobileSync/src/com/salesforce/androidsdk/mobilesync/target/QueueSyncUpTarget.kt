@@ -36,6 +36,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
 import java.net.HttpURLConnection
+import java.net.URLEncoder
 
 /**
  * Sync up target that replays the entries of the sync-up change queue
@@ -160,7 +161,25 @@ open class QueueSyncUpTarget : SyncUpTarget {
             lastError = response.asString()
             return result(response.statusCode)
         }
+        if (response.statusCode == HttpURLConnection.HTTP_NO_CONTENT && externalId != null) {
+            // An upsert that updated an existing record has no body: look the server id up
+            return lookupServerId(syncManager, sobjectType, externalId)
+        }
         return ReplayResult(Outcome.SUCCESS, serverId = response.asJSONObject().getString(Constants.LID))
+    }
+
+    /** Gets the id of the record with the given external id (`GET /sobjects/<type>/<field>/<value>?fields=Id`) */
+    private fun lookupServerId(syncManager: SyncManager, sobjectType: String, externalId: String): ReplayResult {
+        val encoded = URLEncoder.encode(externalId, "UTF-8").replace("+", "%20")
+        val request = RestRequest.getRequestForRetrieve(
+            syncManager.apiVersion, sobjectType, "$externalIdFieldName/$encoded", listOf(Constants.ID)
+        )
+        val response = syncManager.sendSyncWithMobileSyncUserAgent(request)
+        if (!response.isSuccess) {
+            lastError = response.asString()
+            return result(response.statusCode)
+        }
+        return ReplayResult(Outcome.SUCCESS, serverId = response.asJSONObject().getString(Constants.ID))
     }
 
     /** Classifies the status of a request, using the error body kept by the base class */
