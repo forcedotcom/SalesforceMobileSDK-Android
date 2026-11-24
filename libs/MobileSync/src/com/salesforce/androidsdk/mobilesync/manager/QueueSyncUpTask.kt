@@ -37,7 +37,9 @@ import com.salesforce.androidsdk.mobilesync.util.SyncState
 import com.salesforce.androidsdk.smartstore.store.SmartStore
 import org.json.JSONException
 import org.json.JSONObject
-import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  * Task running a sync up whose target is a [QueueSyncUpTarget]: it replays the pending entries of the
@@ -48,14 +50,25 @@ import java.io.IOException
  *   entry for it is pending; a DELETE removes the record.
  * - Record-level error (HTTP 4xx, missing record, soup or type): the sync goes on. The error is
  *   written in the entry (`lastError`, `attempts` + 1) and in the `__last_error__` field of the record.
+ *   The later entries of that record, and those pointing to it, are deferred to the next run (left
+ *   as they are), so that a stale edit is never sent after a newer one.
  * - Transport error (no response, 5xx, `REQUEST_LIMIT_EXCEEDED`): `attempts` + 1 on the entry, which
  *   stays first in line, and the sync fails. Running the sync again retries it.
  */
 open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: SyncUpdateCallback?) :
     SyncTask(syncManager, sync, callback) {
 
-    /** Local id to server id of the records created during this run (not persisted) */
-    private val idMap = HashMap<String, String>()
+    /** (soup name, local id) to server id of the records created during this run (not persisted) */
+    private val idMap = HashMap<Pair<String, String>, String>()
+
+    /** Local id to server id, for the references to records (any soup) found in `changes` */
+    private val refMap = HashMap<String, String>()
+
+    /** Records (soup name, id) with an entry rejected during this run: their later entries wait for the next run */
+    private val blockedRecords = HashSet<Pair<String, String>>()
+
+    /** Ids of the blocked records, to also defer the entries that point to them */
+    private val blockedIds = HashSet<String>()
 
     private val store: SmartStore
         get() = syncManager.smartStore
@@ -68,11 +81,21 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
         val entryIds = SyncQueue.pendingEntryIds(store)
         sync.totalSize = entryIds.size
         updateSync(sync, SyncState.Status.RUNNING, 0, callback)
+        val lock = lockFor(store)
         for ((i, entryId) in entryIds.withIndex()) {
             checkIfStopRequested()
-            val entry = SyncQueue.readEntry(store, entryId)
-            if (entry != null && entry.optString(SyncQueue.STATUS) == SyncQueue.Status.PENDING.name) {
-                replay(target, entryId, entry)
+            // One replay at a time per store, from the read of the entry to the commit of its outcome:
+            // a queue sync of another sync manager on the same store waits here, then reads the fresh
+            // entry (already gone if the other one replayed it)
+            lock.withLock {
+                val entry = SyncQueue.readEntry(store, entryId)
+                if (entry != null && entry.optString(SyncQueue.STATUS) == SyncQueue.Status.PENDING.name) {
+                    if (isDeferred(entry)) {
+                        defer(entry)
+                    } else {
+                        replay(target, entryId, entry)
+                    }
+                }
             }
             val progress = (i + 1) * 100 / entryIds.size
             if (progress < 100) {
@@ -81,10 +104,37 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
         }
     }
 
+    /**
+     * True if the entry must wait for the next run: an earlier entry of the same record was rejected
+     * (sending this one first would let a stale edit be overwritten by a newer one), or the entry
+     * points to such a record (`parentRef` or a top-level value of `changes`).
+     */
+    private fun isDeferred(entry: JSONObject): Boolean {
+        if (blockedRecords.isEmpty()) return false
+        val soupName = entry.optString(SyncQueue.SOUP_NAME)
+        if ((soupName to mapId(soupName, entry.optString(SyncQueue.RECORD_ID))) in blockedRecords) return true
+        if (entry.optString(SyncQueue.PARENT_REF) in blockedIds) return true
+        val changes = entry.optJSONObject(SyncQueue.CHANGES) ?: return false
+        return changes.keys().asSequence().any { (changes.opt(it) as? String) in blockedIds }
+    }
+
+    /** Leaves the entry untouched (no send, no attempt, no error), and blocks what depends on it */
+    private fun defer(entry: JSONObject) {
+        val soupName = entry.optString(SyncQueue.SOUP_NAME)
+        block(soupName, mapId(soupName, entry.optString(SyncQueue.RECORD_ID)))
+    }
+
+    private fun block(soupName: String, recordId: String) {
+        if (recordId.isNotEmpty()) {
+            blockedRecords.add(soupName to recordId)
+            blockedIds.add(recordId)
+        }
+    }
+
     @Throws(Exception::class)
     private fun replay(target: QueueSyncUpTarget, entryId: Long, entry: JSONObject) {
         val soupName = entry.optString(SyncQueue.SOUP_NAME)
-        val recordId = mapId(entry.optString(SyncQueue.RECORD_ID))
+        val recordId = mapId(soupName, entry.optString(SyncQueue.RECORD_ID))
         val sobjectType = entry.optString(SyncQueue.SOBJECT_TYPE)
         val kind = SyncQueue.Kind.entries.firstOrNull { it.name == entry.optString(SyncQueue.KIND) }
         val changes = entry.optJSONObject(SyncQueue.CHANGES)?.let { mapChanges(it) }
@@ -99,7 +149,7 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
             else -> null
         }
         if (problem != null || kind == null) {
-            recordError(target, entryId, entry, soupName, recordEntryId, problem ?: "Invalid queue entry")
+            recordError(entryId, entry, soupName, recordId, recordEntryId, problem ?: "Invalid queue entry")
             return
         }
 
@@ -115,7 +165,7 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
         }
         when (result.outcome) {
             Outcome.SUCCESS -> onSuccess(target, entryId, entry, kind, soupName, recordId, recordEntryId, result.serverId)
-            Outcome.RECORD_ERROR -> recordError(target, entryId, entry, soupName, recordEntryId, result.error ?: "Unknown error")
+            Outcome.RECORD_ERROR -> recordError(entryId, entry, soupName, recordId, recordEntryId, result.error ?: "Unknown error")
             Outcome.TRANSPORT_ERROR -> {
                 recordFailure(entryId, entry, result.error ?: "Unknown error")
                 throw MobileSyncException("Sync up of $kind $sobjectType $recordId failed: ${result.error}")
@@ -148,10 +198,11 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
             val record = store.retrieve(soupName, recordEntryId).optJSONObject(0)
             when (kind) {
                 SyncQueue.Kind.CREATE -> {
-                    if (serverId == null) throw MobileSyncException("No id returned for $recordId")
-                    idMap[recordId] = serverId
+                    if (serverId.isNullOrBlank()) throw MobileSyncException("No id returned for $recordId")
+                    idMap[soupName to recordId] = serverId
+                    refMap[recordId] = serverId
                     // Rewrite the entries first: the check below must see them under the server id
-                    rewritePendingEntries(recordId, serverId)
+                    rewritePendingEntries(soupName, recordId, serverId)
                     if (record != null) {
                         // The server record may already be in the soup (sync down, upsert that hit an existing record)
                         val existing = store.lookupSoupEntryId(soupName, target.idFieldName, serverId)
@@ -161,7 +212,7 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
                         record.put(target.idFieldName, serverId)
                         record.remove(SyncTarget.LAST_ERROR) // the CREATE went through
                         updateFlags(target, record, SyncQueue.otherEntryKinds(store, soupName, serverId, entryId), created = true)
-                        store.update(soupName, record, recordEntryId, false)
+                        updateOrThrow(soupName, record, recordEntryId)
                     } else {
                         MobileSyncLogger.w(TAG, "Record $recordId is gone from $soupName, only queue entries are updated")
                     }
@@ -170,15 +221,14 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
                 SyncQueue.Kind.UPDATE -> {
                     if (record != null) {
                         updateFlags(target, record, SyncQueue.otherEntryKinds(store, soupName, recordId, entryId), created = false)
-                        store.update(soupName, record, recordEntryId, false)
+                        updateOrThrow(soupName, record, recordEntryId)
                     }
                 }
 
                 SyncQueue.Kind.DELETE -> {
-                    // A record that never reached the server takes its other (failed) entries with it
-                    if (SyncTarget.isLocalId(recordId)) {
-                        SyncQueue.deleteEntriesForRecord(store, soupName, recordId)
-                    }
+                    // The record is gone: its other entries (a rejected CREATE or UPDATE, for instance)
+                    // have nothing left to apply to
+                    SyncQueue.deleteEntriesForRecord(store, soupName, recordId)
                     if (record != null) store.delete(soupName, recordEntryId)
                 }
             }
@@ -203,37 +253,49 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
         record.put(SyncTarget.LOCALLY_UPDATED, SyncQueue.Kind.UPDATE in others)
     }
 
-    /** Replaces [localId] by [serverId] in the pending entries that reference it (any soup) */
+    /** Replaces [localId] by [serverId] in the pending entries that reference it: as `recordId` for the
+     * entries of [soupName] (the soup of the created record), as `parentRef` or `changes` value for any entry */
     @Throws(JSONException::class)
-    private fun rewritePendingEntries(localId: String, serverId: String) {
+    private fun rewritePendingEntries(soupName: String, localId: String, serverId: String) {
         for (pending in SyncQueue.findPendingEntriesReferencing(store, localId)) {
-            if (SyncQueue.replaceId(pending, localId, serverId)) {
-                store.update(SyncQueue.QUEUE_SOUP, pending, pending.getLong(SmartStore.SOUP_ENTRY_ID), false)
+            if (SyncQueue.replaceId(pending, soupName, localId, serverId)) {
+                updateOrThrow(SyncQueue.QUEUE_SOUP, pending, pending.getLong(SmartStore.SOUP_ENTRY_ID))
             }
         }
     }
 
-    /** Records the error in the entry and in the record, then lets the sync go on */
+    /** SmartStore answers null when it did not write: throwing rolls the whole transaction back */
+    @Throws(JSONException::class)
+    private fun updateOrThrow(soupName: String, element: JSONObject, soupEntryId: Long, handleTx: Boolean = false) {
+        store.update(soupName, element, soupEntryId, handleTx)
+            ?: throw MobileSyncException("Failed to update entry $soupEntryId of $soupName")
+    }
+
+    /**
+     * Records the error in the entry and in the record, then lets the sync go on with unrelated
+     * records: the later entries of this record, and those pointing to it, wait for the next run
+     */
     @Throws(JSONException::class)
     private fun recordError(
-        target: QueueSyncUpTarget,
         entryId: Long,
         entry: JSONObject,
         soupName: String,
+        recordId: String,
         recordEntryId: Long,
         error: String
     ) {
         MobileSyncLogger.w(TAG, "Queue entry $entryId failed: $error")
+        block(soupName, recordId)
         SyncQueue.inTransaction(store, soupName) {
-            entry.put(SyncQueue.LAST_ERROR, error)
-            entry.put(SyncQueue.ATTEMPTS, entry.optInt(SyncQueue.ATTEMPTS) + 1)
-            store.update(SyncQueue.QUEUE_SOUP, entry, entryId, false)
             if (recordEntryId != -1L && store.hasSoup(soupName)) {
                 store.retrieve(soupName, recordEntryId).optJSONObject(0)?.let { record ->
                     record.put(SyncTarget.LAST_ERROR, error)
-                    store.update(soupName, record, recordEntryId, false)
+                    updateOrThrow(soupName, record, recordEntryId)
                 }
             }
+            entry.put(SyncQueue.LAST_ERROR, error)
+            entry.put(SyncQueue.ATTEMPTS, entry.optInt(SyncQueue.ATTEMPTS) + 1)
+            updateOrThrow(SyncQueue.QUEUE_SOUP, entry, entryId)
         }
     }
 
@@ -242,11 +304,15 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
     private fun recordFailure(entryId: Long, entry: JSONObject, error: String) {
         entry.put(SyncQueue.LAST_ERROR, error)
         entry.put(SyncQueue.ATTEMPTS, entry.optInt(SyncQueue.ATTEMPTS) + 1)
-        store.update(SyncQueue.QUEUE_SOUP, entry, entryId, true)
+        updateOrThrow(SyncQueue.QUEUE_SOUP, entry, entryId, handleTx = true)
     }
 
-    /** Safety net: maps a local id created earlier in this run, unknown local ids are kept */
-    private fun mapId(id: String): String = if (SyncTarget.isLocalId(id)) idMap[id] ?: id else id
+    /** Safety net: maps the local id of a record created earlier in this run, unknown ids are kept */
+    private fun mapId(soupName: String, id: String): String =
+        if (SyncTarget.isLocalId(id)) idMap[soupName to id] ?: id else id
+
+    /** Same for a reference to a record, whatever its soup */
+    private fun mapRef(id: String): String = if (SyncTarget.isLocalId(id)) refMap[id] ?: id else id
 
     @Throws(JSONException::class)
     private fun mapChanges(changes: JSONObject): JSONObject {
@@ -254,7 +320,7 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
         for (key in mapped.keys().asSequence().toList()) {
             val value = mapped.opt(key)
             if (value is String) {
-                mapped.put(key, mapId(value))
+                mapped.put(key, mapRef(value))
             }
         }
         return mapped
@@ -262,5 +328,14 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
 
     companion object {
         private const val TAG = "QueueSyncUpTask"
+
+        private val locks = ConcurrentHashMap<String, ReentrantLock>()
+
+        /**
+         * The lock of a store (by database path): queue syncs of different sync managers on the same
+         * store must not replay the same entry at the same time.
+         */
+        internal fun lockFor(store: SmartStore): ReentrantLock =
+            locks.getOrPut(store.database.path) { ReentrantLock() }
     }
 }

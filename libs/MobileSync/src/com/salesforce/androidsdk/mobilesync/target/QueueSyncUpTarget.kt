@@ -165,7 +165,7 @@ open class QueueSyncUpTarget : SyncUpTarget {
             // An upsert that updated an existing record has no body: look the server id up
             return lookupServerId(syncManager, sobjectType, externalId)
         }
-        return ReplayResult(Outcome.SUCCESS, serverId = response.asJSONObject().getString(Constants.LID))
+        return serverIdResult(response.asJSONObject().opt(Constants.LID), "creating")
     }
 
     /** Gets the id of the record with the given external id (`GET /sobjects/<type>/<field>/<value>?fields=Id`) */
@@ -179,8 +179,16 @@ open class QueueSyncUpTarget : SyncUpTarget {
             lastError = response.asString()
             return result(response.statusCode)
         }
-        return ReplayResult(Outcome.SUCCESS, serverId = response.asJSONObject().getString(Constants.ID))
+        return serverIdResult(response.asJSONObject().opt(Constants.ID), "looking up")
     }
+
+    /** A success must come with a nonblank string id: anything else is treated like an unusable answer */
+    private fun serverIdResult(id: Any?, action: String): ReplayResult =
+        if (id is String && id.isNotBlank()) {
+            ReplayResult(Outcome.SUCCESS, serverId = id)
+        } else {
+            ReplayResult(Outcome.TRANSPORT_ERROR, error = "No valid id returned when $action the record: $id")
+        }
 
     private fun encodePathSegment(value: String) = URLEncoder.encode(value, "UTF-8").replace("+", "%20")
 

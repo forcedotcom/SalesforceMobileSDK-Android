@@ -183,6 +183,11 @@ object SyncQueue {
                 if (store.lookupSoupEntryId(soupName, ID_FIELD, givenId as String) != -1L) {
                     throw MobileSyncException("A record with id $givenId already exists in $soupName")
                 }
+                // Local ids are used as references between soups: they are unique in the whole store
+                val otherSoup = soupUsingId(store, soupName, givenId)
+                if (otherSoup != null) {
+                    throw MobileSyncException("The id $givenId is already used in $otherSoup: local ids must be unique in the store")
+                }
                 givenId
             } else {
                 var candidate = SyncTarget.createLocalId()
@@ -199,6 +204,24 @@ object SyncQueue {
             appendEntry(store, soupName, id, sobjectType, Kind.CREATE, changes)
             saved
         }
+    }
+
+    /**
+     * Returns the name of a soup other than [soupName] that has a record or a queue entry with the
+     * given id, or null.
+     */
+    private fun soupUsingId(store: SmartStore, soupName: String, id: String): String? {
+        val sql = "SELECT {$QUEUE_SOUP:$SOUP_NAME} FROM {$QUEUE_SOUP} " +
+            "WHERE {$QUEUE_SOUP:$RECORD_ID} = '${sqlEscape(id)}' AND {$QUEUE_SOUP:$SOUP_NAME} != '${sqlEscape(soupName)}'"
+        queryAll(store, sql) { row -> row.getString(0) }.firstOrNull()?.let { return it }
+        for (other in store.allSoupNames) {
+            if (other != soupName && other != QUEUE_SOUP && store.hasIndexForPath(other, ID_FIELD) &&
+                store.lookupSoupEntryId(other, ID_FIELD, id) != -1L
+            ) {
+                return other
+            }
+        }
+        return null
     }
 
     internal fun updateLocal(store: SmartStore, soupName: String, id: String, changes: JSONObject): JSONObject {
@@ -311,15 +334,17 @@ object SyncQueue {
     }
 
     /**
-     * Replaces [localId] by [serverId] in [entry]: `recordId`, `parentRef`, and the top-level string
-     * values of `changes` that are exactly [localId].
+     * Replaces [localId] by [serverId] in [entry]: `recordId` (only when the entry is for
+     * [soupName], the soup of the record that was created), `parentRef`, and the top-level string
+     * values of `changes` that are exactly [localId] (these are references to a record of any soup).
      *
      * @return true if the entry was modified
      */
     @Throws(JSONException::class)
-    internal fun replaceId(entry: JSONObject, localId: String, serverId: String): Boolean {
+    internal fun replaceId(entry: JSONObject, soupName: String, localId: String, serverId: String): Boolean {
         var modified = false
-        for (field in listOf(RECORD_ID, PARENT_REF)) {
+        val fields = if (entry.opt(SOUP_NAME) == soupName) listOf(RECORD_ID, PARENT_REF) else listOf(PARENT_REF)
+        for (field in fields) {
             if (entry.opt(field) == localId) {
                 entry.put(field, serverId)
                 modified = true
