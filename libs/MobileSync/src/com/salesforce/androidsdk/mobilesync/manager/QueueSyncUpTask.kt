@@ -79,7 +79,8 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
      */
     private val blockedTypes = HashSet<String>()
 
-    /** Destination lookups of this run, by (object type, external id value): each value is looked up once */
+    /** Destination lookups of this run, by (object type, external id value): each value is looked up once
+     * as long as no write succeeded since (a write may move an external id, so the cache is cleared) */
     private val destinations = HashMap<Pair<String, String>, QueueSyncUpTarget.Destination>()
 
     /** Number of entries after the one being replayed (a destination lookup is useless when 0) */
@@ -224,7 +225,10 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
             throw e
         }
         when (result.outcome) {
-            Outcome.SUCCESS -> onSuccess(target, entryId, entry, kind, soupName, recordId, recordEntryId, result.serverId)
+            Outcome.SUCCESS -> {
+                destinations.clear()
+                onSuccess(target, entryId, entry, kind, soupName, recordId, recordEntryId, result.serverId)
+            }
             Outcome.RECORD_ERROR -> recordError(target, entryId, entry, soupName, recordId, recordEntryId, result.error ?: "Unknown error")
             Outcome.TRANSPORT_ERROR -> {
                 recordFailure(entryId, entry, result.error ?: "Unknown error")

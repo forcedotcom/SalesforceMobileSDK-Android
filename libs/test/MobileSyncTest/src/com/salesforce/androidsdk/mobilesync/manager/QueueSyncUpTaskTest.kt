@@ -1449,6 +1449,49 @@ class QueueSyncUpTaskTest {
     }
 
     @Test
+    fun test_givenSuccessfulWriteMovedExternalId_whenLaterUpsertDeferred_thenDestinationIsLookedUpAgain() {
+        insertCleanRecord(ACCOUNTS, "001A", "Account", mapOf("ExtId__c" to "ext-1"))
+        insertCleanRecord(ACCOUNTS, "001B", "Account")
+        manager.createLocal(ACCOUNTS, account("local_a"))
+        manager.createLocal(ACCOUNTS, account("local_u1").put("ExtId__c", "ext-1").put("ParentId", "local_a"))
+        manager.updateLocal(ACCOUNTS, "001B", JSONObject().put("ExtId__c", "ext-1")) // moves ext-1 from A to B
+        manager.createLocal(ACCOUNTS, account("local_u2").put("ExtId__c", "ext-1").put("ParentId", "local_a"))
+        manager.updateLocal(ACCOUNTS, "001B", JSONObject().put("Name", "newer"))
+        var owner = "001A"
+        client.responder = {
+            when {
+                it.method == RestRequest.RestMethod.GET -> Reply(200, """{"Id":"$owner"}""")
+                it.method == RestRequest.RestMethod.POST -> Reply(400, "bad")
+                it.method == RestRequest.RestMethod.PATCH && it.path.endsWith("/001B") && owner == "001A" -> {
+                    owner = "001B"
+                    null
+                }
+                else -> null
+            }
+        }
+
+        val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(
+            listOf("POST Account", "GET Account/ExtId__c/ext-1?fields=Id", "PATCH Account/001B", "GET Account/ExtId__c/ext-1?fields=Id"),
+            client.requestLines()
+        )
+        // The newer edit of B waits behind the deferred upsert that now targets B
+        assertEquals(4, queueEntries().length())
+    }
+
+    @Test
+    fun test_givenLoneRejectedUpsert_whenSyncUp_thenNoLookup() {
+        client.responder = { if (it.method == RestRequest.RestMethod.PATCH) Reply(400, "bad") else null }
+        manager.createLocal(ACCOUNTS, account("local_u").put("ExtId__c", "ext-1"))
+
+        runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        assertEquals(listOf("PATCH Account/ExtId__c/ext-1"), client.requestLines())
+    }
+
+    @Test
     fun test_givenPartialUpsertOntoStoredRow_whenSyncUp_thenUntouchedFieldsSurviveAndNewestEditWins() {
         insertCleanRecord(ACCOUNTS, "001A", "Account", mapOf("ExtId__c" to "ext-1", "Phone" to "555"))
         manager.createLocal(ACCOUNTS, account("local_n").put("Name", "older").put("ExtId__c", "ext-1"))
