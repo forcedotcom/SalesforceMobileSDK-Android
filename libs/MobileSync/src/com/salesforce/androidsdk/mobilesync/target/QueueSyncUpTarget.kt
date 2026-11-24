@@ -178,16 +178,67 @@ open class QueueSyncUpTarget : SyncUpTarget {
 
     /** Gets the id of the record with the given external id (`GET /sobjects/<type>/<field>/<value>?fields=Id`) */
     private fun lookupServerId(syncManager: SyncManager, sobjectType: String, externalId: String): ReplayResult {
-        val encoded = encodePathSegment(externalId)
-        val request = RestRequest.getRequestForRetrieve(
-            syncManager.apiVersion, sobjectType, "$externalIdFieldName/$encoded", listOf(Constants.ID)
-        )
+        val request = lookupRequest(syncManager, sobjectType, externalId)
         val response = syncManager.sendSyncWithMobileSyncUserAgent(request)
         if (!response.isSuccess) {
             lastError = response.asString()
             return result(response.statusCode)
         }
         return serverIdResult(response.asJSONObject().opt(Constants.ID), "looking up")
+    }
+
+    private fun lookupRequest(syncManager: SyncManager, sobjectType: String, externalId: String) =
+        RestRequest.getRequestForRetrieve(
+            syncManager.apiVersion, sobjectType, "$externalIdFieldName/${encodePathSegment(externalId)}", listOf(Constants.ID)
+        )
+
+    /** Answer of [lookupDestination] */
+    internal class Destination(val kind: DestinationKind, val id: String? = null, val error: String? = null)
+
+    internal enum class DestinationKind {
+        /** An existing record has this external id: [Destination.id] */
+        FOUND,
+
+        /** No record has it (404): an upsert would create one */
+        NOT_FOUND,
+
+        /** Record-level error or unusable answer: the destination is unknown */
+        INCONCLUSIVE,
+
+        /** The request failed like any transport failure (5xx, 401, 429...) */
+        TRANSPORT_ERROR
+    }
+
+    /**
+     * Finds which record an upsert of [externalId] would hit, with the same lookup as for a 204
+     * answer, without writing anything.
+     *
+     * @throws IOException if the request cannot be sent
+     */
+    @Throws(IOException::class)
+    internal fun lookupDestination(syncManager: SyncManager, sobjectType: String, externalId: String): Destination {
+        val response = syncManager.sendSyncWithMobileSyncUserAgent(lookupRequest(syncManager, sobjectType, externalId))
+        if (!response.isSuccess) {
+            if (response.statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
+                return Destination(DestinationKind.NOT_FOUND)
+            }
+            lastError = response.asString()
+            val failure = result(response.statusCode)
+            return Destination(
+                if (failure.outcome == Outcome.TRANSPORT_ERROR) DestinationKind.TRANSPORT_ERROR else DestinationKind.INCONCLUSIVE,
+                error = failure.error
+            )
+        }
+        val id = try {
+            response.asJSONObject().opt(Constants.ID)
+        } catch (e: JSONException) {
+            null
+        }
+        return if (id is String && id.isNotBlank()) {
+            Destination(DestinationKind.FOUND, id = id)
+        } else {
+            Destination(DestinationKind.INCONCLUSIVE, error = "No valid id in the lookup answer")
+        }
     }
 
     /** A success must come with a nonblank string id: anything else is treated like an unusable answer */

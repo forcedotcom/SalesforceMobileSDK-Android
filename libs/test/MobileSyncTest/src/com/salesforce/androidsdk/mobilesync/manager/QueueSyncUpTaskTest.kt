@@ -1073,7 +1073,7 @@ class QueueSyncUpTaskTest {
     }
 
     @Test
-    fun test_givenRejectedUpdateThenUpsertOfSameType_whenReSync_thenUpsertWaitsAndNewerWins() {
+    fun test_givenRejectedUpdateThenUpsertToSameRecord_whenReSync_thenUpsertWaitsAndNewerWins() {
         insertCleanRecord(ACCOUNTS, "001A", "Account", mapOf("ExtId__c" to "ext-1"))
         manager.updateLocal(ACCOUNTS, "001A", JSONObject().put("Name", "older"))
         manager.createLocal(ACCOUNTS, account("local_n").put("Name", "newer").put("ExtId__c", "ext-1"))
@@ -1084,36 +1084,158 @@ class QueueSyncUpTaskTest {
         val sent = mutableListOf<String>()
         client.nextIds.addAll(listOf("003C", "001P", "001A"))
         client.responder = {
-            val name = it.getRequestBodyAsJson().optString("Name")
-            if (name == "older" || name == "newer") sent.add(name)
-            if (name == "older" && rejectOnce) {
-                rejectOnce = false
-                Reply(400, "bad")
+            if (it.method == RestRequest.RestMethod.GET) {
+                Reply(200, """{"Id":"001A"}""")
             } else {
-                if (name == "older" || name == "newer") serverName = name
-                null
+                val name = it.getRequestBodyAsJson().optString("Name")
+                if (name == "older" || name == "newer") sent.add(name)
+                if (name == "older" && rejectOnce) {
+                    rejectOnce = false
+                    Reply(400, "bad")
+                } else {
+                    if (name == "older" || name == "newer") serverName = name
+                    null
+                }
             }
         }
 
         val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
 
-        // Run 1: the upsert of the same type waits; a CREATE without external id and other types go
+        // Run 1: the lookup says the upsert would hit the blocked record 001A, so it waits.
+        // A CREATE without external id and one of another type go
         assertEquals(SyncState.Status.DONE, sync.status)
         assertEquals(listOf("older"), sent)
-        assertEquals(3, client.requests.size)
+        assertEquals(
+            listOf("PATCH Account/001A", "GET Account/ExtId__c/ext-1?fields=Id", "POST Contact", "POST Account"),
+            client.requestLines()
+        )
         assertEquals(2, queueEntries().length())
         assertEquals("PENDING", queueEntries().getJSONObject(1).getString(SyncQueue.STATUS))
         assertEquals(0, queueEntries().getJSONObject(1).optInt(SyncQueue.ATTEMPTS))
+        assertFalse(queueEntries().getJSONObject(1).has(SyncQueue.LAST_ERROR))
 
+        client.requests.clear()
         val resync = runResync(sync)
 
+        // Run 2: nothing is blocked, no lookup
         assertEquals(SyncState.Status.DONE, resync.status)
+        assertEquals(listOf("PATCH Account/001A", "PATCH Account/ExtId__c/ext-1"), client.requestLines())
         assertEquals(listOf("older", "older", "newer"), sent)
         assertEquals("newer", serverName)
         assertEquals(0, queueEntries().length())
         val record = findRecord(ACCOUNTS, "001A")!!
         assertEquals("newer", record.getString("Name"))
         checkFlags(record, local = false, created = false, updated = false, deleted = false)
+    }
+
+    private fun runUpsertWithOtherRecordBlocked(lookupReply: Reply): SyncState {
+        insertCleanRecord(ACCOUNTS, "001A", "Account", mapOf("ExtId__c" to "ext-1"))
+        manager.updateLocal(ACCOUNTS, "001A", JSONObject().put("Name", "older"))
+        manager.createLocal(ACCOUNTS, account("local_n").put("Name", "newer").put("ExtId__c", "ext-2"))
+        client.responder = {
+            when {
+                it.method == RestRequest.RestMethod.GET -> lookupReply
+                it.path.endsWith("001A") -> Reply(400, "bad")
+                else -> null
+            }
+        }
+        return runQueueSync(QueueSyncUpTarget("ExtId__c"))
+    }
+
+    @Test
+    fun test_givenUpsertLookupFindsUnblockedRecordOrNone_whenAnotherRecordIsBlocked_thenUpsertIsSent() {
+        for (reply in listOf(Reply(200, """{"Id":"001B"}"""), Reply(404, "[]"))) {
+            setUp()
+            val sync = runUpsertWithOtherRecordBlocked(reply)
+
+            assertEquals(SyncState.Status.DONE, sync.status)
+            assertEquals(
+                listOf("PATCH Account/001A", "GET Account/ExtId__c/ext-2?fields=Id", "PATCH Account/ExtId__c/ext-2"),
+                client.requestLines()
+            )
+            assertEquals(1, queueEntries().length())
+        }
+    }
+
+    @Test
+    fun test_givenNothingBlocked_whenUpsertCreate_thenNoLookup() {
+        insertCleanRecord(ACCOUNTS, "001A", "Account")
+        manager.updateLocal(ACCOUNTS, "001A", JSONObject().put("Name", "a1"))
+        manager.createLocal(ACCOUNTS, account("local_n").put("ExtId__c", "ext-2"))
+
+        val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(listOf("PATCH Account/001A", "PATCH Account/ExtId__c/ext-2"), client.requestLines())
+    }
+
+    @Test
+    fun test_givenUpsertLookupTransportFailure_whenAnotherRecordIsBlocked_thenSyncFailsAndUpsertNotSent() {
+        for (reply in listOf<Reply?>(Reply(503, "unavailable"), Reply(401, "expired"), null)) {
+            setUp()
+            insertCleanRecord(ACCOUNTS, "001A", "Account")
+            manager.updateLocal(ACCOUNTS, "001A", JSONObject().put("Name", "older"))
+            manager.createLocal(ACCOUNTS, account("local_n").put("ExtId__c", "ext-2"))
+            client.responder = {
+                when {
+                    it.method == RestRequest.RestMethod.GET -> reply ?: throw IOException("offline")
+                    it.path.endsWith("001A") -> Reply(400, "bad")
+                    else -> null
+                }
+            }
+
+            val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+            assertEquals(SyncState.Status.FAILED, sync.status)
+            assertEquals(listOf("PATCH Account/001A", "GET Account/ExtId__c/ext-2?fields=Id"), client.requestLines())
+            val entry = queueEntries().getJSONObject(1)
+            assertEquals(1, entry.getInt(SyncQueue.ATTEMPTS))
+            assertFalse(entry.optString(SyncQueue.LAST_ERROR).isEmpty())
+            assertNotNull(findRecord(ACCOUNTS, "local_n"))
+        }
+    }
+
+    @Test
+    fun test_givenInconclusiveUpsertLookup_whenAnotherRecordIsBlocked_thenUpsertIsDeferred() {
+        for (reply in listOf(Reply(400, "bad"), Reply(403, "denied"), Reply(200, """{"Id":""}"""), Reply(200, "<html/>"))) {
+            setUp()
+            val sync = runUpsertWithOtherRecordBlocked(reply)
+
+            assertEquals(SyncState.Status.DONE, sync.status)
+            assertEquals(listOf("PATCH Account/001A", "GET Account/ExtId__c/ext-2?fields=Id"), client.requestLines())
+            val entry = queueEntries().getJSONObject(1)
+            assertEquals("PENDING", entry.getString(SyncQueue.STATUS))
+            assertEquals(0, entry.optInt(SyncQueue.ATTEMPTS))
+            assertFalse(entry.has(SyncQueue.LAST_ERROR))
+        }
+    }
+
+    @Test
+    fun test_givenRejectedUpsertCreate_whenLaterUpsertCreates_thenSameExternalIdWaitsWithoutLookupOthersDoNot() {
+        manager.createLocal(ACCOUNTS, account("local_a").put("ExtId__c", "ext-1"))
+        manager.createLocal(ACCOUNTS, account("local_b").put("ExtId__c", "ext-1"))
+        manager.createLocal(ACCOUNTS, account("local_c").put("ExtId__c", "ext-2"))
+        client.responder = {
+            when {
+                it.method == RestRequest.RestMethod.GET -> Reply(404, "[]")
+                it.path.endsWith("ext-1") -> Reply(400, "bad")
+                else -> null
+            }
+        }
+
+        val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(
+            listOf("PATCH Account/ExtId__c/ext-1", "GET Account/ExtId__c/ext-2?fields=Id", "PATCH Account/ExtId__c/ext-2"),
+            client.requestLines()
+        )
+        val entries = queueEntries()
+        assertEquals(2, entries.length())
+        assertEquals("local_a", entries.getJSONObject(0).getString(SyncQueue.RECORD_ID))
+        assertEquals(1, entries.getJSONObject(0).getInt(SyncQueue.ATTEMPTS))
+        assertEquals("local_b", entries.getJSONObject(1).getString(SyncQueue.RECORD_ID))
+        assertEquals(0, entries.getJSONObject(1).optInt(SyncQueue.ATTEMPTS))
     }
 
     @Test

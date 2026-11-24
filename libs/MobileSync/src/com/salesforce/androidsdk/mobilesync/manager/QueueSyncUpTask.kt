@@ -67,8 +67,11 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
     /** Records (soup name, id) with an entry rejected during this run: their later entries wait for the next run */
     private val blockedRecords = HashSet<Pair<String, String>>()
 
-    /** Object types with an entry rejected or deferred during this run: upserts of these types wait too */
-    private val blockedTypes = HashSet<String>()
+    /** (object type, id) of the blocked records: what an upsert lookup is compared with */
+    private val blockedTypedIds = HashSet<Pair<String, String>>()
+
+    /** (object type, external id value) of the blocked upsert CREATEs, which have no server id to compare */
+    private val blockedUpserts = HashSet<Pair<String, String>>()
 
     /** Ids of the blocked records, to also defer the entries that point to them */
     private val blockedIds = HashSet<String>()
@@ -94,8 +97,8 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
             checkIfStopRequested()
             val entry = SyncQueue.readEntry(store, entryId)
             if (entry != null && entry.optString(SyncQueue.STATUS) == SyncQueue.Status.PENDING.name) {
-                if (isDeferred(target, entry)) {
-                    defer(entry)
+                if (isDeferred(target, entryId, entry)) {
+                    defer(target, entry)
                 } else {
                     replay(target, entryId, entry)
                 }
@@ -110,9 +113,13 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
     /**
      * True if the entry must wait for the next run: an earlier entry of the same record was rejected
      * (sending this one first would let a stale edit be overwritten by a newer one), or the entry
-     * points to such a record (`parentRef` or a top-level value of `changes`).
+     * points to such a record (`parentRef` or a top-level value of `changes`). An upsert CREATE is
+     * also deferred when it would land on such a record: same external id as a blocked upsert, or,
+     * after a lookup (only while something is blocked), the id of a blocked record of its type.
+     * A failing lookup fails the sync like any transport error; an inconclusive one defers the CREATE.
      */
-    private fun isDeferred(target: QueueSyncUpTarget, entry: JSONObject): Boolean {
+    @Throws(Exception::class)
+    private fun isDeferred(target: QueueSyncUpTarget, entryId: Long, entry: JSONObject): Boolean {
         if (blockedRecords.isEmpty()) return false
         val soupName = entry.optString(SyncQueue.SOUP_NAME)
         val recordId = mapId(soupName, entry.optString(SyncQueue.RECORD_ID))
@@ -120,26 +127,46 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
         // Deleting a record that never reached the server makes no call: nothing to order
         if (kind == SyncQueue.Kind.DELETE.name && SyncTarget.isLocalId(recordId)) return false
         if ((soupName to recordId) in blockedRecords) return true
-        // An upsert can land on any existing record of its type, including one with a rejected entry
-        if (kind == SyncQueue.Kind.CREATE.name && entry.optString(SyncQueue.SOBJECT_TYPE) in blockedTypes &&
-            target.upsertExternalId(entry.optJSONObject(SyncQueue.CHANGES)) != null
-        ) {
-            return true
-        }
         if (entry.optString(SyncQueue.PARENT_REF) in blockedIds) return true
-        val changes = entry.optJSONObject(SyncQueue.CHANGES) ?: return false
-        return changes.keys().asSequence().any { (changes.opt(it) as? String) in blockedIds }
+        val changes = entry.optJSONObject(SyncQueue.CHANGES)
+        if (changes != null && changes.keys().asSequence().any { (changes.opt(it) as? String) in blockedIds }) return true
+        // An upsert can land on an existing record that has a blocked entry
+        val sobjectType = entry.optString(SyncQueue.SOBJECT_TYPE)
+        val externalId = if (kind == SyncQueue.Kind.CREATE.name) target.upsertExternalId(changes) else null
+        if (externalId != null) {
+            if ((sobjectType to externalId) in blockedUpserts) return true
+            val destination = try {
+                target.lookupDestination(syncManager, sobjectType, externalId)
+            } catch (e: Exception) {
+                recordFailure(entryId, entry, e.message ?: e.toString())
+                throw e
+            }
+            when (destination.kind) {
+                QueueSyncUpTarget.DestinationKind.FOUND -> return (sobjectType to destination.id!!) in blockedTypedIds
+                QueueSyncUpTarget.DestinationKind.NOT_FOUND -> return false
+                QueueSyncUpTarget.DestinationKind.INCONCLUSIVE -> return true
+                QueueSyncUpTarget.DestinationKind.TRANSPORT_ERROR -> {
+                    recordFailure(entryId, entry, destination.error ?: "Unknown error")
+                    throw MobileSyncException("Lookup of the destination of $sobjectType $externalId failed: ${destination.error}")
+                }
+            }
+        }
+        return false
     }
 
     /** Leaves the entry untouched (no send, no attempt, no error), and blocks what depends on it */
-    private fun defer(entry: JSONObject) {
+    private fun defer(target: QueueSyncUpTarget, entry: JSONObject) {
         val soupName = entry.optString(SyncQueue.SOUP_NAME)
-        block(soupName, mapId(soupName, entry.optString(SyncQueue.RECORD_ID)), entry.optString(SyncQueue.SOBJECT_TYPE))
+        block(target, soupName, mapId(soupName, entry.optString(SyncQueue.RECORD_ID)), entry)
     }
 
-    private fun block(soupName: String, recordId: String, sobjectType: String) {
-        if (sobjectType.isNotEmpty()) blockedTypes.add(sobjectType)
+    private fun block(target: QueueSyncUpTarget, soupName: String, recordId: String, entry: JSONObject) {
+        val sobjectType = entry.optString(SyncQueue.SOBJECT_TYPE)
+        if (entry.optString(SyncQueue.KIND) == SyncQueue.Kind.CREATE.name) {
+            target.upsertExternalId(entry.optJSONObject(SyncQueue.CHANGES))?.let { blockedUpserts.add(sobjectType to it) }
+        }
         if (recordId.isNotEmpty()) {
+            blockedTypedIds.add(sobjectType to recordId)
             blockedRecords.add(soupName to recordId)
             blockedIds.add(recordId)
         }
@@ -163,7 +190,7 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
             else -> null
         }
         if (problem != null || kind == null) {
-            recordError(entryId, entry, soupName, recordId, recordEntryId, problem ?: "Invalid queue entry")
+            recordError(target, entryId, entry, soupName, recordId, recordEntryId, problem ?: "Invalid queue entry")
             return
         }
 
@@ -179,7 +206,7 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
         }
         when (result.outcome) {
             Outcome.SUCCESS -> onSuccess(target, entryId, entry, kind, soupName, recordId, recordEntryId, result.serverId)
-            Outcome.RECORD_ERROR -> recordError(entryId, entry, soupName, recordId, recordEntryId, result.error ?: "Unknown error")
+            Outcome.RECORD_ERROR -> recordError(target, entryId, entry, soupName, recordId, recordEntryId, result.error ?: "Unknown error")
             Outcome.TRANSPORT_ERROR -> {
                 recordFailure(entryId, entry, result.error ?: "Unknown error")
                 throw MobileSyncException("Sync up of $kind $sobjectType $recordId failed: ${result.error}")
@@ -291,6 +318,7 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
      */
     @Throws(JSONException::class)
     private fun recordError(
+        target: QueueSyncUpTarget,
         entryId: Long,
         entry: JSONObject,
         soupName: String,
@@ -299,7 +327,7 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
         error: String
     ) {
         MobileSyncLogger.w(TAG, "Queue entry $entryId failed: $error")
-        block(soupName, recordId, entry.optString(SyncQueue.SOBJECT_TYPE))
+        block(target, soupName, recordId, entry)
         SyncQueue.inTransaction(store, soupName) {
             if (recordEntryId != -1L && store.hasSoup(soupName)) {
                 store.retrieve(soupName, recordEntryId).optJSONObject(0)?.let { record ->
