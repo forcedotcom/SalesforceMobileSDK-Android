@@ -569,6 +569,51 @@ class QueueSyncUpTaskTest {
     }
 
     @Test
+    fun test_givenCreateThenUpdate_whenSyncUp_thenDirtyAfterCreateCleanAfterUpdate() {
+        manager.createLocal(ACCOUNTS, account("local_1"))
+        manager.updateLocal(ACCOUNTS, "local_1", JSONObject().put("Phone", "1"))
+        client.nextIds.add("001S")
+        var duringUpdate: JSONObject? = null
+        client.onRequest = { if (client.requests.size == 2) duringUpdate = findRecord(ACCOUNTS, "001S") }
+
+        runQueueSync()
+
+        checkFlags(duringUpdate!!, local = true, created = false, updated = true, deleted = false)
+        checkFlags(findRecord(ACCOUNTS, "001S")!!, local = false, created = false, updated = false, deleted = false)
+    }
+
+    @Test
+    fun test_givenCreateThenDelete_whenSyncUp_thenStaysDeletedFlaggedUntilDeleteReplays() {
+        manager.createLocal(ACCOUNTS, account("local_1"))
+        manager.deleteLocal(ACCOUNTS, "local_1")
+        client.nextIds.add("001S")
+        var duringDelete: JSONObject? = null
+        client.onRequest = { if (client.requests.size == 2) duringDelete = findRecord(ACCOUNTS, "001S") }
+
+        runQueueSync()
+
+        checkFlags(duringDelete!!, local = true, created = false, updated = false, deleted = true)
+        assertEquals(listOf("POST Account", "DELETE Account/001S"), client.requestLines())
+        assertNull(findRecord(ACCOUNTS, "001S"))
+    }
+
+    @Test
+    fun test_givenCreateAndTwoUpdates_whenSyncUp_thenDirtyUntilLastEntry() {
+        manager.createLocal(ACCOUNTS, account("local_1"))
+        manager.updateLocal(ACCOUNTS, "local_1", JSONObject().put("Phone", "1"))
+        manager.updateLocal(ACCOUNTS, "local_1", JSONObject().put("Phone", "2"))
+        client.nextIds.add("001S")
+        val seen = mutableListOf<JSONObject>()
+        client.onRequest = { if (client.requests.size > 1) seen.add(findRecord(ACCOUNTS, "001S")!!) }
+
+        runQueueSync()
+
+        assertEquals(2, seen.size)
+        seen.forEach { checkFlags(it, local = true, created = false, updated = true, deleted = false) }
+        checkFlags(findRecord(ACCOUNTS, "001S")!!, local = false, created = false, updated = false, deleted = false)
+    }
+
+    @Test
     fun test_givenCreateSucceeds_whenEntriesRewritten_thenPendingEntriesInAnySoupGetServerId() {
         manager.createLocal(ACCOUNTS, account("local_a"))
         manager.createLocal(CONTACTS, contact("local_c").put("AccountId", "local_a").put("Other", "local_zzz"))

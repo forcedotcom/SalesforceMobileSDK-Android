@@ -150,20 +150,20 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
                 SyncQueue.Kind.CREATE -> {
                     if (serverId == null) throw MobileSyncException("No id returned for $recordId")
                     idMap[recordId] = serverId
+                    // Rewrite the entries first: the check below must see them under the server id
+                    rewritePendingEntries(recordId, serverId)
                     if (record != null) {
                         record.put(target.idFieldName, serverId)
-                        target.cleanRecord(record)
+                        updateFlags(target, record, SyncQueue.laterPendingKinds(store, soupName, serverId, sequence), created = true)
                         store.update(soupName, record, recordEntryId, false)
                     } else {
                         MobileSyncLogger.w(TAG, "Record $recordId is gone from $soupName, only queue entries are updated")
                     }
-                    rewritePendingEntries(recordId, serverId)
                 }
 
                 SyncQueue.Kind.UPDATE -> {
-                    // Later entries still need the record to be dirty
-                    if (record != null && !SyncQueue.hasLaterPendingEntry(store, soupName, recordId, sequence)) {
-                        target.cleanRecord(record)
+                    if (record != null) {
+                        updateFlags(target, record, SyncQueue.laterPendingKinds(store, soupName, recordId, sequence), created = false)
                         store.update(soupName, record, recordEntryId, false)
                     }
                 }
@@ -171,6 +171,23 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
                 SyncQueue.Kind.DELETE -> if (record != null) store.delete(soupName, recordEntryId)
             }
         }
+    }
+
+    /**
+     * Sets the dirty flags of a record after one of its entries was replayed: clean when no later
+     * entry is pending, otherwise still dirty for them (`__locally_deleted__` is left as it is, so a
+     * pending DELETE stays flagged). `__last_error__` is removed.
+     */
+    @Throws(JSONException::class)
+    private fun updateFlags(target: QueueSyncUpTarget, record: JSONObject, later: Set<SyncQueue.Kind>, created: Boolean) {
+        if (later.isEmpty()) {
+            target.cleanRecord(record)
+            return
+        }
+        if (created) record.put(SyncTarget.LOCALLY_CREATED, false)
+        record.put(SyncTarget.LOCAL, true)
+        record.put(SyncTarget.LOCALLY_UPDATED, SyncQueue.Kind.UPDATE in later)
+        record.remove(SyncTarget.LAST_ERROR)
     }
 
     /** Replaces [localId] by [serverId] in the pending entries that reference it (any soup) */

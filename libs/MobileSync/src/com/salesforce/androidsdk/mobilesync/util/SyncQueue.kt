@@ -266,18 +266,17 @@ object SyncQueue {
         store.retrieve(QUEUE_SOUP, entryId).optJSONObject(0)
 
     /**
-     * Returns true if a pending entry for the same record, with a sequence greater than [sequence],
-     * is in the queue.
+     * Returns the kinds of the pending entries for the same record with a sequence greater than
+     * [sequence] (empty when no later entry is pending).
      */
     @Throws(JSONException::class)
-    internal fun hasLaterPendingEntry(store: SmartStore, soupName: String, recordId: String, sequence: Long): Boolean {
-        val sql = "SELECT COUNT(*) FROM {$QUEUE_SOUP} " +
+    internal fun laterPendingKinds(store: SmartStore, soupName: String, recordId: String, sequence: Long): Set<Kind> {
+        val sql = "SELECT DISTINCT {$QUEUE_SOUP:$KIND} FROM {$QUEUE_SOUP} " +
             "WHERE {$QUEUE_SOUP:$SOUP_NAME} = '${sqlEscape(soupName)}' " +
             "AND {$QUEUE_SOUP:$RECORD_ID} = '${sqlEscape(recordId)}' " +
             "AND {$QUEUE_SOUP:$STATUS} = '${Status.PENDING.name}' " +
             "AND {$QUEUE_SOUP:$SEQUENCE} > $sequence"
-        val rows = store.query(QuerySpec.buildSmartQuerySpec(sql, 1), 0)
-        return rows.optJSONArray(0)?.optLong(0, 0L)?.let { it > 0 } ?: false
+        return queryAll(store, sql) { row -> Kind.valueOf(row.getString(0)) }.toSet()
     }
 
     /**
