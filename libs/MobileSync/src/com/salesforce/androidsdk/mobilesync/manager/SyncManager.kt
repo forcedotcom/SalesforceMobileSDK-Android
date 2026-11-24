@@ -32,6 +32,7 @@ import com.salesforce.androidsdk.auth.HttpAccess.UserAgentInterceptor
 import com.salesforce.androidsdk.mobilesync.app.Features
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager
 import com.salesforce.androidsdk.mobilesync.target.AdvancedSyncUpTarget
+import com.salesforce.androidsdk.mobilesync.target.QueueSyncUpTarget
 import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget
 import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget
 import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger
@@ -375,7 +376,9 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
                 callback
             )
 
-            syncUp -> if (sync.target is AdvancedSyncUpTarget) {
+            syncUp -> if (sync.target is QueueSyncUpTarget) {
+                QueueSyncUpTask(this, sync, callback)
+            } else if (sync.target is AdvancedSyncUpTarget) {
                 AdvancedSyncUpTask(this, sync, callback)
             } else {
                 SyncUpTask(this, sync, callback)

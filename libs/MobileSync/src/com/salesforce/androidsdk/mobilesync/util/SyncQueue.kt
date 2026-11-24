@@ -241,6 +241,109 @@ object SyncQueue {
 
     // endregion
 
+    // region Replay support (used by QueueSyncUpTask)
+
+    /** Page size of the queries reading the queue (the default page size of smart queries is capped) */
+    private const val QUERY_PAGE_SIZE = 2000
+
+    /** Characters allowed in a local id for the LIKE pre-filter of [findPendingEntriesReferencing] */
+    private val SIMPLE_ID = Regex("[A-Za-z0-9_-]+")
+
+    /**
+     * Returns the soup entry ids of the entries with status [Status.PENDING], ordered by [SEQUENCE].
+     * Parked entries are skipped.
+     */
+    @Throws(JSONException::class)
+    internal fun pendingEntryIds(store: SmartStore): List<Long> {
+        val sql = "SELECT {$QUEUE_SOUP:${SmartStore.SOUP_ENTRY_ID}} FROM {$QUEUE_SOUP} " +
+            "WHERE {$QUEUE_SOUP:$STATUS} = '${Status.PENDING.name}' ORDER BY {$QUEUE_SOUP:$SEQUENCE} ASC"
+        return queryAll(store, sql) { row -> row.getLong(0) }
+    }
+
+    /** Returns the entry stored under [entryId], or null if it does not exist anymore */
+    @Throws(JSONException::class)
+    internal fun readEntry(store: SmartStore, entryId: Long): JSONObject? =
+        store.retrieve(QUEUE_SOUP, entryId).optJSONObject(0)
+
+    /**
+     * Returns true if a pending entry for the same record, with a sequence greater than [sequence],
+     * is in the queue.
+     */
+    @Throws(JSONException::class)
+    internal fun hasLaterPendingEntry(store: SmartStore, soupName: String, recordId: String, sequence: Long): Boolean {
+        val sql = "SELECT COUNT(*) FROM {$QUEUE_SOUP} " +
+            "WHERE {$QUEUE_SOUP:$SOUP_NAME} = '${sqlEscape(soupName)}' " +
+            "AND {$QUEUE_SOUP:$RECORD_ID} = '${sqlEscape(recordId)}' " +
+            "AND {$QUEUE_SOUP:$STATUS} = '${Status.PENDING.name}' " +
+            "AND {$QUEUE_SOUP:$SEQUENCE} > $sequence"
+        val rows = store.query(QuerySpec.buildSmartQuerySpec(sql, 1), 0)
+        return rows.optJSONArray(0)?.optLong(0, 0L)?.let { it > 0 } ?: false
+    }
+
+    /**
+     * Returns the pending entries that may reference [localId] (as `recordId`, `parentRef` or a
+     * value of `changes`). The result can contain entries that do not reference it: callers check.
+     */
+    @Throws(JSONException::class)
+    internal fun findPendingEntriesReferencing(store: SmartStore, localId: String): List<JSONObject> {
+        val pending = "{$QUEUE_SOUP:$STATUS} = '${Status.PENDING.name}'"
+        // The raw JSON of an id made of simple characters appears verbatim in the entry, so a LIKE
+        // narrows the scan (`_` in the pattern is a wildcard, which can only widen the result)
+        val sql = if (SIMPLE_ID.matches(localId)) {
+            "SELECT {$QUEUE_SOUP:_soup} FROM {$QUEUE_SOUP} WHERE $pending AND {$QUEUE_SOUP:_soup} LIKE '%$localId%'"
+        } else {
+            "SELECT {$QUEUE_SOUP:_soup} FROM {$QUEUE_SOUP} WHERE $pending"
+        }
+        return queryAll(store, "$sql ORDER BY {$QUEUE_SOUP:$SEQUENCE} ASC") { row ->
+            row.get(0).let { if (it is JSONObject) it else JSONObject(it.toString()) }
+        }
+    }
+
+    /**
+     * Replaces [localId] by [serverId] in [entry]: `recordId`, `parentRef`, and the top-level string
+     * values of `changes` that are exactly [localId].
+     *
+     * @return true if the entry was modified
+     */
+    @Throws(JSONException::class)
+    internal fun replaceId(entry: JSONObject, localId: String, serverId: String): Boolean {
+        var modified = false
+        for (field in listOf(RECORD_ID, PARENT_REF)) {
+            if (entry.opt(field) == localId) {
+                entry.put(field, serverId)
+                modified = true
+            }
+        }
+        val changes = entry.optJSONObject(CHANGES)
+        if (changes != null) {
+            for (key in changes.keys().asSequence().toList()) {
+                if (changes.opt(key) == localId) {
+                    changes.put(key, serverId)
+                    modified = true
+                }
+            }
+        }
+        return modified
+    }
+
+    private fun <T> queryAll(store: SmartStore, sql: String, mapRow: (org.json.JSONArray) -> T): List<T> {
+        val result = mutableListOf<T>()
+        var page = 0
+        while (true) {
+            val rows = store.query(QuerySpec.buildSmartQuerySpec(sql, QUERY_PAGE_SIZE), page)
+            for (i in 0 until rows.length()) {
+                result.add(mapRow(rows.getJSONArray(i)))
+            }
+            if (rows.length() < QUERY_PAGE_SIZE) break
+            page++
+        }
+        return result
+    }
+
+    private fun sqlEscape(value: String): String = value.replace("'", "''")
+
+    // endregion
+
     private fun setFlags(record: JSONObject, created: Boolean, updated: Boolean, deleted: Boolean) {
         record.put(SyncTarget.LOCAL, true)
         record.put(SyncTarget.LOCALLY_CREATED, created)
@@ -319,7 +422,7 @@ object SyncQueue {
      * Runs [block] in one SmartStore transaction: everything it writes is committed, or nothing is.
      * Failures are reported as [MobileSyncException].
      */
-    private fun <T> inTransaction(store: SmartStore, soupName: String, block: () -> T): T {
+    internal fun <T> inTransaction(store: SmartStore, soupName: String, block: () -> T): T {
         synchronized(store.database) {
             store.beginTransaction()
             try {
