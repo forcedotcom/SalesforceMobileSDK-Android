@@ -1145,6 +1145,178 @@ class QueueSyncUpTaskTest {
         checkFlags(record, local = false, created = false, updated = false, deleted = false)
     }
 
+    // region Round 4: deferral by server record identity, reconciliation of a duplicate row
+
+    /** Sets up: upsert CREATE (ext-1) first, then an UPDATE of its destination 001A held by another soup */
+    private fun runRejectedUpsertThenUpdateOfDestination(lookupReply: Reply, sent: MutableList<String>): SyncState {
+        insertCleanRecord(ACCOUNTS, "001A", "Account", mapOf("ExtId__c" to "ext-1"))
+        insertCleanRecord(CONTACTS, "001A", "Account") // another soup holding a copy of the same server record
+        insertCleanRecord(ACCOUNTS, "001B", "Account")
+        manager.createLocal(ACCOUNTS, account("local_n").put("Name", "older").put("ExtId__c", "ext-1"))
+        manager.updateLocal(CONTACTS, "001A", JSONObject().put("Name", "newer"))
+        manager.updateLocal(ACCOUNTS, "001B", JSONObject().put("Name", "other"))
+        var rejectOnce = true
+        client.responder = {
+            when {
+                it.method == RestRequest.RestMethod.GET -> lookupReply
+                else -> {
+                    sent.add(it.getRequestBodyAsJson().optString("Name"))
+                    if (it.path.endsWith("ExtId__c/ext-1") && rejectOnce) {
+                        rejectOnce = false
+                        Reply(400, "bad")
+                    } else null
+                }
+            }
+        }
+        return runQueueSync(QueueSyncUpTarget("ExtId__c"))
+    }
+
+    @Test
+    fun test_givenRejectedUpsertWhoseDestinationIsFound_whenNewerUpdateOfDestinationInOtherSoup_thenDeferredAndOrderKept() {
+        val sent = mutableListOf<String>()
+        client.nextIds.add("001A")
+
+        val sync = runRejectedUpsertThenUpdateOfDestination(Reply(200, """{"Id":"001A"}"""), sent)
+
+        // Run 1: the rejected upsert is resolved to 001A, so the newer edit of 001A waits; 001B goes
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(listOf("older", "other"), sent)
+        assertEquals(
+            listOf("PATCH Account/ExtId__c/ext-1", "GET Account/ExtId__c/ext-1?fields=Id", "PATCH Account/001B"),
+            client.requestLines()
+        )
+        val left = queueEntries()
+        assertEquals(2, left.length())
+        assertEquals(1, left.getJSONObject(0).getInt(SyncQueue.ATTEMPTS))
+        assertEquals(0, left.getJSONObject(1).optInt(SyncQueue.ATTEMPTS))
+        assertFalse(left.getJSONObject(1).has(SyncQueue.LAST_ERROR))
+
+        client.requests.clear()
+        sent.clear()
+        val resync = runResync(sync)
+
+        // Run 2: older first, then newer
+        assertEquals(SyncState.Status.DONE, resync.status)
+        assertEquals(listOf("older", "newer"), sent)
+        assertEquals(0, queueEntries().length())
+    }
+
+    @Test
+    fun test_givenRejectedUpdateOfServerId_whenNewerUpdateOfSameIdInOtherSoup_thenDeferredAndOrderKept() {
+        insertCleanRecord(ACCOUNTS, "001A", "Account")
+        insertCleanRecord(CONTACTS, "001A", "Account")
+        insertCleanRecord(ACCOUNTS, "001B", "Account")
+        manager.updateLocal(ACCOUNTS, "001A", JSONObject().put("Name", "older"))
+        manager.updateLocal(CONTACTS, "001A", JSONObject().put("Name", "newer"))
+        manager.updateLocal(ACCOUNTS, "001B", JSONObject().put("Name", "other"))
+        var rejectOnce = true
+        val sent = mutableListOf<String>()
+        client.responder = {
+            sent.add(it.getRequestBodyAsJson().optString("Name"))
+            if (rejectOnce) {
+                rejectOnce = false
+                Reply(400, "bad")
+            } else null
+        }
+
+        val sync = runQueueSync()
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(listOf("older", "other"), sent)
+        assertEquals(2, queueEntries().length())
+        assertEquals(0, queueEntries().getJSONObject(1).optInt(SyncQueue.ATTEMPTS))
+
+        sent.clear()
+        val resync = runResync(sync)
+
+        assertEquals(SyncState.Status.DONE, resync.status)
+        assertEquals(listOf("older", "newer"), sent)
+        assertEquals(0, queueEntries().length())
+    }
+
+    @Test
+    fun test_givenRejectedUpsertWhoseDestinationIsNotFound_whenLaterUpdateOfOtherRecord_thenSent() {
+        val sent = mutableListOf<String>()
+
+        val sync = runRejectedUpsertThenUpdateOfDestination(Reply(404, "[]"), sent)
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(listOf("older", "newer", "other"), sent)
+        assertEquals(1, queueEntries().length())
+    }
+
+    @Test
+    fun test_givenRejectedUpsertWithInconclusiveLookup_whenLaterEntries_thenServerIdsOfTheTypeWaitOthersGo() {
+        insertCleanRecord(ACCOUNTS, "001A", "Account")
+        insertCleanRecord(CONTACTS, "003C", "Contact")
+        manager.createLocal(ACCOUNTS, account("local_n").put("Name", "older").put("ExtId__c", "ext-1"))
+        manager.updateLocal(ACCOUNTS, "001A", JSONObject().put("Name", "newer"))
+        manager.updateLocal(CONTACTS, "003C", JSONObject().put("LastName", "c"))
+        client.responder = {
+            when {
+                it.method == RestRequest.RestMethod.GET -> Reply(400, "unclear")
+                it.path.endsWith("ExtId__c/ext-1") -> Reply(400, "bad")
+                else -> null
+            }
+        }
+
+        val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(
+            listOf("PATCH Account/ExtId__c/ext-1", "GET Account/ExtId__c/ext-1?fields=Id", "PATCH Contact/003C"),
+            client.requestLines()
+        )
+        assertEquals(2, queueEntries().length())
+    }
+
+    @Test
+    fun test_givenRejectedUpsertAndFailingLookup_whenSyncUp_thenSyncFailsWithAttemptRecordedOnce() {
+        insertCleanRecord(ACCOUNTS, "001A", "Account")
+        manager.createLocal(ACCOUNTS, account("local_n").put("ExtId__c", "ext-1"))
+        manager.updateLocal(ACCOUNTS, "001A", JSONObject().put("Name", "newer"))
+        client.responder = {
+            if (it.method == RestRequest.RestMethod.GET) Reply(503, "down") else Reply(400, "bad")
+        }
+
+        val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        assertEquals(SyncState.Status.FAILED, sync.status)
+        assertEquals(2, queueEntries().length())
+        assertEquals(1, queueEntries().getJSONObject(0).getInt(SyncQueue.ATTEMPTS))
+        assertEquals(0, queueEntries().getJSONObject(1).optInt(SyncQueue.ATTEMPTS))
+    }
+
+    @Test
+    fun test_givenUpsertOntoRowWithNewerLocalEdit_whenSyncUp_thenNewerEditSurvivesAndRowCleanAtTheEnd() {
+        // 001A is in the soup; the app queues an upsert CREATE (older) that lands on it, then edits the row (newer)
+        insertCleanRecord(ACCOUNTS, "001A", "Account", mapOf("ExtId__c" to "ext-1"))
+        manager.createLocal(ACCOUNTS, account("local_n").put("Name", "older").put("ExtId__c", "ext-1"))
+        manager.updateLocal(ACCOUNTS, "001A", JSONObject().put("Name", "newer"))
+        client.nextIds.add("001A")
+        var rowDuringUpdate: JSONObject? = null
+        client.onRequest = {
+            if (it.path.endsWith("/sobjects/Account/001A")) rowDuringUpdate = findRecord(ACCOUNTS, "001A")
+        }
+
+        val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(listOf("PATCH Account/ExtId__c/ext-1", "PATCH Account/001A"), client.requestLines())
+        assertEquals("newer", client.requests[1].getRequestBodyAsJson().getString("Name"))
+        // Between the two requests the row held the newer edit and was still dirty for it
+        assertEquals("newer", rowDuringUpdate!!.getString("Name"))
+        checkFlags(rowDuringUpdate!!, local = true, created = false, updated = true, deleted = false)
+        // At the end: one row, newer, clean
+        assertEquals(0, queueEntries().length())
+        assertEquals(1, count(ACCOUNTS))
+        val record = findRecord(ACCOUNTS, "001A")!!
+        assertEquals("newer", record.getString("Name"))
+        checkFlags(record, local = false, created = false, updated = false, deleted = false)
+    }
+
+    // endregion
+
     private fun runUpsertWithOtherRecordBlocked(lookupReply: Reply): SyncState {
         insertCleanRecord(ACCOUNTS, "001A", "Account", mapOf("ExtId__c" to "ext-1"))
         manager.updateLocal(ACCOUNTS, "001A", JSONObject().put("Name", "older"))
@@ -1244,7 +1416,11 @@ class QueueSyncUpTaskTest {
 
         assertEquals(SyncState.Status.DONE, sync.status)
         assertEquals(
-            listOf("PATCH Account/ExtId__c/ext-1", "GET Account/ExtId__c/ext-2?fields=Id", "PATCH Account/ExtId__c/ext-2"),
+            // the rejected upsert is resolved once (round 4), local_b waits without a lookup of its own
+            listOf(
+                "PATCH Account/ExtId__c/ext-1", "GET Account/ExtId__c/ext-1?fields=Id",
+                "GET Account/ExtId__c/ext-2?fields=Id", "PATCH Account/ExtId__c/ext-2"
+            ),
             client.requestLines()
         )
         val entries = queueEntries()

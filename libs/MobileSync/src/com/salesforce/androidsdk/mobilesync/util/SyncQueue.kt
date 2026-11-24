@@ -308,6 +308,16 @@ object SyncQueue {
         return queryAll(store, sql) { row -> Kind.valueOf(row.getString(0)) }.toSet()
     }
 
+    /** Returns the entries (any status) for the record queued after [sequence], ordered by sequence */
+    @Throws(JSONException::class)
+    internal fun entriesAfter(store: SmartStore, soupName: String, recordId: String, sequence: Long): List<JSONObject> {
+        val sql = "SELECT {$QUEUE_SOUP:_soup} FROM {$QUEUE_SOUP} " +
+            "WHERE {$QUEUE_SOUP:$SOUP_NAME} = '${sqlEscape(soupName)}' " +
+            "AND {$QUEUE_SOUP:$RECORD_ID} = '${sqlEscape(recordId)}' " +
+            "AND {$QUEUE_SOUP:$SEQUENCE} > $sequence ORDER BY {$QUEUE_SOUP:$SEQUENCE} ASC"
+        return queryAll(store, sql) { row -> row.get(0).let { if (it is JSONObject) it else JSONObject(it.toString()) } }
+    }
+
     /** Deletes every entry (any status) for the record */
     @Throws(JSONException::class)
     internal fun deleteEntriesForRecord(store: SmartStore, soupName: String, recordId: String) {
