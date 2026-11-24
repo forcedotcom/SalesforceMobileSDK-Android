@@ -1271,6 +1271,26 @@ class QueueSyncUpTaskTest {
     }
 
     @Test
+    fun test_givenRejectedUpsertAndLookupAnswering2xxWithoutUsableId_whenSyncUp_thenSyncFailsWithAttemptRecordedOnce() {
+        for (reply in listOf(Reply(200, """{"Id":""}"""), Reply(200, """{"Id":"  "}"""), Reply(200, "{}"), Reply(200, "<html/>"))) {
+            setUp()
+            insertCleanRecord(ACCOUNTS, "001A", "Account")
+            manager.createLocal(ACCOUNTS, account("local_n").put("ExtId__c", "ext-1"))
+            manager.updateLocal(ACCOUNTS, "001A", JSONObject().put("Name", "newer"))
+            client.responder = { if (it.method == RestRequest.RestMethod.GET) reply else Reply(400, "bad") }
+
+            val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+            assertEquals(SyncState.Status.FAILED, sync.status)
+            assertEquals(listOf("PATCH Account/ExtId__c/ext-1", "GET Account/ExtId__c/ext-1?fields=Id"), client.requestLines())
+            assertEquals(2, queueEntries().length())
+            assertEquals(1, queueEntries().getJSONObject(0).getInt(SyncQueue.ATTEMPTS))
+            assertFalse(queueEntries().getJSONObject(0).optString(SyncQueue.LAST_ERROR).isEmpty())
+            assertEquals(0, queueEntries().getJSONObject(1).optInt(SyncQueue.ATTEMPTS))
+        }
+    }
+
+    @Test
     fun test_givenRejectedUpsertAndFailingLookup_whenSyncUp_thenSyncFailsWithAttemptRecordedOnce() {
         insertCleanRecord(ACCOUNTS, "001A", "Account")
         manager.createLocal(ACCOUNTS, account("local_n").put("ExtId__c", "ext-1"))
@@ -1360,7 +1380,10 @@ class QueueSyncUpTaskTest {
 
     @Test
     fun test_givenUpsertLookupTransportFailure_whenAnotherRecordIsBlocked_thenSyncFailsAndUpsertNotSent() {
-        for (reply in listOf<Reply?>(Reply(503, "unavailable"), Reply(401, "expired"), null)) {
+        for (reply in listOf<Reply?>(
+            Reply(503, "unavailable"), Reply(401, "expired"), null,
+            Reply(200, """{"Id":""}"""), Reply(200, """{"Id":"  "}"""), Reply(200, "{}"), Reply(200, "<html/>"), Reply(200, "")
+        )) {
             setUp()
             insertCleanRecord(ACCOUNTS, "001A", "Account")
             manager.updateLocal(ACCOUNTS, "001A", JSONObject().put("Name", "older"))
@@ -1386,7 +1409,7 @@ class QueueSyncUpTaskTest {
 
     @Test
     fun test_givenInconclusiveUpsertLookup_whenAnotherRecordIsBlocked_thenUpsertIsDeferred() {
-        for (reply in listOf(Reply(400, "bad"), Reply(403, "denied"), Reply(200, """{"Id":""}"""), Reply(200, "<html/>"))) {
+        for (reply in listOf(Reply(400, "bad"), Reply(403, "denied"), Reply(300, "multiple"))) {
             setUp()
             val sync = runUpsertWithOtherRecordBlocked(reply)
 

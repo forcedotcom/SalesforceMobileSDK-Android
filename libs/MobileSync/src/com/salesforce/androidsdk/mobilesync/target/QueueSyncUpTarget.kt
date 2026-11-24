@@ -205,10 +205,10 @@ open class QueueSyncUpTarget : SyncUpTarget {
         /** No record has it (404): an upsert would create one */
         NOT_FOUND,
 
-        /** Record-level error or unusable answer: the destination is unknown */
+        /** Record-level error other than 404 (300, 403...): the destination is unknown */
         INCONCLUSIVE,
 
-        /** The request failed like any transport failure (5xx, 401, 429...) */
+        /** The request failed like any transport failure (5xx, 401, 429...), or a 2xx answer has no usable id */
         TRANSPORT_ERROR
     }
 
@@ -240,7 +240,8 @@ open class QueueSyncUpTarget : SyncUpTarget {
         return if (id is String && id.isNotBlank()) {
             Destination(DestinationKind.FOUND, id = id)
         } else {
-            Destination(DestinationKind.INCONCLUSIVE, error = "No valid id in the lookup answer")
+            // A 2xx answer that does not tell the record is as unusable as a failed request
+            Destination(DestinationKind.TRANSPORT_ERROR, error = "No valid id in the lookup answer")
         }
     }
 
