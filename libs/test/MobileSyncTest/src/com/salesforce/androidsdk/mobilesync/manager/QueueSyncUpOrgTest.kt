@@ -44,7 +44,6 @@ import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -63,7 +62,6 @@ class QueueSyncUpOrgTest : SyncManagerTestCase() {
 
     private val prefix = "QueueOrgTest_${System.nanoTime()}"
     private val serverIds = mutableMapOf<String, MutableSet<String>>() // sobject type -> ids to clean up
-    private var externalIdObject: String? = null
 
     @Before
     @Throws(Exception::class)
@@ -82,7 +80,6 @@ class QueueSyncUpOrgTest : SyncManagerTestCase() {
             deleteByPrefix("Contact", "LastName")
             for ((type, ids) in serverIds) if (type != "Contact") deleteQuietly(ids, type)
             deleteByPrefix("Account", "Name")
-            externalIdObject?.let { deleteByPrefix(it, "Name") }
         } finally {
             clearQueue()
             dropSoup(ACCOUNTS)
@@ -269,43 +266,89 @@ class QueueSyncUpOrgTest : SyncManagerTestCase() {
 
     // endregion
 
-    // region Case 4: upsert with external id
+    // region Case 4: upsert with external id (Account.External_Id__c)
 
     @Test
     fun testUpsertWithExternalId() {
-        val (type, field) = findExternalIdField()
-        assumeTrue("SKIPPED: no usable external id field found in the org (no standard or custom object with an externalId=true createable string field and no required field other than Name); org metadata is not created by tests", type != null)
-        externalIdObject = type
-        println("QueueSyncUpOrgTest using external id field $type.$field")
+        val field = EXT_FIELD
         val value = "ext-${System.nanoTime()}"
         val target = QueueSyncUpTarget(field, Constants.ID, null)
-
-        val first = JSONObject().put("Name", "$prefix-up1").put(field!!, value)
-            .put(Constants.ATTRIBUTES, JSONObject().put(Constants.LTYPE, type))
-        val firstLocalId = syncManager.createLocal(ACCOUNTS, first).getString(Constants.ID)
+        assumeUpsertUsable()
+        val firstLocalId = syncManager.createLocal(ACCOUNTS, extAccount("$prefix-up1", value)).getString(Constants.ID)
         var sync = runQueueSync(target)
         assertEquals(SyncState.Status.DONE, sync.status)
         assertEquals(0, queueEntries().length())
-        val serverId = idsByName(type!!, field, value).single()
-        track(type, serverId)
-        assertEquals("$prefix-up1", serverField(type, serverId, "Name"))
+        val serverId = idsByName("Account", field, value).single()
+        track("Account", serverId)
+        assertEquals("$prefix-up1", serverField("Account", serverId, "Name"))
         assertNull(findRecord(ACCOUNTS, firstLocalId))
         assertNotNull(findRecord(ACCOUNTS, serverId))
 
-        // Same external id value again: the server updates the existing record
-        val second = JSONObject().put("Name", "$prefix-up2").put(field, value)
-            .put(Constants.ATTRIBUTES, JSONObject().put(Constants.LTYPE, type))
-        val secondLocalId = syncManager.createLocal(ACCOUNTS, second).getString(Constants.ID)
+        // Probe the real statuses for the same external id value (this also updates the record)
+        val probe = restClient.sendSync(
+            RestRequest.getRequestForUpsert(apiVersion, "Account", field, value, mapOf<String, Any>("Name" to "$prefix-probe"))
+        )
+        println("QueueSyncUpOrgTest live repeated upsert status=${probe.statusCode} body=${probe.asString()}")
+        val lookup = restClient.sendSync(
+            RestRequest(RestRequest.RestMethod.GET, "/services/data/$apiVersion/sobjects/Account/$field/$value?fields=Id")
+        )
+        println("QueueSyncUpOrgTest live lookup status=${lookup.statusCode} body=${lookup.asString()}")
+        val missing = restClient.sendSync(
+            RestRequest(RestRequest.RestMethod.GET, "/services/data/$apiVersion/sobjects/Account/$field/nope-$value?fields=Id")
+        )
+        println("QueueSyncUpOrgTest live lookup of unknown value status=${missing.statusCode} body=${missing.asString()}")
+
+        // Same external id value through the queue: the server updates the existing record
+        val secondLocalId = syncManager.createLocal(ACCOUNTS, extAccount("$prefix-up2", value)).getString(Constants.ID)
         sync = runQueueSync(target)
         assertEquals(SyncState.Status.DONE, sync.status)
         assertEquals(0, queueEntries().length())
-        assertEquals(listOf(serverId), idsByName(type, field, value)) // still one record
-        assertEquals("$prefix-up2", serverField(type, serverId, "Name"))
+        assertEquals(listOf(serverId), idsByName("Account", field, value)) // still one record
+        assertEquals("$prefix-up2", serverField("Account", serverId, "Name"))
         assertNull(findRecord(ACCOUNTS, secondLocalId))
-        assertNotEquals(secondLocalId, serverId)
         val local = findRecord(ACCOUNTS, serverId)!!
         assertEquals("$prefix-up2", local.getString("Name"))
         checkFlags(local, local = false, created = false, updated = false, deleted = false)
+        assertEquals(1, count(ACCOUNTS) - 0) // no second row for the same server id
+    }
+
+    @Test
+    fun testUpsertDeferredWhenItsDestinationIsBlockedByRejectedUpdate() {
+        assumeUpsertUsable()
+        val field = EXT_FIELD
+        val value = "ext-${System.nanoTime()}"
+        val target = QueueSyncUpTarget(field, Constants.ID, null)
+        val created = restClient.sendSync(
+            RestRequest.getRequestForCreate(apiVersion, "Account", mapOf<String, Any>("Name" to "$prefix-dest", field to value))
+        )
+        assertTrue(created.isSuccess)
+        val destId = created.asJSONObject().getString("id")
+        track("Account", destId)
+        insertCleanRecord(ACCOUNTS, destId, "Account")
+
+        // Rejected UPDATE of the destination record, then an upsert CREATE that would hit it,
+        // and an upsert CREATE of another value that must go through
+        syncManager.updateLocal(ACCOUNTS, destId, JSONObject().put("NumberOfEmployees", "not-a-number"))
+        val blockedLocalId = syncManager.createLocal(ACCOUNTS, extAccount("$prefix-blocked", value)).getString(Constants.ID)
+        val otherValue = "$value-other"
+        val otherLocalId = syncManager.createLocal(ACCOUNTS, extAccount("$prefix-free", otherValue)).getString(Constants.ID)
+
+        val sync = runQueueSync(target)
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals("$prefix-dest", serverField("Account", destId, "Name")) // upsert did not overwrite it
+        val freeId = idsByName("Account", field, otherValue).single()
+        track("Account", freeId)
+        assertEquals("$prefix-free", serverField("Account", freeId, "Name"))
+        assertNull(findRecord(ACCOUNTS, otherLocalId))
+        val entries = queueEntries()
+        assertEquals(2, entries.length())
+        assertEquals(destId, entries.getJSONObject(0).getString(SyncQueue.RECORD_ID))
+        assertEquals(1, entries.getJSONObject(0).getInt(SyncQueue.ATTEMPTS))
+        assertEquals(blockedLocalId, entries.getJSONObject(1).getString(SyncQueue.RECORD_ID))
+        assertEquals(0, entries.getJSONObject(1).optInt(SyncQueue.ATTEMPTS, 0))
+        assertTrue(entries.getJSONObject(1).isNull(SyncQueue.LAST_ERROR))
+        assertNotNull(findRecord(ACCOUNTS, blockedLocalId))
     }
 
     // endregion
@@ -410,45 +453,28 @@ class QueueSyncUpOrgTest : SyncManagerTestCase() {
         }
     }
 
-    /**
-     * Looks for an object with a createable string field flagged externalId whose creation needs nothing but Name.
-     * Only describes; never creates org metadata.
-     */
-    private fun findExternalIdField(): Pair<String?, String?> {
-        val candidates = mutableListOf("Account", "Contact", "Lead", "Opportunity", "Product2", "Campaign")
-        val global = restClient.sendSync(RestRequest.getRequestForDescribeGlobal(apiVersion))
-        if (global.isSuccess) {
-            val sobjects = global.asJSONObject().getJSONArray("sobjects")
-            for (i in 0 until sobjects.length()) {
-                val o = sobjects.getJSONObject(i)
-                if (o.getString("name").endsWith("__c") && o.optBoolean("createable")) candidates.add(o.getString("name"))
-            }
-        }
-        for (type in candidates) {
-            val response = restClient.sendSync(RestRequest.getRequestForDescribe(apiVersion, type))
-            if (!response.isSuccess) continue
-            val fields = response.asJSONObject().getJSONArray("fields")
-            var found: String? = null
-            var otherRequired = false
-            for (i in 0 until fields.length()) {
-                val f = fields.getJSONObject(i)
-                if (f.optBoolean("createable") && !f.optBoolean("nillable") && !f.optBoolean("defaultedOnCreate") &&
-                    f.getString("name") != "Name") otherRequired = true
-                if (found == null && f.optBoolean("externalId") && f.optBoolean("createable") &&
-                    f.getString("type") in setOf("string", "email", "phone", "url") && f.getString("name") != "Name") {
-                    found = f.getString("name")
-                }
-            }
-            println("QueueSyncUpOrgTest describe $type: externalId field=$found otherRequired=$otherRequired")
-            if (found != null && !otherRequired && type != "Contact") return Pair(type, found)
-        }
-        return Pair(null, null)
+    /** Skips the test (with the server answer) if the org does not accept upsert by [EXT_FIELD] */
+    private fun assumeUpsertUsable() {
+        val value = "probe-${System.nanoTime()}"
+        val response = restClient.sendSync(
+            RestRequest.getRequestForUpsert(apiVersion, "Account", EXT_FIELD, value, mapOf<String, Any>("Name" to "$prefix-probe"))
+        )
+        println("QueueSyncUpOrgTest live probe upsert status=${response.statusCode} body=${response.asString()}")
+        assumeTrue(
+            "SKIPPED: org rejects upsert by Account.$EXT_FIELD with ${response.statusCode} ${response.asString()}",
+            response.isSuccess
+        )
     }
+
+    private fun extAccount(name: String, extId: String) = account(name).put(EXT_FIELD, extId)
+
+    private fun count(soup: String) = smartStore.countQuery(QuerySpec.buildAllQuerySpec(soup, null, null, 100))
 
     // endregion
 
     companion object {
         private const val ACCOUNTS = "queue_org_accounts"
         private const val CONTACTS = "queue_org_contacts"
+        private const val EXT_FIELD = "External_Id__c"
     }
 }
