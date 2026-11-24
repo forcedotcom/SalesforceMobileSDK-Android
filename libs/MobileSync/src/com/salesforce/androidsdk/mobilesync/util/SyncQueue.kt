@@ -266,22 +266,34 @@ object SyncQueue {
         store.retrieve(QUEUE_SOUP, entryId).optJSONObject(0)
 
     /**
-     * Returns the kinds of the pending entries for the same record with a sequence greater than
-     * [sequence] (empty when no later entry is pending).
+     * Returns the kinds of the other entries of a record: every entry for ([soupName], [recordId])
+     * except [excludeEntryId] (the entry just replayed), whatever its sequence and status. An earlier
+     * failed entry is an unsent edit too, and a parked one is still waiting for the app.
      */
     @Throws(JSONException::class)
-    internal fun laterPendingKinds(store: SmartStore, soupName: String, recordId: String, sequence: Long): Set<Kind> {
+    internal fun otherEntryKinds(store: SmartStore, soupName: String, recordId: String, excludeEntryId: Long): Set<Kind> {
         val sql = "SELECT DISTINCT {$QUEUE_SOUP:$KIND} FROM {$QUEUE_SOUP} " +
             "WHERE {$QUEUE_SOUP:$SOUP_NAME} = '${sqlEscape(soupName)}' " +
             "AND {$QUEUE_SOUP:$RECORD_ID} = '${sqlEscape(recordId)}' " +
-            "AND {$QUEUE_SOUP:$STATUS} = '${Status.PENDING.name}' " +
-            "AND {$QUEUE_SOUP:$SEQUENCE} > $sequence"
+            "AND {$QUEUE_SOUP:${SmartStore.SOUP_ENTRY_ID}} != $excludeEntryId"
         return queryAll(store, sql) { row -> Kind.valueOf(row.getString(0)) }.toSet()
+    }
+
+    /** Deletes every entry (any status) for the record */
+    @Throws(JSONException::class)
+    internal fun deleteEntriesForRecord(store: SmartStore, soupName: String, recordId: String) {
+        val sql = "SELECT {$QUEUE_SOUP:${SmartStore.SOUP_ENTRY_ID}} FROM {$QUEUE_SOUP} " +
+            "WHERE {$QUEUE_SOUP:$SOUP_NAME} = '${sqlEscape(soupName)}' " +
+            "AND {$QUEUE_SOUP:$RECORD_ID} = '${sqlEscape(recordId)}'"
+        for (id in queryAll(store, sql) { row -> row.getLong(0) }) {
+            store.delete(QUEUE_SOUP, id)
+        }
     }
 
     /**
      * Returns the pending entries that may reference [localId] (as `recordId`, `parentRef` or a
-     * value of `changes`). The result can contain entries that do not reference it: callers check.
+     * value of `changes`). TODO: include PARKED entries when parking arrives: a parked entry still
+     * holds the local id and must be remapped too. The result can contain entries that do not reference it: callers check.
      */
     @Throws(JSONException::class)
     internal fun findPendingEntriesReferencing(store: SmartStore, localId: String): List<JSONObject> {

@@ -81,7 +81,7 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
         }
     }
 
-    @Throws(JSONException::class, IOException::class)
+    @Throws(Exception::class)
     private fun replay(target: QueueSyncUpTarget, entryId: Long, entry: JSONObject) {
         val soupName = entry.optString(SyncQueue.SOUP_NAME)
         val recordId = mapId(entry.optString(SyncQueue.RECORD_ID))
@@ -108,15 +108,16 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
             QueueSyncUpTarget.ReplayResult(Outcome.SUCCESS)
         } else try {
             target.replay(syncManager, kind, sobjectType, recordId, changes)
-        } catch (e: IOException) {
-            incrementAttempts(entryId, entry)
+        } catch (e: Exception) {
+            // No usable answer (IOException, unparseable body, missing id...): the sync fails
+            recordFailure(entryId, entry, e.message ?: e.toString())
             throw e
         }
         when (result.outcome) {
             Outcome.SUCCESS -> onSuccess(target, entryId, entry, kind, soupName, recordId, recordEntryId, result.serverId)
             Outcome.RECORD_ERROR -> recordError(target, entryId, entry, soupName, recordEntryId, result.error ?: "Unknown error")
             Outcome.TRANSPORT_ERROR -> {
-                incrementAttempts(entryId, entry)
+                recordFailure(entryId, entry, result.error ?: "Unknown error")
                 throw MobileSyncException("Sync up of $kind $sobjectType $recordId failed: ${result.error}")
             }
         }
@@ -142,7 +143,6 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
         recordEntryId: Long,
         serverId: String?
     ) {
-        val sequence = entry.optLong(SyncQueue.SEQUENCE)
         SyncQueue.inTransaction(store, soupName) {
             store.delete(SyncQueue.QUEUE_SOUP, entryId)
             val record = store.retrieve(soupName, recordEntryId).optJSONObject(0)
@@ -153,8 +153,14 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
                     // Rewrite the entries first: the check below must see them under the server id
                     rewritePendingEntries(recordId, serverId)
                     if (record != null) {
+                        // The server record may already be in the soup (sync down, upsert that hit an existing record)
+                        val existing = store.lookupSoupEntryId(soupName, target.idFieldName, serverId)
+                        if (existing != -1L && existing != recordEntryId) {
+                            store.delete(soupName, existing)
+                        }
                         record.put(target.idFieldName, serverId)
-                        updateFlags(target, record, SyncQueue.laterPendingKinds(store, soupName, serverId, sequence), created = true)
+                        record.remove(SyncTarget.LAST_ERROR) // the CREATE went through
+                        updateFlags(target, record, SyncQueue.otherEntryKinds(store, soupName, serverId, entryId), created = true)
                         store.update(soupName, record, recordEntryId, false)
                     } else {
                         MobileSyncLogger.w(TAG, "Record $recordId is gone from $soupName, only queue entries are updated")
@@ -163,12 +169,18 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
 
                 SyncQueue.Kind.UPDATE -> {
                     if (record != null) {
-                        updateFlags(target, record, SyncQueue.laterPendingKinds(store, soupName, recordId, sequence), created = false)
+                        updateFlags(target, record, SyncQueue.otherEntryKinds(store, soupName, recordId, entryId), created = false)
                         store.update(soupName, record, recordEntryId, false)
                     }
                 }
 
-                SyncQueue.Kind.DELETE -> if (record != null) store.delete(soupName, recordEntryId)
+                SyncQueue.Kind.DELETE -> {
+                    // A record that never reached the server takes its other (failed) entries with it
+                    if (SyncTarget.isLocalId(recordId)) {
+                        SyncQueue.deleteEntriesForRecord(store, soupName, recordId)
+                    }
+                    if (record != null) store.delete(soupName, recordEntryId)
+                }
             }
         }
     }
@@ -176,18 +188,19 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
     /**
      * Sets the dirty flags of a record after one of its entries was replayed: clean when no later
      * entry is pending, otherwise still dirty for them (`__locally_deleted__` is left as it is, so a
-     * pending DELETE stays flagged). `__last_error__` is removed.
+     * pending DELETE stays flagged). `__last_error__` is removed only when the record is cleaned.
      */
     @Throws(JSONException::class)
-    private fun updateFlags(target: QueueSyncUpTarget, record: JSONObject, later: Set<SyncQueue.Kind>, created: Boolean) {
-        if (later.isEmpty()) {
+    private fun updateFlags(target: QueueSyncUpTarget, record: JSONObject, others: Set<SyncQueue.Kind>, created: Boolean) {
+        if (others.isEmpty()) {
             target.cleanRecord(record)
             return
         }
+        // Still dirty: the other entries (earlier failed ones included) are unsent edits, so the
+        // error of the record is kept
         if (created) record.put(SyncTarget.LOCALLY_CREATED, false)
         record.put(SyncTarget.LOCAL, true)
-        record.put(SyncTarget.LOCALLY_UPDATED, SyncQueue.Kind.UPDATE in later)
-        record.remove(SyncTarget.LAST_ERROR)
+        record.put(SyncTarget.LOCALLY_UPDATED, SyncQueue.Kind.UPDATE in others)
     }
 
     /** Replaces [localId] by [serverId] in the pending entries that reference it (any soup) */
@@ -224,8 +237,10 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
         }
     }
 
+    /** Counts a failed attempt on the entry, which stays pending, and keeps the error */
     @Throws(JSONException::class)
-    private fun incrementAttempts(entryId: Long, entry: JSONObject) {
+    private fun recordFailure(entryId: Long, entry: JSONObject, error: String) {
+        entry.put(SyncQueue.LAST_ERROR, error)
         entry.put(SyncQueue.ATTEMPTS, entry.optInt(SyncQueue.ATTEMPTS) + 1)
         store.update(SyncQueue.QUEUE_SOUP, entry, entryId, true)
     }

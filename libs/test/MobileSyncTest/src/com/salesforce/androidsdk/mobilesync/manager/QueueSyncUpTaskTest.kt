@@ -288,11 +288,11 @@ class QueueSyncUpTaskTest {
         val sync = runQueueSync()
 
         // The CREATE is rejected; the DELETE of a record that never reached the server needs no call
+        // and takes the failed CREATE with it
         assertEquals(SyncState.Status.DONE, sync.status)
         assertEquals(listOf("POST Account"), client.requestLines())
         assertNull(findRecord(ACCOUNTS, "local_1"))
-        assertEquals(1, queueEntries().length())
-        assertEquals("CREATE", queueEntries().getJSONObject(0).getString(SyncQueue.KIND))
+        assertEquals(0, queueEntries().length())
     }
 
     @Test
@@ -704,6 +704,200 @@ class QueueSyncUpTaskTest {
         assertEquals(SyncState.Status.DONE, sync.status)
         assertEquals(0, count(ACCOUNTS))
         assertEquals("001SA", client.requests[1].getRequestBodyAsJson().getString("AccountId"))
+    }
+
+    // endregion
+
+    // region Review fixes
+
+    @Test
+    fun test_givenEarlierUpdateFailed_whenLaterUpdateSucceeds_thenStillDirtyWithErrorUntilEarlierSucceeds() {
+        insertCleanRecord(ACCOUNTS, "001A", "Account")
+        manager.updateLocal(ACCOUNTS, "001A", JSONObject().put("Name", "n1"))
+        manager.updateLocal(ACCOUNTS, "001A", JSONObject().put("Phone", "p2"))
+        client.responder = { if (client.requests.size == 1) Reply(400, "bad name") else null }
+
+        val sync = runQueueSync()
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(1, queueEntries().length())
+        val record = findRecord(ACCOUNTS, "001A")!!
+        checkFlags(record, local = true, created = false, updated = true, deleted = false)
+        assertEquals("bad name", record.getString(SyncTarget.LAST_ERROR))
+
+        client.responder = null
+        runResync(sync)
+
+        assertEquals(0, queueEntries().length())
+        val cleaned = findRecord(ACCOUNTS, "001A")!!
+        checkFlags(cleaned, local = false, created = false, updated = false, deleted = false)
+        assertFalse(cleaned.has(SyncTarget.LAST_ERROR))
+    }
+
+    @Test
+    fun test_givenFailedCreateThenDeleteLocal_whenSyncUp_thenAllEntriesAndRecordAreGone() {
+        manager.createLocal(ACCOUNTS, account("local_1"))
+        client.responder = { Reply(400, "bad") }
+        val sync = runQueueSync()
+        assertEquals(1, queueEntries().length())
+        manager.deleteLocal(ACCOUNTS, "local_1")
+        assertEquals(2, queueEntries().length())
+
+        runResync(sync)
+
+        assertEquals(0, queueEntries().length())
+        assertNull(findRecord(ACCOUNTS, "local_1"))
+        assertEquals(0, count(ACCOUNTS))
+        // Only the CREATE was sent again: the DELETE of a local id never reaches the server
+        assertEquals(listOf("POST Account", "POST Account"), client.requestLines())
+    }
+
+    @Test
+    fun test_givenExternalIdsWithSpecialCharacters_whenUpsert_thenPathSegmentIsEncoded() {
+        val values = listOf("a/b", "a?b", "a%b", "a#b", "a b")
+        values.forEachIndexed { i, v -> manager.createLocal(ACCOUNTS, account("local_$i").put("ExtId__c", v)) }
+
+        val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(
+            listOf("a%2Fb", "a%3Fb", "a%25b", "a%23b", "a%20b"),
+            client.requests.map { it.path.substringAfter("ExtId__c/") }
+        )
+    }
+
+    @Test
+    fun test_givenStatuses_whenSyncUp_thenClassifiedAsTransportOrRecordLevel() {
+        val transport = listOf(
+            Reply(401, "expired"), Reply(408, "timeout"), Reply(429, "slow down"), Reply(500, "boom"),
+            Reply(403, """[{"errorCode":"REQUEST_LIMIT_EXCEEDED"}]""")
+        )
+        val recordLevel = listOf(
+            Reply(400, "bad"), Reply(403, """[{"errorCode":"INSUFFICIENT_ACCESS"}]"""), Reply(404, "gone"),
+            Reply(409, "conflict"), Reply(422, "invalid")
+        )
+        for (reply in transport + recordLevel) {
+            setUp()
+            insertCleanRecord(ACCOUNTS, "001A", "Account")
+            insertCleanRecord(ACCOUNTS, "001B", "Account")
+            manager.updateLocal(ACCOUNTS, "001A", JSONObject().put("Name", "a1"))
+            manager.updateLocal(ACCOUNTS, "001B", JSONObject().put("Name", "b1"))
+            client.responder = { if (it.path.endsWith("001A")) reply else null }
+
+            val sync = runQueueSync()
+
+            val message = "status ${reply.status} ${reply.body}"
+            if (reply in transport) {
+                assertEquals(message, SyncState.Status.FAILED, sync.status)
+                assertEquals(message, 1, client.requests.size)
+            } else {
+                assertEquals(message, SyncState.Status.DONE, sync.status)
+                assertEquals(message, 2, client.requests.size)
+            }
+        }
+    }
+
+    @Test
+    fun test_givenSuccessWithoutUsableId_whenCreate_thenSyncFailsAndEntryKeepsErrorAndAttempt() {
+        for (body in listOf("""{"success":true}""", "<html>not json</html>")) {
+            setUp()
+            manager.createLocal(ACCOUNTS, account("local_1"))
+            client.responder = { Reply(201, body) }
+
+            val sync = runQueueSync()
+
+            assertEquals(body, SyncState.Status.FAILED, sync.status)
+            val entry = queueEntries().getJSONObject(0)
+            assertEquals(1, entry.getInt(SyncQueue.ATTEMPTS))
+            assertFalse(entry.optString(SyncQueue.LAST_ERROR).isEmpty())
+            assertNotNull(findRecord(ACCOUNTS, "local_1"))
+        }
+    }
+
+    @Test
+    fun test_givenTransportError_whenSyncUp_thenEntryKeepsLastError() {
+        insertCleanRecord(ACCOUNTS, "001A", "Account")
+        manager.updateLocal(ACCOUNTS, "001A", JSONObject().put("Name", "a1"))
+        client.responder = { Reply(503, "unavailable") }
+        runQueueSync()
+        assertEquals("unavailable", queueEntries().getJSONObject(0).getString(SyncQueue.LAST_ERROR))
+
+        client.responder = { throw IOException("offline") }
+        runQueueSync()
+        val entry = queueEntries().getJSONObject(0)
+        assertEquals("offline", entry.getString(SyncQueue.LAST_ERROR))
+        assertEquals(2, entry.getInt(SyncQueue.ATTEMPTS))
+    }
+
+    @Test
+    fun test_givenServerRecordAlreadyInSoup_whenCreateSucceeds_thenDuplicateRowIsRemoved() {
+        insertCleanRecord(ACCOUNTS, "001SA", "Account")
+        manager.createLocal(ACCOUNTS, account("local_a"))
+        val soupEntryId = findRecord(ACCOUNTS, "local_a")!!.getLong(SmartStore.SOUP_ENTRY_ID)
+        client.nextIds.add("001SA")
+
+        val sync = runQueueSync()
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(1, count(ACCOUNTS))
+        assertEquals(soupEntryId, findRecord(ACCOUNTS, "001SA")!!.getLong(SmartStore.SOUP_ENTRY_ID))
+    }
+
+    @Test
+    fun test_givenStopRequested_whenSyncUp_thenStoppedAndReSyncResumes() {
+        insertCleanRecord(ACCOUNTS, "001A", "Account")
+        insertCleanRecord(ACCOUNTS, "001B", "Account")
+        manager.updateLocal(ACCOUNTS, "001A", JSONObject().put("Name", "a1"))
+        manager.updateLocal(ACCOUNTS, "001B", JSONObject().put("Name", "b1"))
+        client.onRequest = { if (client.requests.size == 1) manager.stop() }
+
+        val sync = runQueueSync()
+
+        assertEquals(SyncState.Status.STOPPED, sync.status)
+        assertEquals(listOf("PATCH Account/001A"), client.requestLines())
+        assertEquals(1, queueEntries().length())
+
+        client.onRequest = null
+        manager.restart(false, null)
+        val resync = runResync(sync)
+
+        assertEquals(SyncState.Status.DONE, resync.status)
+        assertEquals(listOf("PATCH Account/001A", "PATCH Account/001B"), client.requestLines())
+        assertEquals(0, queueEntries().length())
+    }
+
+    @Test
+    fun test_givenLocalIdsThatArePrefixesOfEachOther_whenSyncUp_thenOnlyExactMatchesAreRemapped() {
+        manager.createLocal(ACCOUNTS, account("local_1"))
+        manager.createLocal(ACCOUNTS, account("local_10"))
+        manager.createLocal(CONTACTS, contact("local_c").put("AccountId", "local_10").put("Other", "local_1"))
+        client.nextIds.addAll(listOf("001ONE", "001TEN", "003C"))
+
+        val sync = runQueueSync()
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        val body = client.requests[2].getRequestBodyAsJson()
+        assertEquals("001TEN", body.getString("AccountId"))
+        assertEquals("001ONE", body.getString("Other"))
+    }
+
+    @Test
+    fun test_givenSeveralEntries_whenSyncUp_thenTotalSizeAndProgressAreReported() {
+        for (i in 1..3) manager.createLocal(ACCOUNTS, account("local_$i"))
+        val sync = manager.createSyncUp(QueueSyncUpTarget(), SyncOptions.optionsForSyncUp(emptyList()), SyncQueue.QUEUE_SOUP, null)
+        val callbacks = SyncUpdateCallbackQueue(sync.id)
+        manager.runSync(sync, callbacks)
+        val updates = mutableListOf<SyncState>()
+        do {
+            updates.add(callbacks.getNextSyncUpdate(sync.id))
+        } while (updates.last().status == SyncState.Status.RUNNING || updates.last().status == SyncState.Status.NEW)
+
+        assertEquals(SyncState.Status.DONE, updates.last().status)
+        assertEquals(3, updates.last().totalSize)
+        assertEquals(100, updates.last().progress)
+        val progress = updates.map { it.progress }
+        assertEquals(progress.sorted(), progress)
+        assertTrue(updates.any { it.status == SyncState.Status.RUNNING && it.progress in 1..99 })
     }
 
     // endregion

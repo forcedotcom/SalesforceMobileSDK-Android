@@ -152,7 +152,7 @@ open class QueueSyncUpTarget : SyncUpTarget {
             JSONObjectHelper.optString(changes, externalIdFieldName)
         } else null
         val request = if (externalId != null && !isLocalId(externalId)) {
-            RestRequest.getRequestForUpsert(syncManager.apiVersion, sobjectType, externalIdFieldName, externalId, fields)
+            RestRequest.getRequestForUpsert(syncManager.apiVersion, sobjectType, externalIdFieldName, encodePathSegment(externalId), fields)
         } else {
             RestRequest.getRequestForCreate(syncManager.apiVersion, sobjectType, fields)
         }
@@ -170,7 +170,7 @@ open class QueueSyncUpTarget : SyncUpTarget {
 
     /** Gets the id of the record with the given external id (`GET /sobjects/<type>/<field>/<value>?fields=Id`) */
     private fun lookupServerId(syncManager: SyncManager, sobjectType: String, externalId: String): ReplayResult {
-        val encoded = URLEncoder.encode(externalId, "UTF-8").replace("+", "%20")
+        val encoded = encodePathSegment(externalId)
         val request = RestRequest.getRequestForRetrieve(
             syncManager.apiVersion, sobjectType, "$externalIdFieldName/$encoded", listOf(Constants.ID)
         )
@@ -182,18 +182,26 @@ open class QueueSyncUpTarget : SyncUpTarget {
         return ReplayResult(Outcome.SUCCESS, serverId = response.asJSONObject().getString(Constants.ID))
     }
 
+    private fun encodePathSegment(value: String) = URLEncoder.encode(value, "UTF-8").replace("+", "%20")
+
     /** Classifies the status of a request, using the error body kept by the base class */
     private fun result(statusCode: Int): ReplayResult {
         if (RestResponse.isSuccess(statusCode)) {
             return ReplayResult(Outcome.SUCCESS)
         }
         val error = lastError
+        // Only a clear rejection of this record lets the sync go on; auth, timeout, throttling and
+        // server errors may hit every entry, so they stop the sync
         val transport = statusCode >= HttpURLConnection.HTTP_INTERNAL_ERROR ||
+            statusCode == HttpURLConnection.HTTP_UNAUTHORIZED ||
+            statusCode == HttpURLConnection.HTTP_CLIENT_TIMEOUT ||
+            statusCode == HTTP_TOO_MANY_REQUESTS ||
             (statusCode == HttpURLConnection.HTTP_FORBIDDEN && error?.contains(REQUEST_LIMIT_EXCEEDED) == true)
         return ReplayResult(if (transport) Outcome.TRANSPORT_ERROR else Outcome.RECORD_ERROR, error = error ?: "HTTP $statusCode")
     }
 
     companion object {
+        private const val HTTP_TOO_MANY_REQUESTS = 429
         private const val REQUEST_LIMIT_EXCEEDED = "REQUEST_LIMIT_EXCEEDED"
     }
 }
