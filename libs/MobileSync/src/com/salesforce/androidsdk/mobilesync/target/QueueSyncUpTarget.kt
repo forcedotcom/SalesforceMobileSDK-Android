@@ -160,7 +160,10 @@ open class QueueSyncUpTarget : SyncUpTarget {
         // there for an external id field that is the id field and holds a local id
         val externalId = upsertExternalId(changes)
         val request = if (externalId != null) {
-            RestRequest.getRequestForUpsert(syncManager.apiVersion, sobjectType, externalIdFieldName, encodePathSegment(externalId), fields)
+            // The server rejects an upsert whose body repeats the external id field (INVALID_FIELD):
+            // the value travels in the path only. The queued changes and the record keep the field.
+            val body = fields.filterKeys { it != externalIdFieldName }
+            RestRequest.getRequestForUpsert(syncManager.apiVersion, sobjectType, externalIdFieldName, encodePathSegment(externalId), body)
         } else {
             RestRequest.getRequestForCreate(syncManager.apiVersion, sobjectType, fields)
         }

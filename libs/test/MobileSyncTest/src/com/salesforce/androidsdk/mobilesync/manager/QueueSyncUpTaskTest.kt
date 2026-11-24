@@ -144,6 +144,23 @@ class QueueSyncUpTaskTest {
     }
 
     @Test
+    fun test_givenUpsert_whenSyncUp_thenBodyHasNoExternalIdFieldButChangesAndRecordKeepIt() {
+        // The value is only in changes (createLocal), not in a field list
+        manager.createLocal(ACCOUNTS, account("local_1").put("ExtId__c", "ext-1").put("Phone", "555"))
+        client.nextIds.add("001SERVER")
+
+        runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        val body = client.requests[0].getRequestBodyAsJson()
+        assertFalse(body.has("ExtId__c"))
+        assertEquals("555", body.getString("Phone"))
+        assertEquals("name-local_1", body.getString("Name"))
+        assertTrue(client.requests[0].path.endsWith("/sobjects/Account/ExtId__c/ext-1"))
+        // the local record keeps the value
+        assertEquals("ext-1", findRecord(ACCOUNTS, "001SERVER")!!.getString("ExtId__c"))
+    }
+
+    @Test
     fun test_givenUpsertAnswering201_whenSyncUp_thenIdComesFromBody() {
         manager.createLocal(ACCOUNTS, account("local_1").put("ExtId__c", "ext-1"))
         client.nextIds.add("001SERVER")
