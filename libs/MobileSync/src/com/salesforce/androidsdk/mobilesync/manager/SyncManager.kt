@@ -36,6 +36,7 @@ import com.salesforce.androidsdk.mobilesync.target.SyncDownTarget
 import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget
 import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger
 import com.salesforce.androidsdk.mobilesync.util.SyncOptions
+import com.salesforce.androidsdk.mobilesync.util.SyncQueue
 import com.salesforce.androidsdk.mobilesync.util.SyncState
 import com.salesforce.androidsdk.mobilesync.util.SyncState.MergeMode
 import com.salesforce.androidsdk.mobilesync.util.SyncState.Status.DONE
@@ -54,6 +55,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import org.json.JSONException
+import org.json.JSONObject
 import java.io.IOException
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
@@ -89,6 +91,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
         this.restClient = restClient
         state = State.ACCEPTING_SYNCS
         SyncState.setupSyncsSoupIfNeeded(smartStore)
+        SyncQueue.setupQueueSoupIfNeeded(smartStore)
         SyncState.cleanupSyncsSoupIfNeeded(smartStore)
     }
 
@@ -670,6 +673,80 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
         return getSyncStatus(syncName)
             ?: throw MobileSyncException("Sync $syncName does not exist")
     }
+
+    /**
+     * Creates a record in a soup, locally, and appends a CREATE entry to the sync-up change queue
+     * (see [SyncQueue]). The record write and the queue write happen in one SmartStore transaction:
+     * both are done or neither is.
+     *
+     * The record must have `attributes.type`. Its `Id` must be absent or a local id (see
+     * [com.salesforce.androidsdk.mobilesync.target.SyncTarget.createLocalId]); when absent, a new
+     * local id is generated. The dirty flags are set (`__local__` and `__locally_created__` true,
+     * `__locally_updated__` and `__locally_deleted__` false). The soup must index `Id`. The
+     * flags must be string-indexed for sync down to skip locally modified records.
+     *
+     * This call blocks while holding the database lock; avoid calling it from the main thread for
+     * large volumes. It does not require the sync manager to be accepting syncs.
+     *
+     * A record soup must use either queue-based or flag-based sync up, never both: this API sets the
+     * dirty flags that flag-based sync up reads, and nothing reads the queue yet, so mixing both on
+     * the same soup is unsupported.
+     *
+     * @param soupName Name of the record soup
+     * @param record The record to create. It is not modified.
+     * @return The saved record
+     * @throws MobileSyncException if the soup is missing or has no `Id` index, the record is
+     * invalid (missing type, non-local or existing `Id`, `_soup*` field, not serializable), or
+     * a write fails. Nothing is written in that case.
+     */
+    @Throws(MobileSyncException::class)
+    fun createLocal(soupName: String, record: JSONObject): JSONObject =
+        SyncQueue.createLocal(smartStore, soupName, record)
+
+    /**
+     * Merges changes into a record of a soup, locally, and appends an UPDATE entry holding only
+     * those changes to the sync-up change queue, in one SmartStore transaction.
+     *
+     * `__local__` and `__locally_updated__` are set to true; `__locally_created__` is preserved.
+     * To clear a field, pass [JSONObject.NULL] as its value (`put(key, null)` removes the key
+     * from the JSON object instead, so it would not be part of the changes).
+     *
+     * A record soup must use either queue-based or flag-based sync up, never both: this API sets the
+     * dirty flags that flag-based sync up reads, and nothing reads the queue yet, so mixing both on
+     * the same soup is unsupported.
+     *
+     * @param soupName Name of the record soup
+     * @param id Id of the record (local or server id)
+     * @param changes The fields to change. Must not be empty nor contain internal fields
+     * (`Id`, `attributes`, `_soup*`, dirty flags, `__last_error__`, `__sync_id__`, `__display__`).
+     * @return The saved (merged) record
+     * @throws MobileSyncException if the soup is missing or has no `Id` index, the record is
+     * missing or already flagged deleted, the changes are empty or invalid, or a write fails.
+     * Nothing is written in that case.
+     */
+    @Throws(MobileSyncException::class)
+    fun updateLocal(soupName: String, id: String, changes: JSONObject): JSONObject =
+        SyncQueue.updateLocal(smartStore, soupName, id, changes)
+
+    /**
+     * Flags a record of a soup as deleted, locally (the record stays in its soup), and appends a
+     * DELETE entry to the sync-up change queue, in one SmartStore transaction.
+     *
+     * `__local__` and `__locally_deleted__` are set to true; the other flags are unchanged.
+     *
+     * A record soup must use either queue-based or flag-based sync up, never both: this API sets the
+     * dirty flags that flag-based sync up reads, and nothing reads the queue yet, so mixing both on
+     * the same soup is unsupported.
+     *
+     * @param soupName Name of the record soup
+     * @param id Id of the record (local or server id)
+     * @return The saved (flagged) record
+     * @throws MobileSyncException if the soup is missing or has no `Id` index, the record is
+     * missing or already flagged deleted, or a write fails. Nothing is written in that case.
+     */
+    @Throws(MobileSyncException::class)
+    fun deleteLocal(soupName: String, id: String): JSONObject =
+        SyncQueue.deleteLocal(smartStore, soupName, id)
 
     /**
      * Exception thrown by mobile sync manager

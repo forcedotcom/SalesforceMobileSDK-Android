@@ -30,7 +30,7 @@ For cross-platform concepts (architecture, data flows, conflict resolution) see 
 | `manager` | `SyncManager`, `LayoutSyncManager`, `MetadataSyncManager` |
 | `model` | `Layout`, `Metadata`, `SalesforceObject` |
 | `target` | All sync targets (see below) |
-| `util` | `SyncState`, `SyncOptions`, `SOQLBuilder`, `SOQLMutator`, `SOSLBuilder`, `ParentInfo`, `ChildrenInfo`, `BriefcaseObjectInfo`, `Constants` |
+| `util` | `SyncState`, `SyncQueue`, `SyncOptions`, `SOQLBuilder`, `SOQLMutator`, `SOSLBuilder`, `ParentInfo`, `ChildrenInfo`, `BriefcaseObjectInfo`, `Constants` |
 
 ---
 
@@ -142,6 +142,32 @@ fun hasSyncWithName(name: String?): Boolean
 fun deleteSync(syncId: Long)
 fun deleteSync(name: String?)
 ```
+
+### Local Write API and Sync-Up Queue
+
+`createLocal`, `updateLocal` and `deleteLocal` write a record in a record soup and append one entry to the sync-up change queue, in a single SmartStore transaction: both writes happen or neither does. The queue is the `mobilesync_queue` soup (one per store), created empty by `SyncQueue.setupQueueSoupIfNeeded(store)` when a `SyncManager` is created (right after `SyncState.setupSyncsSoupIfNeeded`). Apps that never call the write API only see an empty soup; nothing else reads it yet and sync-up behavior is unchanged.
+
+```kotlin
+fun createLocal(soupName: String, record: JSONObject): JSONObject
+fun updateLocal(soupName: String, id: String, changes: JSONObject): JSONObject
+fun deleteLocal(soupName: String, id: String): JSONObject
+```
+
+All three return the saved record, throw `MobileSyncException` (nothing is written) on invalid input or failed writes, and block while holding the database lock, like other SmartStore calls. They do not require the manager to be accepting syncs. The record soup must exist and index `Id`; the dirty flags (`__local__`, `__locally_created__`, `__locally_updated__`, `__locally_deleted__`) should be string-indexed so sync-down skip logic works.
+
+| Call | Record write | Flags set | Queue entry |
+|---|---|---|---|
+| `createLocal` | Inserts the record (`attributes.type` required; `Id` absent or a local id, generated when absent; the input is not modified) | `__local__` and `__locally_created__` true, `__locally_updated__` and `__locally_deleted__` false | `kind` `CREATE`, `changes` = all non-internal fields |
+| `updateLocal` | Merges `changes` into the stored record | `__local__` and `__locally_updated__` true; `__locally_created__` preserved | `kind` `UPDATE`, `changes` = the given fields only |
+| `deleteLocal` | Keeps the record in its soup (soft delete) | `__local__` and `__locally_deleted__` true; others unchanged | `kind` `DELETE`, no `changes` |
+
+- `changes` must not be empty and must not contain internal fields (`Id`, `attributes`, `_soup*`, the dirty flags, `__last_error__`, `__sync_id__`, `__display__`).
+- To clear a field pass `JSONObject.NULL` (`put(key, null)` removes the key from a `JSONObject` instead).
+- `updateLocal` and `deleteLocal` fail if the record is missing or already flagged deleted.
+- `__display__` is neither written nor refreshed.
+- A record soup must use either queue-based or flag-based sync up, never both. The write API sets the dirty flags that flag-based sync up reads, and nothing reads the queue yet, so mixing both on the same soup is unsupported.
+
+Queue entries are `{sequence, soupName, recordId, sobjectType, kind, changes, status: "PENDING", attempts: 0}`. `sequence` is an integer allocated in the write transaction (highest + 1, starting at 1), so it is unique and increases in write order across all record soups; order entries by it. `base`, `lastError` and `parentRef` are indexed but not written yet. Index specs: `sequence`, `attempts` (integer); `soupName`, `recordId`, `sobjectType`, `kind`, `status`, `parentRef` (string); `changes`, `base`, `lastError` (json1).
 
 ### Callbacks
 
