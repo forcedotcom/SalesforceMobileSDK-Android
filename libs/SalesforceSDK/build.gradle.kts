@@ -64,7 +64,6 @@ android { // TODO: This cannot be resolved until newDSL=true
 
     //noinspection GradleDependency
     compileSdk = 36 // MSDK 14 uses major 36; revisit for MSDK 15.
-    compileSdkMinor = 1
 
     defaultConfig {
         minSdk = 31
