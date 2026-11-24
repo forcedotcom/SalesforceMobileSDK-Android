@@ -24,10 +24,10 @@ Introduction
 ==
 
 ### What's New in 14.1.0
-Apps that consume SalesforceSDK, directly or through SmartStore, MobileSync or
-SalesforceHybrid, must compile with Android SDK 36.1 or higher because of the
-biometric dependency. The minimum supported Android version and the app's target
-SDK setting are unchanged.
+MSDK 14.x retains AGP 9.1.1 and compile SDK 36 for its libraries. The biometric
+dependency declares compile SDK 36.1, but AGP 9.1.1 does not check the minor
+version. AGP 9.2 enforces it and fails builds at 36.0, so that toolchain upgrade
+is deferred to MSDK 15.0. Minimum and target SDK settings are unchanged.
 
 See [release notes](https://github.com/forcedotcom/SalesforceMobileSDK-Android/releases).
 
