@@ -1481,6 +1481,53 @@ class QueueSyncUpTaskTest {
         assertEquals(4, queueEntries().length())
     }
 
+    /**
+     * Two upserts of the same value are deferred by a rejected CREATE; [middle] queues an entry between them
+     * and the reply to DELETE requests is [deleteReply]. Returns the number of lookups.
+     */
+    private fun countLookupsAroundEntry(deleteReply: Reply?, middle: () -> Unit): Int {
+        insertCleanRecord(ACCOUNTS, "001D", "Account")
+        manager.createLocal(ACCOUNTS, account("local_a"))
+        manager.createLocal(ACCOUNTS, account("local_u1").put("ExtId__c", "ext-1").put("ParentId", "local_a"))
+        middle()
+        manager.createLocal(ACCOUNTS, account("local_u2").put("ExtId__c", "ext-1").put("ParentId", "local_a"))
+        insertCleanRecord(CONTACTS, "003C", "Contact")
+        manager.updateLocal(CONTACTS, "003C", JSONObject().put("LastName", "c")) // something follows the second upsert
+        client.responder = {
+            when {
+                it.method == RestRequest.RestMethod.GET -> Reply(200, """{"Id":"001S"}""")
+                it.method == RestRequest.RestMethod.POST -> Reply(400, "bad")
+                it.method == RestRequest.RestMethod.DELETE -> deleteReply
+                else -> null
+            }
+        }
+        runQueueSync(QueueSyncUpTarget("ExtId__c"))
+        return client.requestLines().count { it.contains("?fields=Id") }
+    }
+
+    @Test
+    fun test_givenLocalIdDeleteBetweenDeferredUpserts_whenSyncUp_thenLookedUpOnce() {
+        val lookups = countLookupsAroundEntry(null) {
+            manager.createLocal(ACCOUNTS, account("local_x"))
+            manager.deleteLocal(ACCOUNTS, "local_x")
+        }
+        assertEquals(1, lookups)
+    }
+
+    @Test
+    fun test_givenDeleteAnswered404BetweenDeferredUpserts_whenSyncUp_thenLookedUpOnce() {
+        val lookups = countLookupsAroundEntry(Reply(404, "[]")) { manager.deleteLocal(ACCOUNTS, "001D") }
+        assertEquals(1, lookups)
+        assertTrue(client.requestLines().contains("DELETE Account/001D"))
+    }
+
+    @Test
+    fun test_givenDeleteAnswered2xxBetweenDeferredUpserts_whenSyncUp_thenLookedUpAgain() {
+        val lookups = countLookupsAroundEntry(null) { manager.deleteLocal(ACCOUNTS, "001D") }
+        assertEquals(2, lookups)
+        assertTrue(client.requestLines().contains("DELETE Account/001D"))
+    }
+
     @Test
     fun test_givenLoneRejectedUpsert_whenSyncUp_thenNoLookup() {
         client.responder = { if (it.method == RestRequest.RestMethod.PATCH) Reply(400, "bad") else null }

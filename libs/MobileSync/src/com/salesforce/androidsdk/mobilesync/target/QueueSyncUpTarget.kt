@@ -101,8 +101,14 @@ open class QueueSyncUpTarget : SyncUpTarget {
      * @property outcome What happened
      * @property serverId For a successful CREATE, the id given by the server
      * @property error For a failure, the error body returned by the server
+     * @property serverChanged True if the server accepted a write (2xx); false for a DELETE answered 404 or a failure
      */
-    internal class ReplayResult(val outcome: Outcome, val serverId: String? = null, val error: String? = null)
+    internal class ReplayResult(
+        val outcome: Outcome,
+        val serverId: String? = null,
+        val error: String? = null,
+        val serverChanged: Boolean = outcome == Outcome.SUCCESS
+    )
 
     /**
      * Sends the request for one queue entry.
@@ -135,7 +141,7 @@ open class QueueSyncUpTarget : SyncUpTarget {
             SyncQueue.Kind.DELETE -> {
                 // A record that is already gone is a success
                 val status = deleteOnServer(syncManager, sobjectType, recordId)
-                if (status == HttpURLConnection.HTTP_NOT_FOUND) ReplayResult(Outcome.SUCCESS) else result(status)
+                if (status == HttpURLConnection.HTTP_NOT_FOUND) ReplayResult(Outcome.SUCCESS, serverChanged = false) else result(status)
             }
         }
     }

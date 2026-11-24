@@ -216,7 +216,7 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
 
         // A record that was never sent cannot exist on the server: nothing to delete there
         val result = if (kind == SyncQueue.Kind.DELETE && SyncTarget.isLocalId(recordId)) {
-            QueueSyncUpTarget.ReplayResult(Outcome.SUCCESS)
+            QueueSyncUpTarget.ReplayResult(Outcome.SUCCESS, serverChanged = false)
         } else try {
             target.replay(syncManager, kind, sobjectType, recordId, changes)
         } catch (e: Exception) {
@@ -226,7 +226,8 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
         }
         when (result.outcome) {
             Outcome.SUCCESS -> {
-                destinations.clear()
+                // Only a write the server accepted (2xx) can move an external id
+                if (result.serverChanged) destinations.clear()
                 onSuccess(target, entryId, entry, kind, soupName, recordId, recordEntryId, result.serverId)
             }
             Outcome.RECORD_ERROR -> recordError(target, entryId, entry, soupName, recordId, recordEntryId, result.error ?: "Unknown error")
