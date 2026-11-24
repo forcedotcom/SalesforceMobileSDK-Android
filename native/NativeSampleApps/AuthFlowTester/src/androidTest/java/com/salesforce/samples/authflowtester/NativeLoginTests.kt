@@ -563,6 +563,49 @@ class NativeLoginConfigRulesTest {
     }
 
     @Test
+    fun test_givenSingleApiPrGroups_whenSelected_thenUseDisjointRegularUsers() {
+        val users = (1..10).map { index -> User("user$index@example.com", "placeholder") }
+        val config = config(hosts = listOf(LoginHost("regular_auth", HOST_URL, users)))
+
+        assertEquals(KnownUserConfig.FIRST, config.userConfigForSingleApiPrGroup(KnownLoginHostConfig.REGULAR_AUTH, "login"))
+        assertEquals(KnownUserConfig.SECOND, config.userConfigForSingleApiPrGroup(KnownLoginHostConfig.REGULAR_AUTH, "welcome"))
+        assertEquals(KnownUserConfig.THIRD, config.userConfigForSingleApiPrGroup(KnownLoginHostConfig.REGULAR_AUTH, "token-lifecycle"))
+        assertEquals(KnownUserConfig.FIFTH, config.userConfigForSingleApiPrGroup(KnownLoginHostConfig.REGULAR_AUTH, "multi-user"))
+        assertEquals(KnownUserConfig.SEVENTH, config.userConfigForSingleApiPrGroup(KnownLoginHostConfig.REGULAR_AUTH, "community"))
+        assertEquals(KnownUserConfig.EIGHTH, config.userConfigForSingleApiPrGroup(KnownLoginHostConfig.REGULAR_AUTH, "native-login"))
+
+        val regularUserAssignments = listOf(
+            "login",
+            "welcome",
+            "token-lifecycle",
+            "multi-user",
+            "community",
+            "native-login",
+        ).flatMap { group ->
+            val primary = config.userConfigForSingleApiPrGroup(KnownLoginHostConfig.REGULAR_AUTH, group)
+            if (group == "token-lifecycle" || group == "multi-user") {
+                listOf(primary, config.otherUserConfig(KnownLoginHostConfig.REGULAR_AUTH, primary))
+            } else {
+                listOf(primary)
+            }
+        }
+        assertEquals(
+            listOf(
+                KnownUserConfig.FIRST,
+                KnownUserConfig.SECOND,
+                KnownUserConfig.THIRD,
+                KnownUserConfig.FORTH,
+                KnownUserConfig.FIFTH,
+                KnownUserConfig.SIXTH,
+                KnownUserConfig.SEVENTH,
+                KnownUserConfig.EIGHTH,
+            ),
+            regularUserAssignments,
+        )
+        assertEquals(regularUserAssignments.size, regularUserAssignments.toSet().size)
+    }
+
+    @Test
     fun test_givenOneRegularUser_whenSelectedForCrossHostLogin_thenResolvesFirstUser() {
         val config = config(hosts = listOf(LoginHost("regular_auth", HOST_URL, listOf(User("user@example.com", "placeholder")))))
 

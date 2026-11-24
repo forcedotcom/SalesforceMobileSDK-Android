@@ -1,5 +1,9 @@
 on:
   workflow_call:
+    outputs:
+      result_dirs:
+        description: Firebase result directories keyed by test group.
+        value: ${{ jobs.test-group.outputs.result_dirs }}
     inputs:
       test_groups:
         required: true
@@ -7,6 +11,18 @@ on:
       display_name:
         required: true
         type: string
+      api_levels:
+        required: true
+        type: string
+      results_prefix:
+        required: true
+        type: string
+      checkout_ref:
+        required: true
+        type: string
+      single_api_pr_run:
+        required: true
+        type: boolean
     secrets:
       MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL:
         required: true
@@ -25,16 +41,21 @@ jobs:
     name: ${{ inputs.display_name }}
     runs-on: forcedotcom-ubuntu  # forks: use ubuntu-latest (org-scoped runner)
     timeout-minutes: 240
+    outputs:
+      result_dirs: ${{ steps.run-tests.outputs.result_dirs }}
     env:
-      FULL_API_RANGE: "31 32 33 34 35 36 37"
+      FULL_API_RANGE: ${{ inputs.api_levels }}
       PS16K_MIN_API_VERSION: "36"
       RUN_NUMBER: ${{ github.run_number }}
+      RUN_ATTEMPT: ${{ github.run_attempt }}
       TEST_GROUPS: ${{ inputs.test_groups }}
+      FIREBASE_RESULTS_PREFIX: ${{ inputs.results_prefix }}
+      SINGLE_API_PR_RUN: ${{ inputs.single_api_pr_run }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
         with:
           persist-credentials: false
-          ref: ${{ github.head_ref || github.ref_name }}
+          ref: ${{ inputs.checkout_ref }}
       - name: Install Dependencies
         env:
           MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
@@ -88,6 +109,7 @@ jobs:
           credentials_json: '${{ secrets.GCLOUD_SERVICE_KEY }}'
       - uses: 'google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f'  # v2.2.1
       - name: Run ${{ inputs.test_groups }} Tests
+        id: run-tests
         run: |
           read -r -a groups <<< "$TEST_GROUPS"
           bash .github/test-shards/run-authflowtester-firebase-tests.sh "${groups[@]}"
