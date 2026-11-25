@@ -207,6 +207,8 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
             sobjectType.isEmpty() -> "Queue entry has no ${SyncQueue.SOBJECT_TYPE}"
             kind == SyncQueue.Kind.CREATE && target.entryUnsupportedExternalIdType(entry) != null ->
                 target.entryUnsupportedExternalIdType(entry)
+            kind == SyncQueue.Kind.UPDATE && target.entryImpreciseUpdateProblem(entry) != null ->
+                target.entryImpreciseUpdateProblem(entry)
             !store.hasSoup(soupName) -> "Soup $soupName does not exist"
             recordEntryId == -1L -> "Record $recordId does not exist in $soupName"
             else -> null

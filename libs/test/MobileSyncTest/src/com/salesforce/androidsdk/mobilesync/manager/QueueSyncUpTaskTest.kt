@@ -1627,6 +1627,35 @@ class QueueSyncUpTaskTest {
         assertEquals(listOf("PATCH Account/ExtId__c/42"), replayedLinesForExternalId(java.math.BigDecimal("42.0")))
     }
 
+    /** Queues an UPDATE of the clean server record 001U through updateLocal and returns the request lines of its replay */
+    private fun replayedLinesForExternalIdUpdate(changes: JSONObject): List<String> {
+        setUp()
+        insertCleanRecord(ACCOUNTS, "001U", "Account")
+        manager.updateLocal(ACCOUNTS, "001U", changes)
+        runQueueSync(QueueSyncUpTarget("ExtId__c"))
+        return client.requestLines()
+    }
+
+    @Test
+    fun test_givenImpreciseBigDecimalExternalIdInUpdate_whenReplayed_thenRejectedAndEntryStays() {
+        for (text in listOf("123456789012345.001", "123456789012345.678")) {
+            val changes = JSONObject().put("ExtId__c", java.math.BigDecimal(text)).put("Name", "n")
+            assertEquals(text, emptyList<String>(), replayedLinesForExternalIdUpdate(changes))
+            val entries = queueEntries()
+            assertEquals(text, 1, entries.length())
+            assertEquals(1, entries.getJSONObject(0).getInt(SyncQueue.ATTEMPTS))
+            assertTrue(entries.getJSONObject(0).getString(SyncQueue.LAST_ERROR).contains("precision cannot be preserved"))
+        }
+        // Exact values and unrelated imprecise fields still go out
+        val exact = JSONObject().put("ExtId__c", java.math.BigDecimal("12345.5"))
+        assertEquals(listOf("PATCH Account/001U"), replayedLinesForExternalIdUpdate(exact))
+        assertEquals(12345.5, client.requests[0].requestBodyAsJson.getDouble("ExtId__c"), 0.0)
+        val other = JSONObject().put("AnnualRevenue", java.math.BigDecimal("123456789012345.001"))
+        assertEquals(listOf("PATCH Account/001U"), replayedLinesForExternalIdUpdate(other))
+        val untouched = JSONObject().put("Name", "n2")
+        assertEquals(listOf("PATCH Account/001U"), replayedLinesForExternalIdUpdate(untouched))
+    }
+
     @Test
     fun test_givenImpreciseBigDecimalInOtherField_whenReplayed_thenSyncsNormallyWithTheValueUntouched() {
         manager.createLocal(ACCOUNTS, account("local_n").put("AnnualRevenue", java.math.BigDecimal("123456789012345.001")))
