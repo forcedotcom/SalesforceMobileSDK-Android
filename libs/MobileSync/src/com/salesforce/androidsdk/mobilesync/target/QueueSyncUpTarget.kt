@@ -147,17 +147,47 @@ open class QueueSyncUpTarget : SyncUpTarget {
     }
 
     /**
-     * The external id value of a CREATE that is an upsert, null for a plain create: the target has an
-     * external id field and `changes` holds a nonblank string for it that is not a local id (JSON null,
-     * absent, blank, number, boolean, object and array mean no upsert key).
-     * An upsert can land on any existing record of its type. Request selection, body, destination
-     * lookup and lookup cache all use this one value.
+     * The external id value of a CREATE that is an upsert, null for a plain create. The single validator
+     * for request selection, body, 204 lookup, destination lookup, lookup cache and same-value deferral.
+     * - nonblank string that is not a local id: the key
+     * - number (not boolean): the key in its canonical string form (integers as plain digits, others in
+     *   the shortest round-trip decimal form, no exponent)
+     * - absent, JSON null, blank, local id: no key (plain create)
+     * - boolean, object, array, NaN or infinite number: no key too, but [unsupportedExternalIdType] rejects the entry
+     * An upsert can land on any existing record of its type.
      */
     internal fun upsertExternalId(changes: JSONObject?): String? {
         if (externalIdFieldName == null || changes == null) return null
-        // Only a string: absent, JSONObject.NULL, number, boolean, object and array are no upsert key
-        val value = changes.opt(externalIdFieldName) as? String
-        return value?.takeIf { it.isNotBlank() && !isLocalId(it) }
+        return when (val raw = changes.opt(externalIdFieldName)) {
+            is String -> raw.takeIf { it.isNotBlank() && !isLocalId(it) }
+            is Number -> canonicalNumber(raw)
+            else -> null
+        }
+    }
+
+    /** Message if the external id value of [changes] has an unsupported type (boolean, object, array...), else null */
+    internal fun unsupportedExternalIdType(changes: JSONObject?): String? {
+        if (externalIdFieldName == null || changes == null) return null
+        return when (val raw = changes.opt(externalIdFieldName)) {
+            null, JSONObject.NULL, is String -> null
+            is Number -> if (canonicalNumber(raw) == null) "Entry has an unsupported external id value type for $externalIdFieldName: $raw" else null
+            else -> "Entry has an unsupported external id value type for $externalIdFieldName: ${raw.javaClass.simpleName}"
+        }
+    }
+
+    private fun canonicalNumber(number: Number): String? {
+        val decimal = when (number) {
+            is Int, is Long, is Short, is Byte -> java.math.BigDecimal(number.toLong())
+            is java.math.BigInteger -> java.math.BigDecimal(number)
+            is java.math.BigDecimal -> number
+            else -> {
+                val d = number.toDouble()
+                if (d.isNaN() || d.isInfinite()) return null
+                java.math.BigDecimal(d.toString()) // shortest round-trip form of the double
+            }
+        }
+        val plain = decimal.stripTrailingZeros()
+        return (if (plain.scale() <= 0) plain.setScale(0) else plain).toPlainString()
     }
 
     private fun create(

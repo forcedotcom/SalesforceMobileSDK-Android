@@ -1530,7 +1530,7 @@ class QueueSyncUpTaskTest {
 
     @Test
     fun test_givenNullOrBlankExternalId_whenCreateReplayed_thenPlainPostNotUpsert() {
-        for (value in listOf<Any>(JSONObject.NULL, "", "  ", 5, true)) {
+        for (value in listOf<Any>(JSONObject.NULL, "", "  ", "local_key")) {
             setUp()
             manager.createLocal(ACCOUNTS, account("local_n").put("ExtId__c", value))
             client.nextIds.add("001N")
@@ -1545,6 +1545,68 @@ class QueueSyncUpTaskTest {
     }
 
     @Test
+    fun test_givenNumericExternalId_whenCreateReplayed_thenUpsertWithCanonicalKeyAndFieldOmittedFromBody() {
+        for ((value, key) in listOf<Pair<Any, String>>(12345 to "12345", 12345.5 to "12345.5", 1000.0 to "1000", 1.0E3 to "1000")) {
+            setUp()
+            manager.createLocal(ACCOUNTS, account("local_n").put("ExtId__c", value))
+            client.nextIds.add("001N")
+
+            val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+            assertEquals("$value", SyncState.Status.DONE, sync.status)
+            assertEquals("$value", listOf("PATCH Account/ExtId__c/$key"), client.requestLines())
+            assertFalse("$value", client.requests[0].requestBodyAsJson.has("ExtId__c"))
+        }
+    }
+
+    @Test
+    fun test_givenNumericExternalIdDeferred_whenLookupDone_thenLookupUsesTheSameKey() {
+        manager.createLocal(ACCOUNTS, account("local_a"))
+        manager.createLocal(ACCOUNTS, account("local_u").put("ExtId__c", 1000.0).put("ParentId", "local_a"))
+        insertCleanRecord(CONTACTS, "003C", "Contact")
+        manager.updateLocal(CONTACTS, "003C", JSONObject().put("LastName", "c"))
+        client.responder = {
+            when {
+                it.method == RestRequest.RestMethod.GET -> Reply(404, "[]")
+                it.method == RestRequest.RestMethod.POST -> Reply(400, "bad")
+                else -> null
+            }
+        }
+
+        runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        assertEquals(
+            listOf("POST Account", "GET Account/ExtId__c/1000?fields=Id", "PATCH Contact/003C"),
+            client.requestLines()
+        )
+    }
+
+    @Test
+    fun test_givenUnsupportedExternalIdType_whenCreateReplayed_thenRecordLevelErrorBeforeAnyRequest() {
+        for (value in listOf<Any>(true, JSONObject().put("a", 1), org.json.JSONArray().put("x"))) {
+            setUp()
+            manager.createLocal(ACCOUNTS, account("local_b").put("ExtId__c", value))
+            manager.createLocal(CONTACTS, contact("local_c").put("AccountId", "local_b"))
+            manager.createLocal(ACCOUNTS, account("local_ok"))
+            client.nextIds.add("001K")
+
+            val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+            assertEquals("$value", SyncState.Status.DONE, sync.status)
+            // Nothing sent for the bad entry nor its dependant; the unrelated create goes
+            assertEquals("$value", listOf("POST Account"), client.requestLines())
+            val entries = queueEntries()
+            assertEquals("$value", 2, entries.length())
+            val bad = entries.getJSONObject(0)
+            assertEquals("local_b", bad.getString(SyncQueue.RECORD_ID))
+            assertEquals(1, bad.getInt(SyncQueue.ATTEMPTS))
+            assertTrue(bad.getString(SyncQueue.LAST_ERROR).contains("unsupported external id value type"))
+            assertEquals(0, entries.getJSONObject(1).optInt(SyncQueue.ATTEMPTS))
+            assertNotNull(findRecord(ACCOUNTS, "001K"))
+        }
+    }
+
+    @Test
     fun test_givenNullExternalIdInChanges_whenUpsertExternalId_thenNullNotTheStringNull() {
         val target = QueueSyncUpTarget("ExtId__c")
         assertNull(target.upsertExternalId(JSONObject().put("ExtId__c", JSONObject.NULL)))
@@ -1553,7 +1615,15 @@ class QueueSyncUpTaskTest {
         assertNull(target.upsertExternalId(JSONObject().put("ExtId__c", true)))
         assertNull(target.upsertExternalId(null))
         assertEquals("x", target.upsertExternalId(JSONObject().put("ExtId__c", "x")))
-        assertNull(target.upsertExternalId(JSONObject().put("ExtId__c", 12)))
+        assertEquals("12", target.upsertExternalId(JSONObject().put("ExtId__c", 12)))
+        assertEquals("1000", target.upsertExternalId(JSONObject().put("ExtId__c", 1000.0)))
+        assertEquals("1000", target.upsertExternalId(JSONObject("{\"ExtId__c\": 1e3}")))
+        assertEquals("12345.5", target.upsertExternalId(JSONObject().put("ExtId__c", 12345.5)))
+        assertEquals("12345000", target.upsertExternalId(JSONObject().put("ExtId__c", 1.2345E7)))
+        assertEquals("0.00001", target.upsertExternalId(JSONObject().put("ExtId__c", 1.0E-5)))
+        assertEquals("123456789012345678", target.upsertExternalId(JSONObject().put("ExtId__c", 123456789012345678L)))
+        assertNull(target.upsertExternalId(JSONObject().put("ExtId__c", "local_key")))
+        assertNull(target.upsertExternalId(JSONObject().put("ExtId__c", true)))
         assertNull(target.upsertExternalId(JSONObject().put("ExtId__c", JSONObject())))
         assertNull(target.upsertExternalId(JSONObject().put("ExtId__c", org.json.JSONArray().put("x"))))
     }

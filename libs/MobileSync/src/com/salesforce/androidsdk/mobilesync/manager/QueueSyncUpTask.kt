@@ -205,6 +205,8 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
         val problem = when {
             kind == null -> "Unknown kind of queue entry: ${entry.opt(SyncQueue.KIND)}"
             sobjectType.isEmpty() -> "Queue entry has no ${SyncQueue.SOBJECT_TYPE}"
+            kind == SyncQueue.Kind.CREATE && target.unsupportedExternalIdType(changes) != null ->
+                target.unsupportedExternalIdType(changes)
             !store.hasSoup(soupName) -> "Soup $soupName does not exist"
             recordEntryId == -1L -> "Record $recordId does not exist in $soupName"
             else -> null
