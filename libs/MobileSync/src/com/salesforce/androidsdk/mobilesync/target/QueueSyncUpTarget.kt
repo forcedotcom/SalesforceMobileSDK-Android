@@ -165,6 +165,21 @@ open class QueueSyncUpTarget : SyncUpTarget {
         }
     }
 
+    /** [upsertExternalId] of a queue entry: no key if its external id value was flagged as imprecise when written */
+    internal fun entryUpsertExternalId(entry: JSONObject): String? =
+        if (isImprecise(entry)) null else upsertExternalId(entry.optJSONObject(SyncQueue.CHANGES))
+
+    /** [unsupportedExternalIdType] of a queue entry, including a value flagged as imprecise when written */
+    internal fun entryUnsupportedExternalIdType(entry: JSONObject): String? =
+        if (isImprecise(entry)) {
+            "External id $externalIdFieldName is a number whose precision cannot be preserved; store it as a string"
+        } else unsupportedExternalIdType(entry.optJSONObject(SyncQueue.CHANGES))
+
+    private fun isImprecise(entry: JSONObject): Boolean {
+        val flagged = entry.optJSONArray(SyncQueue.IMPRECISE_FIELDS) ?: return false
+        return externalIdFieldName != null && (0 until flagged.length()).any { flagged.optString(it) == externalIdFieldName }
+    }
+
     /** Message if the external id value of [changes] has an unsupported type (boolean, object, array...), else null */
     internal fun unsupportedExternalIdType(changes: JSONObject?): String? {
         if (externalIdFieldName == null || changes == null) return null

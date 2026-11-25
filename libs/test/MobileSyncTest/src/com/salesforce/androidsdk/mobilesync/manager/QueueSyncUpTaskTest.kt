@@ -1614,6 +1614,32 @@ class QueueSyncUpTaskTest {
     }
 
     @Test
+    fun test_givenBigDecimalExternalIdLostByPersistence_whenReplayed_thenRejectedWithPrecisionMessage() {
+        for (text in listOf("123456789012345.001", "123456789012345.678")) {
+            assertEquals(text, emptyList<String>(), replayedLinesForExternalId(java.math.BigDecimal(text)))
+            val entry = queueEntries().getJSONObject(0)
+            assertEquals(text, 1, entry.getInt(SyncQueue.ATTEMPTS))
+            assertTrue(text, entry.getString(SyncQueue.LAST_ERROR).contains("precision cannot be preserved"))
+        }
+        // Exactly preserved by the persistence: still keys
+        assertEquals(listOf("PATCH Account/ExtId__c/12345.5"), replayedLinesForExternalId(java.math.BigDecimal("12345.5")))
+        assertEquals(listOf("PATCH Account/ExtId__c/0.1"), replayedLinesForExternalId(java.math.BigDecimal("0.1")))
+        assertEquals(listOf("PATCH Account/ExtId__c/42"), replayedLinesForExternalId(java.math.BigDecimal("42.0")))
+    }
+
+    @Test
+    fun test_givenImpreciseBigDecimalInOtherField_whenReplayed_thenSyncsNormallyWithTheValueUntouched() {
+        manager.createLocal(ACCOUNTS, account("local_n").put("AnnualRevenue", java.math.BigDecimal("123456789012345.001")))
+        client.nextIds.add("001N")
+
+        val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(listOf("POST Account"), client.requestLines())
+        assertEquals(0, queueEntries().length())
+    }
+
+    @Test
     fun test_givenUnsupportedExternalIdType_whenCreateReplayed_thenRecordLevelErrorBeforeAnyRequest() {
         for (value in listOf<Any>(true, JSONObject().put("a", 1), org.json.JSONArray().put("x"))) {
             setUp()

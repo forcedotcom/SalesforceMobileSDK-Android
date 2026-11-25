@@ -152,7 +152,7 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
         val changes = entry.optJSONObject(SyncQueue.CHANGES)
         if (changes != null && changes.keys().asSequence().any { (changes.opt(it) as? String) in blockedIds }) return true
         // An upsert can land on an existing record that has a blocked entry
-        val externalId = if (kind == SyncQueue.Kind.CREATE.name) target.upsertExternalId(changes) else null
+        val externalId = if (kind == SyncQueue.Kind.CREATE.name) target.entryUpsertExternalId(entry) else null
         if (externalId != null) {
             if ((sobjectType to externalId) in blockedUpserts) return true
             val destination = resolveDestination(target, entryId, entry, sobjectType, externalId)
@@ -183,7 +183,7 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
     private fun block(target: QueueSyncUpTarget, soupName: String, recordId: String, entry: JSONObject) {
         val sobjectType = entry.optString(SyncQueue.SOBJECT_TYPE)
         if (entry.optString(SyncQueue.KIND) == SyncQueue.Kind.CREATE.name) {
-            target.upsertExternalId(entry.optJSONObject(SyncQueue.CHANGES))?.let { blockedUpserts.add(sobjectType to it) }
+            target.entryUpsertExternalId(entry)?.let { blockedUpserts.add(sobjectType to it) }
         }
         if (recordId.isNotEmpty()) {
             blockedTypedIds.add(sobjectType to recordId)
@@ -205,8 +205,8 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
         val problem = when {
             kind == null -> "Unknown kind of queue entry: ${entry.opt(SyncQueue.KIND)}"
             sobjectType.isEmpty() -> "Queue entry has no ${SyncQueue.SOBJECT_TYPE}"
-            kind == SyncQueue.Kind.CREATE && target.unsupportedExternalIdType(changes) != null ->
-                target.unsupportedExternalIdType(changes)
+            kind == SyncQueue.Kind.CREATE && target.entryUnsupportedExternalIdType(entry) != null ->
+                target.entryUnsupportedExternalIdType(entry)
             !store.hasSoup(soupName) -> "Soup $soupName does not exist"
             recordEntryId == -1L -> "Record $recordId does not exist in $soupName"
             else -> null
@@ -402,7 +402,7 @@ open class QueueSyncUpTask(syncManager: SyncManager, sync: SyncState, callback: 
     @Throws(Exception::class)
     private fun blockDestination(target: QueueSyncUpTarget, entryId: Long, entry: JSONObject, counted: Boolean) {
         if (entry.optString(SyncQueue.KIND) != SyncQueue.Kind.CREATE.name) return
-        val externalId = target.upsertExternalId(entry.optJSONObject(SyncQueue.CHANGES)) ?: return
+        val externalId = target.entryUpsertExternalId(entry) ?: return
         val sobjectType = entry.optString(SyncQueue.SOBJECT_TYPE)
         val destination = resolveDestination(target, entryId, entry, sobjectType, externalId, counted)
         when (destination.kind) {

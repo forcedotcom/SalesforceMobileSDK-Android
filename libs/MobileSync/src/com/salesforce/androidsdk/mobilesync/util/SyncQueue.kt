@@ -57,6 +57,13 @@ object SyncQueue {
     const val KIND = "kind"
     const val CHANGES = "changes"
 
+    /**
+     * Names of the top-level `changes` fields whose value is a BigDecimal or BigInteger that the JSON
+     * persistence does not give back exactly (it comes back as a Long or a Double). The values themselves
+     * are left as they are; replay uses the list to refuse such a value as an external id. Absent if none.
+     */
+    const val IMPRECISE_FIELDS = "impreciseFields"
+
     /** Reserved, never written by the write API yet */
     const val BASE = "base"
     const val STATUS = "status"
@@ -161,6 +168,8 @@ object SyncQueue {
 
     internal fun createLocal(store: SmartStore, soupName: String, record: JSONObject): JSONObject {
         checkRecordSoup(store, soupName)
+        // Checked on the caller's values: the copy below goes through JSON text and loses them
+        val imprecise = impreciseFields(record)
         val copy = deepCopy(record, "Record")
         for (key in copy.keys()) {
             if (key.startsWith("_soup")) {
@@ -207,7 +216,7 @@ object SyncQueue {
             copy.remove(SyncTarget.LAST_ERROR)
             val saved = store.create(soupName, copy, false)
                 ?: throw MobileSyncException("Failed to create record in $soupName")
-            appendEntry(store, soupName, id, sobjectType, Kind.CREATE, changes)
+            appendEntry(store, soupName, id, sobjectType, Kind.CREATE, changes, imprecise)
             saved
         }
     }
@@ -232,6 +241,7 @@ object SyncQueue {
 
     internal fun updateLocal(store: SmartStore, soupName: String, id: String, changes: JSONObject): JSONObject {
         checkRecordSoup(store, soupName)
+        val imprecise = impreciseFields(changes)
         val changesCopy = deepCopy(changes, "Changes")
         if (changesCopy.length() == 0) {
             throw MobileSyncException("Changes cannot be empty")
@@ -250,7 +260,7 @@ object SyncQueue {
             record.put(SyncTarget.LOCALLY_UPDATED, true)
             val saved = store.update(soupName, record, entryId, false)
                 ?: throw MobileSyncException("Failed to update record $id in $soupName")
-            appendEntry(store, soupName, id, objectType(record), Kind.UPDATE, changesCopy)
+            appendEntry(store, soupName, id, objectType(record), Kind.UPDATE, changesCopy, imprecise)
             saved
         }
     }
@@ -448,13 +458,38 @@ object SyncQueue {
         return Pair(entryId, record)
     }
 
+    /**
+     * The top-level fields of [changes] (the caller's own object, before any JSON copy) holding a BigDecimal or BigInteger that does not survive the JSON
+     * persistence (text written, then read back as a Long or a Double): checked here, before the loss.
+     */
+    private fun impreciseFields(changes: JSONObject): org.json.JSONArray {
+        val result = org.json.JSONArray()
+        for (key in changes.keys()) {
+            val value = changes.opt(key)
+            val exact = when (value) {
+                is java.math.BigDecimal -> value
+                is java.math.BigInteger -> java.math.BigDecimal(value)
+                else -> continue
+            }
+            val back = JSONObject("{\"v\":$value}").get("v")
+            val persisted = try {
+                java.math.BigDecimal(back.toString())
+            } catch (e: NumberFormatException) {
+                null // read back as a string or something else: not the same number
+            }
+            if (persisted == null || persisted.compareTo(exact) != 0) result.put(key)
+        }
+        return result
+    }
+
     private fun appendEntry(
         store: SmartStore,
         soupName: String,
         recordId: String,
         sobjectType: String?,
         kind: Kind,
-        changes: JSONObject?
+        changes: JSONObject?,
+        imprecise: org.json.JSONArray? = null
     ) {
         val entry = JSONObject().apply {
             put(SEQUENCE, nextSequence(store))
@@ -463,6 +498,7 @@ object SyncQueue {
             sobjectType?.let { put(SOBJECT_TYPE, it) }
             put(KIND, kind.name)
             changes?.let { put(CHANGES, it) }
+            imprecise?.takeIf { it.length() > 0 }?.let { put(IMPRECISE_FIELDS, it) }
             put(STATUS, Status.PENDING.name)
             put(ATTEMPTS, 0)
         }
