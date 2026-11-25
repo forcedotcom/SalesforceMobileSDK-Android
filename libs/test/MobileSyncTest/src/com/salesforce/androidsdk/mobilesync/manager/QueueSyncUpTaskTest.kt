@@ -1597,6 +1597,54 @@ class QueueSyncUpTaskTest {
         assertEquals(0, last.optInt(SyncQueue.ATTEMPTS))
     }
 
+    /**
+     * Unique external id: nobody owns X when the first deferred upsert looks it up (404, cached); B then takes X;
+     * the second deferred upsert must look X up again and find B, which blocks the newer edit of B.
+     * Without the invalidation, the second upsert would reuse the cached 404 and the newer edit of B would be sent.
+     */
+    @Test
+    fun test_givenUniqueExternalId_whenOwnerAcquiredBetweenTwoDeferredUpserts_thenSecondLookupFindsNewOwnerAndBlocksIt() {
+        insertCleanRecord(ACCOUNTS, "001B", "Account", mapOf("Name" to "b"))
+        val parent = "local_p"
+        manager.createLocal(ACCOUNTS, account(parent).put("Name", "x".repeat(300))) // P, rejected
+        manager.createLocal(ACCOUNTS, account("local_u1").put("Name", "older1").put("ExtId__c", "X").put("ParentId", parent))
+        manager.updateLocal(ACCOUNTS, "001B", JSONObject().put("ExtId__c", "X"))
+        manager.createLocal(ACCOUNTS, account("local_u2").put("Name", "older2").put("ExtId__c", "X").put("ParentId", parent))
+        manager.updateLocal(ACCOUNTS, "001B", JSONObject().put("Name", "newer"))
+        var acquired = false
+        client.responder = {
+            when {
+                it.method == RestRequest.RestMethod.GET -> if (acquired) Reply(200, """{"Id":"001B"}""") else Reply(404, "[]")
+                it.method == RestRequest.RestMethod.POST -> Reply(400, "bad")
+                it.method == RestRequest.RestMethod.PATCH -> {
+                    acquired = true
+                    null
+                }
+                else -> null
+            }
+        }
+
+        val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(
+            listOf(
+                "POST Account",
+                "GET Account/ExtId__c/X?fields=Id",
+                "PATCH Account/001B",
+                "GET Account/ExtId__c/X?fields=Id"
+            ),
+            client.requestLines()
+        )
+        val entries = queueEntries()
+        assertEquals(4, entries.length())
+        assertEquals(
+            listOf("CREATE", "CREATE", "CREATE", "UPDATE"),
+            (0 until 4).map { entries.getJSONObject(it).getString(SyncQueue.KIND) }
+        )
+        assertEquals(listOf(1, 0, 0, 0), (0 until 4).map { entries.getJSONObject(it).optInt(SyncQueue.ATTEMPTS) })
+    }
+
     @Test
     fun test_givenLoneRejectedUpsert_whenSyncUp_thenNoLookup() {
         client.responder = { if (it.method == RestRequest.RestMethod.PATCH) Reply(400, "bad") else null }

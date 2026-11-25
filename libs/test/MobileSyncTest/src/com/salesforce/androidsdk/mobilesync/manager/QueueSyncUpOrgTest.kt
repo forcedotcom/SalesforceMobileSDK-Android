@@ -351,9 +351,47 @@ class QueueSyncUpOrgTest : SyncManagerTestCase() {
         assertNotNull(findRecord(ACCOUNTS, blockedLocalId))
     }
 
+    /**
+     * Spec case 19 with a UNIQUE external id: X is owned by nobody when the first deferred upsert looks it up (404),
+     * then B acquires X, then the second deferred upsert must find B and keep the newer edit of B from going first.
+     */
+    @Test
+    fun testUniqueExternalIdWhenOwnerAcquiredBetweenTwoDeferredUpsertsThenNewerEditOfNewOwnerDeferred() {
+        assumeUpsertUsable()
+        val field = EXT_FIELD
+        val value = "ext-${System.nanoTime()}"
+        val target = QueueSyncUpTarget(field, Constants.ID, null)
+        val created = restClient.sendSync(RestRequest.getRequestForCreate(apiVersion, "Account", mapOf<String, Any>("Name" to "$prefix-b")))
+        assertTrue(created.isSuccess)
+        val idB = created.asJSONObject().getString("id")
+        track("Account", idB)
+        insertCleanRecord(ACCOUNTS, idB, "Account")
+
+        // 1. a create that the server rejects (name too long): every entry that refers to it waits
+        val parent = syncManager.createLocal(ACCOUNTS, account("x".repeat(300))).getString(Constants.ID)
+        // 2. upsert on X (older), deferred: X is looked up, nobody owns it (404)
+        syncManager.createLocal(ACCOUNTS, extAccount("$prefix-older1", value).put("ParentId", parent))
+        // 3. B takes X: succeeds
+        syncManager.updateLocal(ACCOUNTS, idB, JSONObject().put(field, value))
+        // 4. second upsert on X, deferred: X is looked up again (the write cleared the cache) and found on B
+        syncManager.createLocal(ACCOUNTS, extAccount("$prefix-older2", value).put("ParentId", parent))
+        // 5. newer edit of B: B is blocked, so it waits
+        syncManager.updateLocal(ACCOUNTS, idB, JSONObject().put("Name", "$prefix-newer"))
+
+        val sync = runQueueSync(target)
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        val entries = queueEntries()
+        assertEquals(listOf("CREATE", "CREATE", "CREATE", "UPDATE"), (0 until entries.length()).map { entries.getJSONObject(it).getString(SyncQueue.KIND) })
+        assertEquals(listOf(1, 0, 0, 0), (0 until entries.length()).map { entries.getJSONObject(it).optInt(SyncQueue.ATTEMPTS, 0) })
+        assertEquals(listOf(idB), idsByName("Account", field, value))
+        assertEquals("$prefix-b", serverField("Account", idB, "Name")) // the newer edit of B was not sent
+    }
+
     // endregion
 
     // region Helpers
+
 
     private fun runQueueSync(target: QueueSyncUpTarget = QueueSyncUpTarget()): SyncState {
         val sync = syncManager.createSyncUp(target, SyncOptions.optionsForSyncUp(emptyList()), SyncQueue.QUEUE_SOUP, null)
@@ -460,10 +498,13 @@ class QueueSyncUpOrgTest : SyncManagerTestCase() {
             RestRequest.getRequestForUpsert(apiVersion, "Account", EXT_FIELD, value, mapOf<String, Any>("Name" to "$prefix-probe"))
         )
         println("QueueSyncUpOrgTest live probe upsert status=${response.statusCode} body=${response.asString()}")
+        // 400/404: the field is not usable for upsert (see docs/mobilesync/TEST_ORG_SETUP.md in the Workspace repo)
         assumeTrue(
-            "SKIPPED: org rejects upsert by Account.$EXT_FIELD with ${response.statusCode} ${response.asString()}",
-            response.isSuccess
+            "SKIPPED: Account.$EXT_FIELD is unusable for upsert (${response.statusCode}); " +
+                "see docs/mobilesync/TEST_ORG_SETUP.md in the Workspace repo",
+            response.statusCode != 400 && response.statusCode != 404
         )
+        assertTrue("Unexpected answer to the upsert probe: ${response.statusCode} ${response.asString()}", response.isSuccess)
     }
 
     private fun extAccount(name: String, extId: String) = account(name).put(EXT_FIELD, extId)
