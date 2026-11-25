@@ -1529,6 +1529,75 @@ class QueueSyncUpTaskTest {
     }
 
     @Test
+    fun test_givenNullOrBlankExternalId_whenCreateReplayed_thenPlainPostNotUpsert() {
+        for (value in listOf<Any>(JSONObject.NULL, "", "  ")) {
+            setUp()
+            manager.createLocal(ACCOUNTS, account("local_n").put("ExtId__c", value))
+            client.nextIds.add("001N")
+
+            val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+            assertEquals(SyncState.Status.DONE, sync.status)
+            assertEquals(listOf("POST Account"), client.requestLines())
+            assertNotNull(findRecord(ACCOUNTS, "001N"))
+        }
+    }
+
+    @Test
+    fun test_givenNullExternalIdInChanges_whenUpsertExternalId_thenNullNotTheStringNull() {
+        val target = QueueSyncUpTarget("ExtId__c")
+        assertNull(target.upsertExternalId(JSONObject().put("ExtId__c", JSONObject.NULL)))
+        assertNull(target.upsertExternalId(JSONObject()))
+        assertNull(target.upsertExternalId(JSONObject().put("ExtId__c", " ")))
+        assertNull(target.upsertExternalId(JSONObject().put("ExtId__c", true)))
+        assertNull(target.upsertExternalId(null))
+        assertEquals("x", target.upsertExternalId(JSONObject().put("ExtId__c", "x")))
+        assertEquals("12", target.upsertExternalId(JSONObject().put("ExtId__c", 12)))
+    }
+
+    @Test
+    fun test_givenNullExternalIdUpdate_whenCreateDeferred_thenNoDestinationLookup() {
+        manager.createLocal(ACCOUNTS, account("local_a"))
+        manager.createLocal(ACCOUNTS, account("local_u").put("ExtId__c", JSONObject.NULL).put("ParentId", "local_a"))
+        insertCleanRecord(CONTACTS, "003C", "Contact")
+        manager.updateLocal(CONTACTS, "003C", JSONObject().put("LastName", "c"))
+        client.responder = {
+            when {
+                it.method == RestRequest.RestMethod.GET -> Reply(503, "down")
+                it.method == RestRequest.RestMethod.POST -> Reply(400, "bad")
+                else -> null
+            }
+        }
+
+        val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(listOf("POST Account", "PATCH Contact/003C"), client.requestLines())
+    }
+
+    @Test
+    fun test_givenDeferredUpsertIsFinalEntry_whenSyncUp_thenNoLookupAndEntryUntouched() {
+        manager.createLocal(ACCOUNTS, account("local_a"))
+        manager.createLocal(ACCOUNTS, account("local_u").put("ExtId__c", "ext-1").put("ParentId", "local_a"))
+        client.responder = {
+            when {
+                it.method == RestRequest.RestMethod.GET -> Reply(503, "down")
+                it.method == RestRequest.RestMethod.POST -> Reply(400, "bad")
+                else -> null
+            }
+        }
+
+        val sync = runQueueSync(QueueSyncUpTarget("ExtId__c"))
+
+        assertEquals(SyncState.Status.DONE, sync.status)
+        assertEquals(listOf("POST Account"), client.requestLines())
+        val last = queueEntries().getJSONObject(1)
+        assertEquals("local_u", last.getString(SyncQueue.RECORD_ID))
+        assertEquals("PENDING", last.getString(SyncQueue.STATUS))
+        assertEquals(0, last.optInt(SyncQueue.ATTEMPTS))
+    }
+
+    @Test
     fun test_givenLoneRejectedUpsert_whenSyncUp_thenNoLookup() {
         client.responder = { if (it.method == RestRequest.RestMethod.PATCH) Reply(400, "bad") else null }
         manager.createLocal(ACCOUNTS, account("local_u").put("ExtId__c", "ext-1"))

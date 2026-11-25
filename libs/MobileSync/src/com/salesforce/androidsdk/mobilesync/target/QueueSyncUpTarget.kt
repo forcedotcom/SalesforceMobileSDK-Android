@@ -147,14 +147,21 @@ open class QueueSyncUpTarget : SyncUpTarget {
     }
 
     /**
-     * The external id value of a CREATE that is an upsert (the target has an external id field and
-     * `changes` holds a value for it that is not a local id), null for a plain create. An upsert can
-     * land on any existing record of its type.
+     * The external id value of a CREATE that is an upsert, null for a plain create: the target has an
+     * external id field and `changes` holds a usable value for it, that is a nonblank string or a
+     * number (JSON null, absent, blank or any other type mean no upsert key) that is not a local id.
+     * An upsert can land on any existing record of its type. Request selection, body, destination
+     * lookup and lookup cache all use this one value.
      */
-    internal fun upsertExternalId(changes: JSONObject?): String? =
-        if (externalIdFieldName != null && changes != null) {
-            JSONObjectHelper.optString(changes, externalIdFieldName)?.takeIf { !isLocalId(it) }
-        } else null
+    internal fun upsertExternalId(changes: JSONObject?): String? {
+        if (externalIdFieldName == null || changes == null) return null
+        val value = when (val raw = changes.opt(externalIdFieldName)) {
+            is String -> raw
+            is Number -> raw.toString()
+            else -> null // absent, JSONObject.NULL, boolean, object...
+        }
+        return value?.takeIf { it.isNotBlank() && !isLocalId(it) }
+    }
 
     private fun create(
         syncManager: SyncManager,
