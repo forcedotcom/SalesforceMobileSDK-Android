@@ -57,6 +57,13 @@ object SyncQueue {
     const val KIND = "kind"
     const val CHANGES = "changes"
 
+    /**
+     * Names of the top-level `changes` fields whose value is a BigDecimal or BigInteger that the JSON
+     * persistence does not give back exactly (it comes back as a Long or a Double). The values themselves
+     * are left as they are; replay uses the list to refuse such a value as an external id. Absent if none.
+     */
+    const val IMPRECISE_FIELDS = "impreciseFields"
+
     /** Reserved, never written by the write API yet */
     const val BASE = "base"
     const val STATUS = "status"
@@ -156,8 +163,13 @@ object SyncQueue {
 
     // region Local write API (called by SyncManager)
 
+    /** Generates the local ids of records created without an id (replaceable by tests to force collisions) */
+    internal var localIdGenerator: () -> String = { SyncTarget.createLocalId() }
+
     internal fun createLocal(store: SmartStore, soupName: String, record: JSONObject): JSONObject {
         checkRecordSoup(store, soupName)
+        // Checked on the caller's values: the copy below goes through JSON text and loses them
+        val imprecise = impreciseFields(record)
         val copy = deepCopy(record, "Record")
         for (key in copy.keys()) {
             if (key.startsWith("_soup")) {
@@ -183,11 +195,19 @@ object SyncQueue {
                 if (store.lookupSoupEntryId(soupName, ID_FIELD, givenId as String) != -1L) {
                     throw MobileSyncException("A record with id $givenId already exists in $soupName")
                 }
+                // Local ids are used as references between soups: they are unique in the whole store
+                val otherSoup = soupUsingId(store, soupName, givenId)
+                if (otherSoup != null) {
+                    throw MobileSyncException("The id $givenId is already used in $otherSoup: local ids must be unique in the store")
+                }
                 givenId
             } else {
-                var candidate = SyncTarget.createLocalId()
-                while (store.lookupSoupEntryId(soupName, ID_FIELD, candidate) != -1L) {
-                    candidate = SyncTarget.createLocalId()
+                // Same rules as for a given id: unused in this soup and in every other soup of the store
+                var candidate = localIdGenerator()
+                while (store.lookupSoupEntryId(soupName, ID_FIELD, candidate) != -1L ||
+                    soupUsingId(store, soupName, candidate) != null
+                ) {
+                    candidate = localIdGenerator()
                 }
                 candidate
             }
@@ -196,13 +216,32 @@ object SyncQueue {
             copy.remove(SyncTarget.LAST_ERROR)
             val saved = store.create(soupName, copy, false)
                 ?: throw MobileSyncException("Failed to create record in $soupName")
-            appendEntry(store, soupName, id, sobjectType, Kind.CREATE, changes)
+            appendEntry(store, soupName, id, sobjectType, Kind.CREATE, changes, imprecise)
             saved
         }
     }
 
+    /**
+     * Returns the name of a soup other than [soupName] that has a record or a queue entry with the
+     * given id, or null.
+     */
+    private fun soupUsingId(store: SmartStore, soupName: String, id: String): String? {
+        val sql = "SELECT {$QUEUE_SOUP:$SOUP_NAME} FROM {$QUEUE_SOUP} " +
+            "WHERE {$QUEUE_SOUP:$RECORD_ID} = '${sqlEscape(id)}' AND {$QUEUE_SOUP:$SOUP_NAME} != '${sqlEscape(soupName)}'"
+        queryAll(store, sql) { row -> row.getString(0) }.firstOrNull()?.let { return it }
+        for (other in store.allSoupNames) {
+            if (other != soupName && other != QUEUE_SOUP && store.hasIndexForPath(other, ID_FIELD) &&
+                store.lookupSoupEntryId(other, ID_FIELD, id) != -1L
+            ) {
+                return other
+            }
+        }
+        return null
+    }
+
     internal fun updateLocal(store: SmartStore, soupName: String, id: String, changes: JSONObject): JSONObject {
         checkRecordSoup(store, soupName)
+        val imprecise = impreciseFields(changes)
         val changesCopy = deepCopy(changes, "Changes")
         if (changesCopy.length() == 0) {
             throw MobileSyncException("Changes cannot be empty")
@@ -221,7 +260,7 @@ object SyncQueue {
             record.put(SyncTarget.LOCALLY_UPDATED, true)
             val saved = store.update(soupName, record, entryId, false)
                 ?: throw MobileSyncException("Failed to update record $id in $soupName")
-            appendEntry(store, soupName, id, objectType(record), Kind.UPDATE, changesCopy)
+            appendEntry(store, soupName, id, objectType(record), Kind.UPDATE, changesCopy, imprecise)
             saved
         }
     }
@@ -238,6 +277,132 @@ object SyncQueue {
             saved
         }
     }
+
+    // endregion
+
+    // region Replay support (used by QueueSyncUpTask)
+
+    /** Page size of the queries reading the queue (the default page size of smart queries is capped) */
+    private const val QUERY_PAGE_SIZE = 2000
+
+    /** Characters allowed in a local id for the LIKE pre-filter of [findPendingEntriesReferencing] */
+    private val SIMPLE_ID = Regex("[A-Za-z0-9_-]+")
+
+    /**
+     * Returns the soup entry ids of the entries with status [Status.PENDING], ordered by [SEQUENCE].
+     * Parked entries are skipped.
+     */
+    @Throws(JSONException::class)
+    internal fun pendingEntryIds(store: SmartStore): List<Long> {
+        val sql = "SELECT {$QUEUE_SOUP:${SmartStore.SOUP_ENTRY_ID}} FROM {$QUEUE_SOUP} " +
+            "WHERE {$QUEUE_SOUP:$STATUS} = '${Status.PENDING.name}' ORDER BY {$QUEUE_SOUP:$SEQUENCE} ASC"
+        return queryAll(store, sql) { row -> row.getLong(0) }
+    }
+
+    /** Returns the entry stored under [entryId], or null if it does not exist anymore */
+    @Throws(JSONException::class)
+    internal fun readEntry(store: SmartStore, entryId: Long): JSONObject? =
+        store.retrieve(QUEUE_SOUP, entryId).optJSONObject(0)
+
+    /**
+     * Returns the kinds of the other entries of a record: every entry for ([soupName], [recordId])
+     * except [excludeEntryId] (the entry just replayed), whatever its sequence and status. An earlier
+     * failed entry is an unsent edit too, and a parked one is still waiting for the app.
+     */
+    @Throws(JSONException::class)
+    internal fun otherEntryKinds(store: SmartStore, soupName: String, recordId: String, excludeEntryId: Long): Set<Kind> {
+        val sql = "SELECT DISTINCT {$QUEUE_SOUP:$KIND} FROM {$QUEUE_SOUP} " +
+            "WHERE {$QUEUE_SOUP:$SOUP_NAME} = '${sqlEscape(soupName)}' " +
+            "AND {$QUEUE_SOUP:$RECORD_ID} = '${sqlEscape(recordId)}' " +
+            "AND {$QUEUE_SOUP:${SmartStore.SOUP_ENTRY_ID}} != $excludeEntryId"
+        return queryAll(store, sql) { row -> Kind.valueOf(row.getString(0)) }.toSet()
+    }
+
+    /** Returns the entries (any status) for the record queued after [sequence], ordered by sequence */
+    @Throws(JSONException::class)
+    internal fun entriesAfter(store: SmartStore, soupName: String, recordId: String, sequence: Long): List<JSONObject> {
+        val sql = "SELECT {$QUEUE_SOUP:_soup} FROM {$QUEUE_SOUP} " +
+            "WHERE {$QUEUE_SOUP:$SOUP_NAME} = '${sqlEscape(soupName)}' " +
+            "AND {$QUEUE_SOUP:$RECORD_ID} = '${sqlEscape(recordId)}' " +
+            "AND {$QUEUE_SOUP:$SEQUENCE} > $sequence ORDER BY {$QUEUE_SOUP:$SEQUENCE} ASC"
+        return queryAll(store, sql) { row -> row.get(0).let { if (it is JSONObject) it else JSONObject(it.toString()) } }
+    }
+
+    /** Deletes every entry (any status) for the record */
+    @Throws(JSONException::class)
+    internal fun deleteEntriesForRecord(store: SmartStore, soupName: String, recordId: String) {
+        val sql = "SELECT {$QUEUE_SOUP:${SmartStore.SOUP_ENTRY_ID}} FROM {$QUEUE_SOUP} " +
+            "WHERE {$QUEUE_SOUP:$SOUP_NAME} = '${sqlEscape(soupName)}' " +
+            "AND {$QUEUE_SOUP:$RECORD_ID} = '${sqlEscape(recordId)}'"
+        for (id in queryAll(store, sql) { row -> row.getLong(0) }) {
+            store.delete(QUEUE_SOUP, id)
+        }
+    }
+
+    /**
+     * Returns the pending entries that may reference [localId] (as `recordId`, `parentRef` or a
+     * value of `changes`). TODO: include PARKED entries when parking arrives: a parked entry still
+     * holds the local id and must be remapped too. The result can contain entries that do not reference it: callers check.
+     */
+    @Throws(JSONException::class)
+    internal fun findPendingEntriesReferencing(store: SmartStore, localId: String): List<JSONObject> {
+        val pending = "{$QUEUE_SOUP:$STATUS} = '${Status.PENDING.name}'"
+        // The raw JSON of an id made of simple characters appears verbatim in the entry, so a LIKE
+        // narrows the scan (`_` in the pattern is a wildcard, which can only widen the result)
+        val sql = if (SIMPLE_ID.matches(localId)) {
+            "SELECT {$QUEUE_SOUP:_soup} FROM {$QUEUE_SOUP} WHERE $pending AND {$QUEUE_SOUP:_soup} LIKE '%$localId%'"
+        } else {
+            "SELECT {$QUEUE_SOUP:_soup} FROM {$QUEUE_SOUP} WHERE $pending"
+        }
+        return queryAll(store, "$sql ORDER BY {$QUEUE_SOUP:$SEQUENCE} ASC") { row ->
+            row.get(0).let { if (it is JSONObject) it else JSONObject(it.toString()) }
+        }
+    }
+
+    /**
+     * Replaces [localId] by [serverId] in [entry]: `recordId` (only when the entry is for
+     * [soupName], the soup of the record that was created), `parentRef`, and the top-level string
+     * values of `changes` that are exactly [localId] (these are references to a record of any soup).
+     *
+     * @return true if the entry was modified
+     */
+    @Throws(JSONException::class)
+    internal fun replaceId(entry: JSONObject, soupName: String, localId: String, serverId: String): Boolean {
+        var modified = false
+        val fields = if (entry.opt(SOUP_NAME) == soupName) listOf(RECORD_ID, PARENT_REF) else listOf(PARENT_REF)
+        for (field in fields) {
+            if (entry.opt(field) == localId) {
+                entry.put(field, serverId)
+                modified = true
+            }
+        }
+        val changes = entry.optJSONObject(CHANGES)
+        if (changes != null) {
+            for (key in changes.keys().asSequence().toList()) {
+                if (changes.opt(key) == localId) {
+                    changes.put(key, serverId)
+                    modified = true
+                }
+            }
+        }
+        return modified
+    }
+
+    private fun <T> queryAll(store: SmartStore, sql: String, mapRow: (org.json.JSONArray) -> T): List<T> {
+        val result = mutableListOf<T>()
+        var page = 0
+        while (true) {
+            val rows = store.query(QuerySpec.buildSmartQuerySpec(sql, QUERY_PAGE_SIZE), page)
+            for (i in 0 until rows.length()) {
+                result.add(mapRow(rows.getJSONArray(i)))
+            }
+            if (rows.length() < QUERY_PAGE_SIZE) break
+            page++
+        }
+        return result
+    }
+
+    private fun sqlEscape(value: String): String = value.replace("'", "''")
 
     // endregion
 
@@ -293,13 +458,38 @@ object SyncQueue {
         return Pair(entryId, record)
     }
 
+    /**
+     * The top-level fields of [changes] (the caller's own object, before any JSON copy) holding a BigDecimal or BigInteger that does not survive the JSON
+     * persistence (text written, then read back as a Long or a Double): checked here, before the loss.
+     */
+    private fun impreciseFields(changes: JSONObject): org.json.JSONArray {
+        val result = org.json.JSONArray()
+        for (key in changes.keys()) {
+            val value = changes.opt(key)
+            val exact = when (value) {
+                is java.math.BigDecimal -> value
+                is java.math.BigInteger -> java.math.BigDecimal(value)
+                else -> continue
+            }
+            val back = JSONObject("{\"v\":$value}").get("v")
+            val persisted = try {
+                java.math.BigDecimal(back.toString())
+            } catch (e: NumberFormatException) {
+                null // read back as a string or something else: not the same number
+            }
+            if (persisted == null || persisted.compareTo(exact) != 0) result.put(key)
+        }
+        return result
+    }
+
     private fun appendEntry(
         store: SmartStore,
         soupName: String,
         recordId: String,
         sobjectType: String?,
         kind: Kind,
-        changes: JSONObject?
+        changes: JSONObject?,
+        imprecise: org.json.JSONArray? = null
     ) {
         val entry = JSONObject().apply {
             put(SEQUENCE, nextSequence(store))
@@ -308,6 +498,7 @@ object SyncQueue {
             sobjectType?.let { put(SOBJECT_TYPE, it) }
             put(KIND, kind.name)
             changes?.let { put(CHANGES, it) }
+            imprecise?.takeIf { it.length() > 0 }?.let { put(IMPRECISE_FIELDS, it) }
             put(STATUS, Status.PENDING.name)
             put(ATTEMPTS, 0)
         }
@@ -319,7 +510,7 @@ object SyncQueue {
      * Runs [block] in one SmartStore transaction: everything it writes is committed, or nothing is.
      * Failures are reported as [MobileSyncException].
      */
-    private fun <T> inTransaction(store: SmartStore, soupName: String, block: () -> T): T {
+    internal fun <T> inTransaction(store: SmartStore, soupName: String, block: () -> T): T {
         synchronized(store.database) {
             store.beginTransaction()
             try {
