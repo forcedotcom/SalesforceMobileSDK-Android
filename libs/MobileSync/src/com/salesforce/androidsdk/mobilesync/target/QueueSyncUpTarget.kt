@@ -148,18 +148,15 @@ open class QueueSyncUpTarget : SyncUpTarget {
 
     /**
      * The external id value of a CREATE that is an upsert, null for a plain create: the target has an
-     * external id field and `changes` holds a usable value for it, that is a nonblank string or a
-     * number (JSON null, absent, blank or any other type mean no upsert key) that is not a local id.
+     * external id field and `changes` holds a nonblank string for it that is not a local id (JSON null,
+     * absent, blank, number, boolean, object and array mean no upsert key).
      * An upsert can land on any existing record of its type. Request selection, body, destination
      * lookup and lookup cache all use this one value.
      */
     internal fun upsertExternalId(changes: JSONObject?): String? {
         if (externalIdFieldName == null || changes == null) return null
-        val value = when (val raw = changes.opt(externalIdFieldName)) {
-            is String -> raw
-            is Number -> raw.toString()
-            else -> null // absent, JSONObject.NULL, boolean, object...
-        }
+        // Only a string: absent, JSONObject.NULL, number, boolean, object and array are no upsert key
+        val value = changes.opt(externalIdFieldName) as? String
         return value?.takeIf { it.isNotBlank() && !isLocalId(it) }
     }
 
@@ -178,7 +175,8 @@ open class QueueSyncUpTarget : SyncUpTarget {
             val body = fields.filterKeys { it != externalIdFieldName }
             RestRequest.getRequestForUpsert(syncManager.apiVersion, sobjectType, externalIdFieldName, encodePathSegment(externalId), body)
         } else {
-            RestRequest.getRequestForCreate(syncManager.apiVersion, sobjectType, fields)
+            // No upsert key: the external id field (null, blank, non-string...) is left out of the plain POST too
+            RestRequest.getRequestForCreate(syncManager.apiVersion, sobjectType, fields.filterKeys { it != externalIdFieldName })
         }
         val response = syncManager.sendSyncWithMobileSyncUserAgent(request)
         if (!response.isSuccess) {

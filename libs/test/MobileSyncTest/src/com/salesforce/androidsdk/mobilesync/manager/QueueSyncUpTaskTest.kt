@@ -1530,7 +1530,7 @@ class QueueSyncUpTaskTest {
 
     @Test
     fun test_givenNullOrBlankExternalId_whenCreateReplayed_thenPlainPostNotUpsert() {
-        for (value in listOf<Any>(JSONObject.NULL, "", "  ")) {
+        for (value in listOf<Any>(JSONObject.NULL, "", "  ", 5, true)) {
             setUp()
             manager.createLocal(ACCOUNTS, account("local_n").put("ExtId__c", value))
             client.nextIds.add("001N")
@@ -1539,6 +1539,7 @@ class QueueSyncUpTaskTest {
 
             assertEquals(SyncState.Status.DONE, sync.status)
             assertEquals(listOf("POST Account"), client.requestLines())
+            assertFalse("$value", client.requests[0].requestBodyAsJson.has("ExtId__c"))
             assertNotNull(findRecord(ACCOUNTS, "001N"))
         }
     }
@@ -1552,7 +1553,9 @@ class QueueSyncUpTaskTest {
         assertNull(target.upsertExternalId(JSONObject().put("ExtId__c", true)))
         assertNull(target.upsertExternalId(null))
         assertEquals("x", target.upsertExternalId(JSONObject().put("ExtId__c", "x")))
-        assertEquals("12", target.upsertExternalId(JSONObject().put("ExtId__c", 12)))
+        assertNull(target.upsertExternalId(JSONObject().put("ExtId__c", 12)))
+        assertNull(target.upsertExternalId(JSONObject().put("ExtId__c", JSONObject())))
+        assertNull(target.upsertExternalId(JSONObject().put("ExtId__c", org.json.JSONArray().put("x"))))
     }
 
     @Test
