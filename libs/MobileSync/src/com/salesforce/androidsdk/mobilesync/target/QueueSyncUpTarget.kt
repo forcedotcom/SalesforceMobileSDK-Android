@@ -151,9 +151,9 @@ open class QueueSyncUpTarget : SyncUpTarget {
      * for request selection, body, 204 lookup, destination lookup, lookup cache and same-value deferral.
      * - nonblank string that is not a local id: the key
      * - number (not boolean): the key in its canonical string form (integers as plain digits, others in
-     *   the shortest round-trip decimal form, no exponent)
+     *   the shortest round-trip decimal form, no exponent), if it can be preserved (see [canonicalNumber])
      * - absent, JSON null, blank, local id: no key (plain create)
-     * - boolean, object, array, NaN or infinite number: no key too, but [unsupportedExternalIdType] rejects the entry
+     * - boolean, object, array, or a number that cannot be preserved: no key too, but [unsupportedExternalIdType] rejects the entry
      * An upsert can land on any existing record of its type.
      */
     internal fun upsertExternalId(changes: JSONObject?): String? {
@@ -170,24 +170,43 @@ open class QueueSyncUpTarget : SyncUpTarget {
         if (externalIdFieldName == null || changes == null) return null
         return when (val raw = changes.opt(externalIdFieldName)) {
             null, JSONObject.NULL, is String -> null
-            is Number -> if (canonicalNumber(raw) == null) "Entry has an unsupported external id value type for $externalIdFieldName: $raw" else null
+            is Number -> if (canonicalNumber(raw) == null) {
+                "External id $externalIdFieldName is a number whose precision cannot be preserved; store it as a string"
+            } else null
             else -> "Entry has an unsupported external id value type for $externalIdFieldName: ${raw.javaClass.simpleName}"
         }
     }
 
+    /**
+     * Canonical string of a number external id, or null if it cannot be preserved exactly (persistence in
+     * SmartStore reads decimals back as doubles): integers that fit a Long give plain digits; floating
+     * values (and decimals that are not integral) are accepted only if their shortest round-trip decimal
+     * form has at most [MAX_FLOATING_DIGITS] significant digits, written without exponent.
+     */
     private fun canonicalNumber(number: Number): String? {
-        val decimal = when (number) {
-            is Int, is Long, is Short, is Byte -> java.math.BigDecimal(number.toLong())
-            is java.math.BigInteger -> java.math.BigDecimal(number)
-            is java.math.BigDecimal -> number
+        val decimal: java.math.BigDecimal = when (number) {
+            is Int, is Long, is Short, is Byte -> return number.toLong().toString()
+            is java.math.BigInteger -> return if (number.bitLength() <= 63) number.toString() else null
+            is java.math.BigDecimal -> {
+                val stripped = number.stripTrailingZeros()
+                if (stripped.scale() <= 0) {
+                    return if (stripped.toBigInteger().bitLength() <= 63) stripped.toBigInteger().toString() else null
+                }
+                // Not integral: must be exactly what its double form says
+                val d = number.toDouble()
+                if (d.isNaN() || d.isInfinite() || java.math.BigDecimal(d.toString()).compareTo(number) != 0) return null
+                number
+            }
+            is Float -> if (number.isNaN() || number.isInfinite()) return null else java.math.BigDecimal(number.toString())
             else -> {
                 val d = number.toDouble()
                 if (d.isNaN() || d.isInfinite()) return null
                 java.math.BigDecimal(d.toString()) // shortest round-trip form of the double
             }
         }
-        val plain = decimal.stripTrailingZeros()
-        return (if (plain.scale() <= 0) plain.setScale(0) else plain).toPlainString()
+        val stripped = decimal.stripTrailingZeros()
+        if (stripped.precision() > MAX_FLOATING_DIGITS) return null
+        return (if (stripped.scale() <= 0) stripped.setScale(0) else stripped).toPlainString()
     }
 
     private fun create(
@@ -313,6 +332,8 @@ open class QueueSyncUpTarget : SyncUpTarget {
     }
 
     companion object {
+        /** Most significant digits a floating-point external id may have to be preserved by the JSON round trip */
+        private const val MAX_FLOATING_DIGITS = 15
         private const val HTTP_TOO_MANY_REQUESTS = 429
         private const val REQUEST_LIMIT_EXCEEDED = "REQUEST_LIMIT_EXCEEDED"
     }

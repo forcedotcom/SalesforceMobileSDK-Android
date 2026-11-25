@@ -1581,6 +1581,38 @@ class QueueSyncUpTaskTest {
         )
     }
 
+    /** Queues a CREATE through the write API (persisted, reloaded when replayed) and returns the request lines of its replay */
+    private fun replayedLinesForExternalId(value: Any): List<String> {
+        setUp()
+        manager.createLocal(ACCOUNTS, account("local_n").put("ExtId__c", value))
+        client.nextIds.add("001N")
+        runQueueSync(QueueSyncUpTarget("ExtId__c"))
+        return client.requestLines()
+    }
+
+    @Test
+    fun test_givenNumberExternalIdThroughQueueWritePath_whenReplayed_thenExactKeyOrRejected() {
+        assertEquals(
+            listOf("PATCH Account/ExtId__c/123456789012345.678"),
+            replayedLinesForExternalId("123456789012345.678")
+        )
+        assertEquals(
+            listOf("PATCH Account/ExtId__c/123456789012345678"),
+            replayedLinesForExternalId(123456789012345678L)
+        )
+        for ((number, text) in listOf<Pair<Any, String>>(12345.5 to "12345.5", 0.1 to "0.1", 12345678.1234567 to "12345678.1234567")) {
+            assertEquals("$number", replayedLinesForExternalId(text), replayedLinesForExternalId(number))
+            assertEquals("$number", listOf("PATCH Account/ExtId__c/$text"), client.requestLines())
+        }
+        // Precision lost by the persistence: rejected, nothing sent
+        for (value in listOf<Any>(java.math.BigDecimal("123456789012345.678"), 0.12345678901234567, 1.0E20 + 12345.0)) {
+            assertEquals("$value", emptyList<String>(), replayedLinesForExternalId(value))
+            val entry = queueEntries().getJSONObject(0)
+            assertEquals(1, entry.getInt(SyncQueue.ATTEMPTS))
+            assertTrue("$value: ${entry.optString(SyncQueue.LAST_ERROR)}", entry.optString(SyncQueue.LAST_ERROR).contains("precision cannot be preserved"))
+        }
+    }
+
     @Test
     fun test_givenUnsupportedExternalIdType_whenCreateReplayed_thenRecordLevelErrorBeforeAnyRequest() {
         for (value in listOf<Any>(true, JSONObject().put("a", 1), org.json.JSONArray().put("x"))) {
