@@ -159,7 +159,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
             val record = records[i]
             val id = record.getString(idFieldName)
             if (isDirty(record)) {
-                needReRun = needReRun || updateRecordInLocalStore(
+                val recordNeedsReRun = updateRecordInLocalStore(
                     syncManager,
                     syncSoupName,
                     record,
@@ -168,6 +168,7 @@ open class BatchSyncUpTarget : SyncUpTarget, AdvancedSyncUpTarget {
                     refIdToRecordResponses[id],
                     isReRun
                 )
+                needReRun = needReRun || recordNeedsReRun
             }
         }
 
